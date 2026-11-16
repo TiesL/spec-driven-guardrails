@@ -7709,3 +7709,89 @@ checks satisfied. Unlisted input/oracle changes or a surviving mutant still
 STOP through the owning-role route. This is the existing Module/Interface and
 public CLI Seam; no new carrier, rule, code, exception, decomposition or
 authority is introduced. No security trade-off is taken by this clarification.
+
+
+### A60 addendum 9 — returning-launch coverage and remaining-target audit, #646
+
+**Ruling (Architect / Planning, 2026-11-16, OR19, `501edc9`).** [A] Keep S669
+`a6s3-return-1--101` unchanged as a doubly-covered refusal, not a kill target.
+Use the existing `a6s3-return-0--49` and the unreached `a6s3-outcome-0` to kill
+`rule:returning-launch`; also target the existing `a6s3-return-1--49` and
+`a6s3-outcome-1` for slot-swapped selector credit. In the lower row, attempt creation=T-102, first launch and
+all original starts=S=T-100, returned launch L=T-101, R=T-50. The retained ledger
+requires `last.original_start == first.original_start == receipt.started_at`
+and `0 <= L-first.original_start <= deadline`; hence `S <= L`. QA writes:
+`returning-launch lower bound S_s <= L_s implied by rule:original-deadline
+AND attempt-ledger same-original-start and last-original-start-to-receipt
+equalities; domain: schema-valid last attempt and pair, ledger consumer runs`.
+If any premise fails, that ledger itself emits the SAME R/`risk-attempt-invalid`.
+There is therefore no exclusive lower-bound kill input in that domain: changing
+original_start to admit an earlier L breaks the retained equality to S. Outside
+that domain this is no exemption: keep the complete returning-launch check,
+including before the Segment-5 expiry flip. The whole tag is observable: with
+S=T-100, R=T-50, original_start=S and first transport launch=S, a returned retry
+L=T-49 is inside its original 1800-second deadline but after R; alternatively
+one launch at S with outcome `transport`, matching bytes/raw/session and no
+successor, violates only the outcome conjunct. Both are R/`risk-attempt-invalid`
+and lose that code on DEL-returning-launch. No rule is removed or weakened.
+
+**Complete audit of the remaining Segment-3 and Segment-4..6 targets.** [A]
+This replaces addendum 7 N3's blanket remaining-tags-exclusive claim. The list
+includes previously reached Segment-3 targets because Segment 5 changes consumer
+reachability. Existing controls, negatives and exact diagnostics remain; a
+different outer refusal alone does not prove a kill: compare ordered applicable
+codes, including their absence on the mutant. Later-segment entries below are
+algebraic prescriptions, not executed KILLED evidence.
+
+| Segment / every target family | Collision audit and required kill input or implication |
+| --- | --- |
+| 3: `quality-author-separation`, `launch-after-attempt`, `first-launch-start` | Retain the three named quality/author targets, `a6s3-created-0--100` and `a6s3-first-0--99`. For expanded launch selectors, isolate one launch/attempt at a time: creation=launch with all original clocks aligned; or first launch=S+1 within deadline, creation<S and no earlier same-slot launch. Do not use first launch=S-1, which also breaks original-deadline. Risk-reviewer sessions stay distinct from Q and A. |
+| 3: `returning-launch` | Lower row cannot kill (proof above). Upper and outcome targets can, including the previously UNRUN outcome-0; outcome transport alone has no successor, so zero-byte-only does not apply. Keep lower boundaries in both slots, credit their implication, and kill the whole tag on upper/outcome in both slots. |
+| 3: `pair-before-announcement`, `announcement-not-future` | Retain both `a6s3-complete-{0,1}-0` and `a6s3-now--1`. At PC=T keep R<=Z<=P in each slot and both cross-seal bounds; at now=T-1 retain PC<T, pair age positive and full-hold survival. A hold-window code is different and cannot mask loss of risk-independence. |
+| 3: `earliest-copy`, `last-check-before-announcement`, `release-before-announcement` | Retain earliest-299/301, forged-earliest, last-check-0, and BOTH PR/issue release-0 targets. Last-check alone is not a record-binding leaf; release=T is strictly after stop=T-100. Earliest-forgery may also hold, but deletion loses identity-binding. No derivative risk-independence comes from release time. |
+| 3: `full-hold-age`, retained `risk-expired` and deadline/seal targets | Retain full-hold-86300 and B5 age-no-selection/age-negative targets. Plain age-86400 and same-vendor-age-from-earlier-slot-86400 cannot kill risk-expired: full-hold-age also refuses. Deadline-1801 rows still isolate receipt R-S, with launch L=S and chain R<=Z<=P<T. Existing seal-before-compare kills on R>Z with Z<=both P; peer-sealed kills on Z_i>P_j for i!=j while both own chains hold. Same-slot Z<=P and transitive event-to-T/now copies retain addendum-5 implications, not extra exclusive-row claims. |
+| 4: `runtime-guard-root`, checker/preflight-in-guard, retained `runtime` | A path-only D row can fail BOTH its new path tag and retained profile equality, so cannot singly kill the path tag. Kill checker/preflight separately with absolute G=/lab/G, the other path correct, and the attacked path under /lab/B; runtime and its retained profile agree on the attacked path. Rehash that laboratory profile, current/receipt runtime copies, qualification and fresh announcement coherently BEFORE freeze; the guard pin/root stays G. For root deletion use typed relative root `lab/G`, both paths its lexical joins, and matching renewed profile; only the absolute-root rule refuses runtime-invalid. Missing-root rows stay refusals but have no exclusive kill credit. Path equality uses the supplied string root's lexical join; absolute validation is the separate root rule, never permission to execute a relative path. Retain runtime's profile-digest mismatch kill, isolated from the new path rules. |
+| 4: collector validate-before-invoke; B-FOR-G | Observe invocation count, not final evaluator verdict. For EACH accepted-revision, tree-digest, mismatches, untracked, present-state and resolved-root premise, vary only that premise with clean B and all other G checks passing; mutant must invoke the recorded fake preflight whereas original invokes zero times. A row with several bad G leaves cannot kill a single leaf. B-FOR-G uses the coherent actual-external-paths eligible control; G=B remains the independent control. |
+| 5: `no-expiry-skip` (EXPIRE-SKIP), hold/envelope selection reachability | Expiry crossed with raw refer, reviewer-session reuse, invalid raw, or receipt deadline breach can kill EXPIRE-SKIP; retain every owning code. A ledger contradiction already diagnosed by consistency_checks (wrong decision/chronology) CANNOT kill it. Use identity expiry plus `provider_retries_visible=false`, otherwise valid ledger, instead. Hold/stop/off/release rows CANNOT kill EXPIRE-SKIP, since hold is outside that guard: kill a separate bound-only-hold-selection regression with expired selection plus a removed pre-T stop lacking release (own H code even though outer U). Kill bound-only-envelope-selection regression with a record-copy family's honest frozen F drift: reverting to no record must introduce the forbidden derivative risk-binding. |
+| 5: `capture-single-revision`, retained `corpus`, `capture-head-final`, `capture-base-final` | B6 final-only F rows cannot singly kill capture-final while record binding emits identity-binding. Use `a6s5-capture-{head,base}-no-selection`: freeze a coherent control, move only the corresponding coherent FINAL revision, retain captured artifacts/pair/ledger, and make the selected manifest fail closed schema. There is no selection/record binding; capture-final still runs BEFORE the sel-is-None return. Original is U with manifest-schema then identity-binding; mutant loses identity-binding. No carrier is added. For capture-single-revision use two individually well-formed changed/context sources naming distinct revisions on one side, each tree entry still covered at final, other side valid; generic corpus completeness must pass. Kill retained corpus with a missing required snapshot at capture=final, no revision conflict. |
+| 5: envelope binding families | Expand BOTH slots and EACH repository/pr/issue/head/base/decision/attempt/diff/evidence/requirements/design/policy/instructions/profiles/qualification leaf. D-envelope-alone cannot kill its envelope tag while raw-to-envelope also emits risk-binding (B4). Use paired raw+envelope destination edits with the record and final/reference FIXED, so raw equality passes and the envelope-to-referent rule alone emits risk-binding. This is a basis-kill witness for a now comparison, NOT the deferred all-copies A edit, which would also move the record copy. All source availability guards and A deferrals stay. Raw-alone edits kill each retained raw-to-envelope leaf; never delete the owning raw equality anchor. |
+| 5: capability echoes, envelope-slot, risk-independence | Apply that paired-destination witness to table/mapping, row, marker, effort, exceptions and reviewer floor (both raw reviewer copies for floor), with valid derivation and fixed record/final values. Honest F drift cannot kill these rules: Rule G intentionally admits the record copy while identity-binding refuses. A two-entry pair with an unknown slot cannot kill envelope-slot: capability derivation refuses, so C4 skips it. Use two normal entries PLUS a schema-valid third entry naming an unknown slot, raw/envelope agreeing, disclosed unchanged in the selected schema-valid record; cap codes stay empty for the two accepted slots. The original additionally has risk-pair-required and risk-attempt-invalid, but ONLY envelope-slot adds risk-binding; deletion must lose that code. This is a cardinality attack, never a three-slot eligible control. For runtime/profile independence mutations isolate EACH conjunct: a runtime receipt copy matching neither final nor record; or one wrong model/variant/vendor/settings with NO profiles drift, all other independence predicates true. Prompt mutation keeps binding instructions fixed; envelope-instructions mutation keeps receipt prompt aligned to that attacked envelope. Different capability/instruction codes are retained, not mistaken for same-code masking. Keep resolved-model equality even on profiles drift. |
+| 6: FIRST/LAST, WRONG-AUTHORITY, VENDOR | Expand over every now selector only. FIRST/LAST must omit the SOLE bad member, not one of several failures with the same code. For returning FIRST-vs-LAST launch use first zero-byte transport at S and last returned at S+1<=R; for attempt selection use a valid dispositioned prior attempt with its L before the current S. A mutant choosing the first wrongly refuses an eligible current pair; independent no-retry/first-attempt control passes. Other launch selectors use the isolated creation/first-start rows above. WRONG-AUTHORITY uses the fixed-referent paired-destination rows, not honest F drift or deferred all-copies edits. VENDOR uses two same-vendor stable slots with distinct independent IDs, each own deadline/retry allowance; one vendor's bad slot cannot be duplicated into another failure. Existing capability reader mutants remain reader assertions, not final-gate kill claims. |
+| 6: C6.COMPLETE, deferred declarations, S625 witness | Retain all four partition falsifiers (drop from both; both sets; generated selector duplicate/drop; mutant credited to deferred). Credit lower returning boundary via its domain/premises and retain upper/outcome kills; do not mark the whole tag implied. Real-collector missing-carrier mutations use EACH required code AND explicit absence of EACH invented carrier: other missing sources can keep the same outer referral or same code. A supplied partial carrier cannot hide behind a still-unavailable code. No eligibility claim or new live source follows. |
+
+**Exact QA sentence changes before resuming.** [A] S669's addendum-6 scope
+sentence beginning "Returning launch is LAST" gains the lower-bound implication
+above, names the preserved `a6s3-return-1--101` as nonexclusive, and names
+upper/outcome rows in both slots as the tag's kills; its "Boundary ties ... separate"
+sentence distinguishes behavior rows from exclusive mutation targets and adds
+the retry/prior-attempt selector controls in the audit. S615's
+"Every NON-IMPLIED expanded rule owns mutant" sentence cites this constituent
+implication and the complete audit; its addendum-7 B4 sentence gains the
+paired-destination basis witness with record fixed, explicitly preserving deferred
+A. S606's addendum-6 cross-expiry sentence specifies provider-retries-visible for
+the ledger kill and separate hold/envelope-selection mutants; its B6 sentence
+retains the old rows but replaces their kill credit with the two no-selection
+rows above. S677's addendum-6 scope sentence gains the coherent-profile checker,
+preflight and relative-root kill constructions and one-premise-at-a-time collector
+targets. S654's per-leaf mutation/basis and capability-echo sentences (and S659's
+echo places) distinguish paired-destination kills from honest F/deferred A edits.
+S625's real-collector witness sentence adds per-carrier absence assertions as well
+as per-code assertions. S615's C6.COMPLETE sentence records those exact scoped
+credits and all four falsifiers. S617/S618/S619/S658 need no oracle or boundary
+sentence changes. S615's envelope-slot entry also names the third-entry attack
+and its exact loss-of-risk-binding oracle. All addendum-8 inputs/results and
+every reason code stand.
+
+**Limits and completion.** [A] No AC5/AC6 or F70-F74 requirement is contradicted
+or narrowed. This is coverage/input clarification within the existing Module,
+Interface and CLI/collector Seam, with no new decomposition or carrier. Security
+trade-offs and protected contract-text changes remain MAINTAINER decisions;
+none is taken here. Segment 3 resumes only after QA's wording/artifact update;
+its prior red/green evidence remains history, its revised target list must finish
+with actual KILLED output and eligible controls, then addendum 6/8 checks. Later
+segments use this audit rather than the superseded exclusivity assumption; a
+new unexplained survivor still follows OR19, never an oracle relaxation.
+
+Doubts: Later-segment kill constructions are algebraic and must be demonstrated after their implementation; no behavior or mutation suite ran in this Architect session.
+Doubts: The lower implication is domain-limited; it never authorizes removing returning-launch or suppressing diagnostics while a ledger consumer is unavailable/skipped.
+Doubts: Missing adoption/session-context paths prevent installation/live-loading verification; ordinary Codex adoption is the orchestrator's remedy, not a repair authorized here.
