@@ -382,7 +382,7 @@ def control(policy_root=None):
          'host': 'lab-host', 'now': stamp(400), 'preflight_cwd': '/lab/B',
          'preflight': {'exit': 0, 'stdout': '', 'stderr': '', 'escape_hatch': False},
          'verifier': {'head': B, 'base_present': True, 'mismatches': [], 'toplevel': '/lab/B', 'untracked': []},
-         'guard_state': {'head': B, 'base_present': True, 'mismatches': [], 'tree_sha256': sha('guard-tree'),
+         'guard_state': {'toplevel': '/lab/B', 'head': B, 'base_present': True, 'mismatches': [], 'tree_sha256': sha('guard-tree'),
                          'bundle_sha256': sha('bundle'), 'wiring_sha256': sha('wiring')},
          'runtime': {'profile_sha256': sha('runtime'), 'wiring_sha256': sha('wiring'), 'observed': True,
                      'project_dir': '/lab/B', 'checker': '/lab/B/lib/merge-risk.py', 'preflight': '/lab/B/merge-preflight.sh',
@@ -964,13 +964,13 @@ mutate(661,'repository-identity','redirect')
 
 # This Adapter uses real local Git objects and an exhaustive fake gh. It never
 # delegates an unmatched call to a real executable or a network transport.
-def export_probe(implementation, defect=None, capability=None):
+def export_probe(implementation, defect=None, capability=None, guard=None):
     with tempfile.TemporaryDirectory(prefix='mr646-object-') as tmp:
         home=Path(tmp); repo=home/'product'; repo.mkdir(); binpath=home/'bin'; binpath.mkdir()
         env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}
         env.update(GIT_CONFIG_GLOBAL=os.devnull,GIT_CONFIG_NOSYSTEM='1',MR_WORLD=str(home/'world.json'),MR_LOG=str(home/'calls.log'))
-        def g(*args):
-            p=subprocess.run(['git','-C',str(repo),*args],capture_output=True,env=env)
+        def g(*args, at=None):
+            p=subprocess.run(['git','-C',str(at or repo),*args],capture_output=True,env=env)
             check(p.returncode==0,'object fixture git: '+p.stderr.decode()[-300:]); return p.stdout.decode().strip()
         g('init','-q','-b','main');g('config','user.name','fixture');g('config','user.email','fixture@example.invalid')
         for d in ('lib','policy','src'): (repo/d).mkdir()
@@ -980,6 +980,37 @@ def export_probe(implementation, defect=None, capability=None):
         (repo/'merge-preflight.sh').write_text('#!/bin/sh\nexit 0\n');(repo/'merge-preflight.sh').chmod(0o755)
         (repo/'WORKFLOW-ADOPTION.md').write_text('| quality-review-before-merge | yes |\n| process-multi-agent-roles | yes |\n')
         cfg=configuration();cfg.update(enabled=False,acceptance=None,executor_host='',guard=None)
+        guard_dir=None
+        if guard:
+            # Independent G objects and a preflight sentinel; no code runs from B.
+            guard_dir=home/'guard'; guard_dir.mkdir()
+            g('init','-q','-b','main',at=guard_dir)
+            g('config','user.name','fixture',at=guard_dir)
+            g('config','user.email','fixture@example.invalid',at=guard_dir)
+            sentinel='#!/bin/sh\nprintf "invoked\\n" >> "$MR_PREFLIGHT_LOG"\nexit 0\n'
+            (guard_dir/'merge-preflight.sh').write_text(sentinel)
+            (guard_dir/'merge-preflight.sh').chmod(0o755)
+            (guard_dir/'unchanged.txt').write_text('accepted G bytes\n')
+            # A nested script directory is a wrong resolved root without any
+            # other observed-G fault; its sentinel is already in the pinned tree.
+            (guard_dir/'nested').mkdir()
+            (guard_dir/'nested/merge-preflight.sh').write_text(sentinel)
+            (guard_dir/'nested/merge-preflight.sh').chmod(0o755)
+            g('add','.',at=guard_dir); g('commit','-qm','accepted guard',at=guard_dir)
+            revision=g('rev-parse','HEAD',at=guard_dir)
+            tree=subprocess.run(['git','-C',str(guard_dir),'ls-tree','-r','-z','--full-tree',revision],
+                                capture_output=True,env=env)
+            check(tree.returncode==0,'guard tree observation')
+            cfg['guard']={'repository':'laboratory/guard','revision':revision,'tree_sha256':sha(tree.stdout),
+                          'source':{'source':'https://github.com/laboratory/guard/blob/'+revision+'/accepted/guard',
+                                    'sha256':sha('guard-source')},'bundle_sha256':sha('guard-bundle')}
+            env['MR_PREFLIGHT_LOG']=str(home/'preflight.log')
+            if guard=='head': g('commit','--allow-empty','-qm','unaccepted head',at=guard_dir)
+            elif guard=='tree': cfg['guard']['tree_sha256']=sha('wrong tree')
+            elif guard=='mismatches': (guard_dir/'unchanged.txt').write_text('drifted G bytes\n')
+            elif guard=='untracked': (guard_dir/'rogue.sh').write_text('unaccepted\n')
+            elif guard=='present': cfg['guard']['revision']='0'*40
+            elif guard=='root': guard_dir=guard_dir/'nested'
         served=capability_world(cfg,capability) if capability else {}
         (repo/'policy/merge-autonomy.json').write_bytes(raw(cfg))
         (repo/'src/calc.py').write_text('old\n');(repo/'src/removed.txt').write_text('removed\n');(repo/'src/context.txt').write_text('unchanged surrounding context\n')
@@ -1011,7 +1042,19 @@ def export_probe(implementation, defect=None, capability=None):
         (home/'world.json').write_text(json.dumps(routes))
         (binpath/'gh').write_text('#!'+sys.executable+'\nimport json,os,sys\na=sys.argv[1:]\nopen(os.environ["MR_LOG"],"a").write(json.dumps(a)+"\\n")\nr=json.load(open(os.environ["MR_WORLD"])).get(" ".join(a))\nif r is None: sys.exit(99)\nsys.stdout.write(r)\n')
         (binpath/'gh').chmod(0o755);env['PATH']=str(binpath)+':'+env['PATH']
+        if guard: g('checkout','--detach',base)  # physical product verifier is clean B
         before=g('status','--porcelain'); index=sha((repo/'.git/index').read_bytes())
+        if guard:
+            p=subprocess.run([sys.executable,'-I',str(repo/'lib/merge-risk.py'),
+                              'export','700',str(guard_dir),str(home/'guard-evidence')],
+                             cwd=repo,env=env,capture_output=True,text=True)
+            check(p.returncode==0,'guard collector failed before sentinel assertion: '+p.stdout+p.stderr)
+            seen=(home/'preflight.log').read_text().splitlines() if (home/'preflight.log').exists() else []
+            expected=1 if guard=='control' else 0
+            check(len(seen)==expected,'collector G '+guard+': invocations='+str(len(seen))+' expected='+str(expected))
+            check(g('status','--porcelain')==before and sha((repo/'.git/index').read_bytes())==index,
+                  'guard collector wrote product repository/index')
+            return p
         if capability:
             for tool in ('curl','wget','ssh','nc'):
                 (binpath/tool).write_text('#!/bin/sh\necho "'+tool+' $*" >> "$MR_LOG.network"\nexit 97\n');(binpath/tool).chmod(0o755)
@@ -2124,6 +2167,9 @@ def external_guard(b):
         old=item['source']['source']
         item['source']['source']='https://github.com/laboratory/guard/blob/'+('7'*40)+'/skills/merge-risk-panel/'+item['name']
         b['sources'][item['source']['source']]=copy.deepcopy(b['sources'][old])
+    b['guard_state']['toplevel']='/lab/G'
+    b['runtime'].update(checker='/lab/G/lib/merge-risk.py',preflight='/lab/G/merge-preflight.sh')
+    renew_runtime_profile(b)
 
 
 def unaccepted_pin(which,origin):
@@ -2312,7 +2358,7 @@ def run_row(root,entry):
     if command=='documented-verdict':
         documented_verdict(b,b.pop('_omit_reviewer',None),root if (root/'skills').exists() else ROOT)
         command='evaluate'
-    if command=='export-probe': return export_probe(root,b.pop('_export_defect',None),b.pop('_capability_defect',None))
+    if command=='export-probe': return export_probe(root,b.pop('_export_defect',None),b.pop('_capability_defect',None),b.pop('_guard_defect',None))
     if command=='wrapper-probe': return wrapper_probe(b.pop('_wrapper_phase','final'))
     b=prepared(b)
     request=b.pop('_request',b)
@@ -2325,6 +2371,10 @@ def run_row(root,entry):
     check(p.returncode==expected and first.startswith(prefix),
           f'{name}: want {want}/{expected}; actual exit={p.returncode} {p.stdout[-600:]!r}')
     if code: check((code if command=='queue' else 'reason: '+code) in p.stdout, name+': missing '+code+' '+p.stdout[-600:])
+    if name.startswith('a6s4-'):
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        expected=() if want=='eligible' else ('runtime-invalid',)
+        check(actual==expected,name+': exact path codes '+repr(actual)+' != '+repr(expected))
     if name.startswith(('a6s3-release-','a6s3-issue-release-')):
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         expected=() if want=='eligible' else ('hold-release-stale',)
@@ -2345,11 +2395,8 @@ def run_row(root,entry):
 
 # A60 addendum 4: small Segment-1 witnesses, specified independently of lib.
 # The full C6 field/place matrix is a separate implementation segment.
-def actual_external_guard(b):
-    external_guard(b)
+def renew_runtime_profile(b):
     c=json.loads(b['config_text'])
-    b['guard_state']['toplevel']='/lab/G'
-    b['runtime'].update(checker='/lab/G/lib/merge-risk.py',preflight='/lab/G/merge-preflight.sh')
     profile={k:v for k,v in b['runtime'].items() if k not in
              ('profile_sha256','fresh_executor','candidate_exposed','observed')}
     retain_ref(b,c['runtime_profile'],canonical_fixture(profile))
@@ -2358,6 +2405,9 @@ def actual_external_guard(b):
     for p in b['risk_pair']: p['receipt']['runtime_sha256']=digest
     b['accepted']['qualification']['inputs']['runtime']=digest
     requalify_lab(b,c)
+
+
+actual_external_guard=external_guard  # retained add4 witness, same coherent control
 
 
 def pair_after_announcement(b):
@@ -2633,6 +2683,54 @@ seg3(654,'age-negative',change(['now'],stamp(-101)),'referred','risk-expired')
 # Addendum 7 B5: retain both old tags, move kills to exclusive domains.
 MUTANTS['654']=[(tag,('a6s3-age-no-selection' if name=='age-86400' else 'a6s3-age-negative') if tag=='risk-expired' else name,
                  replacement,control_row) for tag,name,replacement,control_row in MUTANTS['654']]
+
+
+# A60 addendum 6 Segment 4 / QA13: coherent profile attacks isolate each
+# path rule; path-only destinations also retain the profile-equality refusal.
+def guard_path_edit(root='/lab/G',checker='/lab/G/lib/merge-risk.py',preflight='/lab/G/merge-preflight.sh',renew=True):
+    def edit(b):
+        external_guard(b)
+        if root is None: b['guard_state'].pop('toplevel')
+        else: b['guard_state']['toplevel']=root
+        b['runtime'].update(checker=checker,preflight=preflight)
+        if renew: renew_runtime_profile(b)
+    return edit
+
+
+row(677,'a6s4-external-control',external_guard)
+for name,edit in (
+    ('both-B',guard_path_edit(checker='/lab/B/lib/merge-risk.py',preflight='/lab/B/merge-preflight.sh')),
+    ('checker-B',guard_path_edit(checker='/lab/B/lib/merge-risk.py')),
+    ('preflight-B',guard_path_edit(preflight='/lab/B/merge-preflight.sh')),
+    ('relative-root',guard_path_edit(root='lab/G',checker='lab/G/lib/merge-risk.py',preflight='lab/G/merge-preflight.sh')),
+    ('missing-root',guard_path_edit(root=None)),
+    ('checker-D',guard_path_edit(checker='/lab/B/lib/merge-risk.py',renew=False)),
+    ('preflight-D',guard_path_edit(preflight='/lab/B/merge-preflight.sh',renew=False))):
+    row(677,'a6s4-'+name,edit,'unresolved','runtime-invalid')
+for fault in ('control','head','tree','mismatches','untracked','present','root'):
+    row(677,'a6s4-collector-'+fault,change(['_guard_defect'],fault),command='export-probe')
+
+
+mutate(677,'runtime-guard-root','a6s4-relative-root',control='a6s4-external-control')
+mutate(677,'runtime-checker-in-guard','a6s4-checker-B',control='a6s4-external-control')
+mutate(677,'runtime-preflight-in-guard','a6s4-preflight-B',control='a6s4-external-control')
+# Each product-root substitution must reject the real external-G control,
+# while the independently eligible G=B control remains green.
+for tag,field,path in (('runtime-checker-in-guard','checker','lib/merge-risk.py'),
+                       ('runtime-preflight-in-guard','preflight','merge-preflight.sh')):
+    predicate='checker_in_guard' if field=='checker' else 'preflight_in_guard'
+    mutate(677,tag,'a6s4-external-control',
+           (predicate,"runtime.get('"+field+"')==str(Path(top or '/')/'"+path+"')"))
+for fault,predicate in (
+    ('head',"guard.get('head')==cfg['guard']['revision']"),
+    ('tree',"guard.get('tree_sha256')==cfg['guard']['tree_sha256']"),
+    ('mismatches',"guard.get('mismatches')==[]"),
+    ('untracked',"guard.get('untracked')==[]"),
+    ('root',"guard.get('toplevel')==str(Path(script_dir).resolve())")):
+    mutate(677,'collector-guard-'+fault,'a6s4-collector-'+fault,(predicate,'True'),
+           control='a6s4-collector-control')
+mutate(677,'collector-guard-present','a6s4-collector-present',('clean=False','clean=True'),
+       control='a6s4-collector-control')
 
 
 def main():

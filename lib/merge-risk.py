@@ -1275,14 +1275,22 @@ def runtime_checks(b,cfg,r):
            and runtime.get('profile_sha256')==cfg['runtime_profile']['sha256'] and runtime.get('observed') is True
            and runtime.get('isolated_config') is True and runtime.get('fresh_executor') is True
            and runtime.get('candidate_exposed') is False and runtime.get('project_dir')==top
-           and runtime.get('checker')==str(Path(top or '/')/'lib/merge-risk.py')
-           and runtime.get('preflight')==str(Path(top or '/')/'merge-preflight.sh')
            and all(isinstance(runtime.get(k),str) and SHA256.fullmatch(runtime[k])
                    for k in ('tools_sha256','hooks_sha256','settings_sha256','wiring_sha256')))
     profile=retained_json(b,cfg['runtime_profile'],cfg['repository'])
     valid=valid and conforms(profile,RUNTIME_PROFILE) and all(runtime.get(k)==v for k,v in (profile or {}).items())
     r.need(valid, 'runtime-invalid')  # rule:runtime
     guard=b.get('guard_state') or {}; pinned=cfg['guard']
+    guard_root=guard.get('toplevel')
+    absolute_guard_root=isinstance(guard_root,str) and Path(guard_root).is_absolute()
+    # Lexical joins keep root validity separate from each path comparison.
+    # These observations never authorize execution; collect() validates G first.
+    guard_path=Path(guard_root if isinstance(guard_root,str) else '/')
+    checker_in_guard=runtime.get('checker')==str(guard_path/'lib/merge-risk.py')
+    preflight_in_guard=runtime.get('preflight')==str(guard_path/'merge-preflight.sh')
+    r.need(absolute_guard_root, 'runtime-invalid')  # rule:runtime-guard-root
+    r.need(checker_in_guard, 'runtime-invalid')  # rule:runtime-checker-in-guard
+    r.need(preflight_in_guard, 'runtime-invalid')  # rule:runtime-preflight-in-guard
     correct=(pinned is not None and guard.get('base_present') is True and guard.get('head')==pinned['revision']
              and guard.get('mismatches')==[] and guard.get('tree_sha256')==pinned['tree_sha256']
              and guard.get('bundle_sha256')==pinned['bundle_sha256']
@@ -1777,6 +1785,16 @@ def collect(phase,n,script_dir):
     # No candidate/preflight executes if this checkout has drift or inactive gates.
     clean=(b['verifier']['head']==B and b['verifier']['mismatches']==[] and b['verifier']['untracked']==[]
            and all(x=='yes' for x in b['answers'].values()))
+    if cfg['guard'] is not None:
+        guard=b.get('guard_state')
+        if guard is None:
+            clean=False  # rule:collector-guard-present
+        else:
+            clean=clean and guard.get('head')==cfg['guard']['revision']  # rule:collector-guard-head
+            clean=clean and guard.get('mismatches')==[]  # rule:collector-guard-mismatches
+            clean=clean and guard.get('untracked')==[]  # rule:collector-guard-untracked
+            clean=clean and guard.get('tree_sha256')==cfg['guard']['tree_sha256']  # rule:collector-guard-tree
+            clean=clean and guard.get('toplevel')==str(Path(script_dir).resolve())  # rule:collector-guard-root
     env={k:v for k,v in os.environ.items() if k not in ESCAPE_HATCHES}
     pf_path=Path(script_dir).resolve()/'merge-preflight.sh'
     if clean:
