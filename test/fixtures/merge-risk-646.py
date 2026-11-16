@@ -2549,6 +2549,80 @@ seg2(615,'schema-outcome-enum',record_change(['outcome'],'invented'),
      'unresolved',('manifest-schema',))
 
 
+
+# A60 addendum 6 Segment 3: separation and strict chronology, public CLI only.
+def seg3(s,name,edit=None,want='eligible',code=None):
+    name='a6s3-'+name
+    row(s,name,edit,want,code)
+    return name
+
+
+for summaries in ('empty','ordinary'):
+    clear=both(change(['author_sessions'],[]),change(['quality_sessions'],[])) if summaries=='empty' else lambda b:None
+    seg3(658,'distinct-'+summaries,clear)
+    seg3(658,'quality-author-'+summaries,both(clear,lambda b:b['quality'].update(session_id=b['authors'][0]['session_id'])),
+         'referred','risk-independence')
+seg3(658,'quality-in-author-summary',lambda b:b['author_sessions'].append(b['quality']['session_id']),'referred','risk-independence')
+seg3(658,'author-in-quality-summary',lambda b:b['quality_sessions'].append(b['authors'][0]['session_id']),'referred','risk-independence')
+mutate(658,'quality-author-separation',['a6s3-quality-author-empty','a6s3-quality-in-author-summary','a6s3-author-in-quality-summary'])
+
+# Attempt creation is strictly earlier than EVERY launch; retries share the
+# original start, while only the final returned launch must lie inside S..R.
+for i in range(2):
+    for d in (-101,-100,-99):
+        seg3(669,'created-'+str(i)+'-'+str(d),change(['attempts',0,'created_at'],stamp(d)),
+             'eligible' if d < -100 else 'referred',None if d < -100 else 'risk-attempt-invalid')
+    for d in (-101,-100,-99):
+        seg3(669,'first-'+str(i)+'-'+str(d),change(['attempts',0,'launches',i,'started_at'],stamp(d)),
+             'eligible' if d == -100 else 'referred',None if d == -100 else 'risk-attempt-invalid')
+    for d in (-101,-100,-99,-51,-50,-49):
+        edit=both(transport_retry(i,started=d),change(['attempts',0,'created_at'],stamp(-102)))
+        seg3(669,'return-'+str(i)+'-'+str(d),edit,
+             'eligible' if -100 <= d <= -50 else 'referred',None if -100 <= d <= -50 else 'risk-attempt-invalid')
+    for outcome in ('transport','failed'):
+        # Use only LAUNCH's closed enum; enum-invalid rows belong to its owner.
+        if outcome=='failed': continue
+        seg3(669,'outcome-'+str(i),change(['attempts',0,'launches',i,'outcome'],outcome),'referred','risk-attempt-invalid')
+mutate(669,'launch-after-attempt','a6s3-created-0--100')
+mutate(669,'first-launch-start','a6s3-first-0--99')
+mutate(669,'returning-launch',['a6s3-return-0--49','a6s3-return-1--101','a6s3-outcome-0'])
+
+for i in range(2):
+    for d in (-1,0,1):
+        seg3(654,'complete-'+str(i)+'-'+str(d),receipt_edit(i,compared_at=stamp(d)),
+             'eligible' if d<0 else 'referred',None if d<0 else 'risk-independence')
+mutate(654,'pair-before-announcement',['a6s3-complete-0-0','a6s3-complete-1-0'])
+for d in (-1,0,1):
+    seg3(654,'now-'+str(d),change(['now'],stamp(d)),
+         'referred' if d<0 else 'held','risk-independence' if d<0 else 'hold-window')
+mutate(654,'announcement-not-future','a6s3-now--1')
+for d in (299,300,301):
+    seg3(617,'earliest-'+str(d),edit_record(lambda m,d=d:m.update(earliest_merge=stamp(d))),
+         'eligible' if d==300 else 'unresolved',None if d==300 else 'identity-binding')
+seg3(617,'forged-earliest',both(change(['now'],stamp(200)),edit_record(lambda m:m.update(earliest_merge=stamp(100)))),
+     'unresolved','identity-binding')
+mutate(617,'earliest-copy',['a6s3-earliest-299','a6s3-earliest-301','a6s3-forged-earliest'])
+for d in (-1,0,1):
+    seg3(617,'last-check-'+str(d),edit_record(lambda m,d=d:m['execution'].update(last_check=stamp(d))),
+         'eligible' if d<0 else 'unresolved',None if d<0 else 'identity-binding')
+mutate(617,'last-check-before-announcement','a6s3-last-check-0')
+for d in (-1,0,1):
+    seg3(619,'release-'+str(d),stops('pr',-100,removed=True,release=d),
+         'eligible' if d<0 else 'held',None if d<0 else 'hold-release-stale')
+mutate(619,'release-before-announcement','a6s3-release-0')
+# E dominates now: this isolates full-hold-age from the preexisting age rule.
+for h in (86299,86300,86301):
+    seg3(654,'full-hold-'+str(h),config_edit(lambda c,h=h:c.update(hold_seconds=h)),
+         'held' if h<86300 else 'referred','hold-window' if h<86300 else 'risk-expired')
+mutate(654,'full-hold-age','a6s3-full-hold-86300')
+seg3(654,'age-no-selection',both(change(['now'],stamp(86300)),schema_record_change(['outcome'],'invalid')),
+     'referred','risk-expired')
+seg3(654,'age-negative',change(['now'],stamp(-101)),'referred','risk-expired')
+# Addendum 7 B5: retain both old tags, move kills to exclusive domains.
+MUTANTS['654']=[(tag,('a6s3-age-no-selection' if name=='age-86400' else 'a6s3-age-negative') if tag=='risk-expired' else name,
+                 replacement,control_row) for tag,name,replacement,control_row in MUTANTS['654']]
+
+
 def main():
     s=sys.argv[1].lstrip('S'); baseline='--baseline' in sys.argv
     entries=ROWS.get(s,[])
