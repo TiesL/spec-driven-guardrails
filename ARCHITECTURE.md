@@ -8275,3 +8275,527 @@ Doubts: R/K/D cannot be stated numerically from the current prose without choosi
 Doubts: Six bounded passes are a conditional plan; an uncovered new imperative witness family must be re-estimated, not hidden in another repeated Segment-6 pass.
 Doubts: Missing .guardrails/source and .agents links require ordinary Codex adoption by the orchestrator; structural/live discovery remains unverified.
 Doubts: No completeness, fresh 53-case campaign, qualification, enablement, risk acceptance or merge authority is established by this Architect report.
+
+### A60 addendum 13 — finite expansion semantics for S615, #646
+
+**Ruling (Architect / Planning, 2026-11-16; OR19, `6aba0b8`).** [A]
+This resolves points 1-6 of `.handoff/qa-report-646-16-stop.md`. It supplements
+addendum 12's profile contract; it does not replace S2, the literal dictionaries,
+addenda 9-11's diagnostic register, or any refusal. QA transcribes the rules below
+under S615 and computes the numbers independently. No scenario, implementation,
+test or Git write is authorized by this Architect ruling. Earlier A-text is history
+and remains byte-identical. No AC5/AC6 or F70-F74 requirement is narrowed.
+
+**Notation and closed expression language.** [A] A profile expression is a typed
+tree, not a string to evaluate as code. Its terminals are literal dictionary
+tokens, literal JSON member names, actual integer array indices, the nine domain
+IDs in R4, and the symbolic observation IDs explicitly retained by addendum 11.
+Allowed constructors are `field(root,name)`, `index(array,i)`, `members(array)`,
+`keyed(array,key,value)`, `original(ref,part)`, `decode(raw_b64)`, `parse(bytes)`,
+`sha256(bytes)`, `len`, `set`, `sorted`, `union`, `intersection`, `min`, `max`,
+integer arithmetic, and the predicates `present`, `type`, `lex`, `member`,
+`closed`, `unique`, `count`, `eq`, `lt`, `le`, `and`, `or`, `not`. `keyed` requires
+exactly one matching member; zero/multiple is its own membership/uniqueness
+obligation, not arbitrary first-match selection. Original observations are opaque
+terminals: their absence cannot be filled by `parse`, a hash or a copy.
+`original(ref,part)` includes the particular REF location and owning consumer;
+`part` is source target, original bytes, digest, revision, path, acceptance or
+unique resolution as declared. No global unqualified `REF.original` key exists.
+Object equality expands to leaf equalities PLUS count/key-set/order predicates
+where the declaration requires them. Logical equivalence search, English owner
+lookup and implementation introspection are not expression constructors.
+`last(x)` is shorthand for `index(x,len(x)-1)` with a nonempty-array guard.
+
+An expanded occurrence stores `(seed, d, indices, branch, relation)`. Its relation
+stores all six key coordinates and a finite ordered guard list. A domain is
+`(d, phase, consumer, guard-list, branch)`, where phase is one of `capture`,
+`final`, `capture-to-final`, `record-copy`, `parsed-shape`, `wire`,
+`original-source`, `collector-response`; branch is the explicit Rule-G,
+nullable, exception, history or finding branch, or `unconditional`. Guards may
+only be presence/type/lexical/membership/count predicates over the expression
+terminals, and the C4 availability predicates. Sort conjunction operands, remove
+literal duplicate operands, preserve disjunctions and strictness. Do not infer
+`eligible`, no-expiry, capability-clear, exactly-two-pair, or selected-record
+guards unless the particular relation explicitly requires them. Dret, Klower,
+Kupper and Koutcome retain addendum 11's exact guards. Schema attacks use the
+pre-validation context defined in R2, not a domain assuming the attacked schema
+predicate already passed. These rules distinguish an applicability domain from
+the historical result of a control bundle.
+
+**R1 — Legacy qualification selectors.** [A] For each following pair, the first
+numeric ID selects REF.source and the second selects REF.sha256. Expand the
+finite right-hand set; retain the numeric seed ID on EVERY resulting occurrence.
+The source is `original(that REF, selected part)`, predicate is resolution/byte
+binding to the accepted product source, phase `original-source`, owner I34,
+planned R/`qualification-unavailable`, scope `deferred-701:—`. This is independent
+of the now parsed REF shape and existing qualification-body/integrity checks.
+
+| Numeric seeds | Exact REF locations below qualification |
+| --- | --- |
+| I09.71/72 | enabling_pr |
+| I09.73/74 | design_redteam |
+| I09.75/76 | linux_check; macos_check (TWO, never a combined check) |
+| I09.77/78 | quality_review |
+| I09.79/80 | m_decisions.1 through m_decisions.9 (NINE distinct REF instances) |
+| I09.81/82 | m8_disposition (not m_decisions.8) |
+| I09.83/84 | failed_dispositions[k], EVERY actual k; empty-family rule R4 applies |
+
+For QRUN aliases use this exact table; `t` retains the numeric prefix's run
+index, while the supplemental family still expands EVERY actual run.
+
+| Legacy selector / seeds | Exact observation |
+| --- | --- |
+| runs[1].reviewer_ids[0/1], I34.69/70 | runs[1].detections[0/1].reviewer, respectively; NOT sessions[0/1] |
+| runs[1].grade.source/sha256, I34.79/80 | runs[1].detections[k].grade.source/sha256 for EVERY actual k; NOT grader |
+| runs[1].action.source/sha256, I34.89/90 | runs[1].actions.source/sha256 |
+
+I34.36/37 remain actual detections[0/1].reviewer observations; I34.46/47 remain
+all actual detections[k].grade leaves. No two-detection minimum is introduced.
+An absent fixed detection position is handled by R4, never by manufacturing a
+detection. The original sample/grade/action authority relation is distinct from
+the observed QRUN value and its parsed shape. All new I34 source/sample
+expansions remain in their existing — complement. `qualification.body` denotes
+the actual original qualification body selected by cfg.qualification, not a QUAL
+member; `operational_projection` similarly denotes B.operational's observation,
+not a new QUAL member. Existing body/inputs/status/coverage/safety/recorder
+checks remain now. Apply R3 to alias repeated observations, never source to shape.
+
+**R2 — Enumerated schema-read rule (C2).** [A] Define a schema atom by
+`(location, instance-path, predicate, pre-validation-domain, owning code)`.
+Presence, base type, lexical bound, enum membership, object closure and wire
+uniqueness are DIFFERENT predicates. Use the following exhaustive two-generator
+definition of `READ`; there is no discretionary third generator.
+`closed(x,F)` means `keys(x) subset-of F` (unknown-key rejection); required-key
+presence is separate. An exact schema key set is the conjunction of this closure
+atom and EVERY `present(x,f)` for f in F. `type` denotes the base JSON kind;
+integer-ness, sign/length/hex/text/time bounds and literal membership are named
+lexical/membership atoms. The integer TYPE[number] specimen in R5 is the
+explicit integer-ness/type overlap case, not a second invented JSON kind.
+
+1. `GUARD(root, schema)` expands every literal field, nested schema, actual array
+   member and non-null nullable branch of that root into presence/type/lex/enum/
+   closure atoms. The following are the whole-schema guards, by exact location:
+
+| Root / schema | Consumer and parsed-shape owner |
+| --- | --- |
+| original p[s].decoded_raw:VERDICT | raw-result consumer; R/risk-result-invalid, separately for each original byte location |
+| original p[s]:PAIR, recursively | envelope/pair-shape consumer; R/risk-result-invalid |
+| selected m:MANIFEST, recursively, including each nested PAIR | selected-record shape; U/manifest-schema |
+| cfg:CFG, recursively, including PROFILE and configured project/CAPCFG | config shape; U/config-invalid |
+| retained cfg.project.brief body:BRIEF | accepted-project consumer; R/project-unconfigured |
+| retained mapping:MAP and decision:DECISION | table/mapping consumer; R/capability-table-invalid |
+| b.capability:CAPEVID, recursively through SLOT/EFFORT/LEDGER_COMMENT | capability evidence/fallback; R/capability-identity-missing, retaining independently applicable capability-effort-unavailable |
+| each CLAIMED retained exception:EXCEPTION | exception consumer; R/capability-exception-invalid, retaining below-author/no-gain; unclaimed ledger history is excluded from this guard |
+| each b.attempts[t]:ATTEMPT, recursively | ledger consumer; R/risk-attempt-invalid |
+| each b.authors[a]:AUTHOR | capability author consumer; R/capability-identity-missing |
+| each b.quality.findings[k]:QFIND | finding-provenance consumer; U/finding-provenance; the separate known-status predicate excludes unknown even though the literal schema permits it as history |
+| accepted retained runtime body:RUNTIME_PROFILE | runtime consumer; U/runtime-invalid |
+| accepted retained qualification:QUAL, recursively | qualification consumer; R/qualification-unavailable |
+
+   These are explicit whole-schema validation premises, not promotions caused by
+   an arbitrary now leaf. They validate syntax, not deferred source authority.
+   Original PAIR has its OWN guard above; it does not inherit MANIFEST's owner.
+   Manifest-decoded raw retains its I24 full-copy/behavior expansions; byte-copy
+   equality does not introduce a second raw-result parser or permit borrowing
+   the original raw parser's diagnostic. Its additional schema atoms use
+   generator 2 and their explicit consumer domain, or remain in the complement.
+   Nor does b.quality inherit all of m.quality's schema. Original quality reads
+   approved/head/marker for its gates; session_id for exclusion; findings[k].status
+   and the explicit QFIND guard above for provenance. Other original-quality
+   projections enter READ only through an explicitly now copy/semantic relation.
+
+2. For EVERY now relation, recursively visit every source, destination, guard
+   and operand in its normalized expression tree. Visiting `field(x,f)` adds
+   `type(x,object)`, `present(x,f)` and the dictionary type/lex/enum predicates
+   for that field at that location. Visiting `index(x,i)` adds array type,
+   index existence (`len(x)>i`) and the selected member's type. Visiting
+   `members(x)` adds array type and visits EVERY actual member. A `keyed` access
+   adds array/member types and its exact identity membership/uniqueness rules.
+   Visit intermediate containers, not their unused descendants. A nullable
+   projection records key presence and nullable union type; descendants are
+   visited only in the non-null branch. Only an explicit `closed` operand or
+   generator 1 adds closure; only an explicit count/set/unique operand adds
+   semantic cardinality or identity uniqueness. An unavailable original source
+   is an opaque terminal, not a recursive visit into an imagined source object.
+
+`now-schema(p,q,d) := (p,q,d) in READ`; the complement of the literal schema
+expansion is `deferred-701:—`, owner #701. READ is computed before witness
+generation. A deferred authority relation cannot seed READ, although the same
+place's explicit whole-schema guard can. A now scalar projection therefore does
+not promote its enclosing object's closure or unused sibling fields. Conversely,
+all syntactic descendants of the explicitly guarded MANIFEST/QUAL/etc. remain
+required even where their authority comparisons are deferred.
+Compute READ as the least fixed point starting with generator 1 and projections
+of S2-now NON-schema relations, then adding only the ancestor/presence/type
+prerequisites of the resulting atoms until no atom is added. Schema membership
+cannot recursively justify a new semantic relation, whole-schema guard or
+closure. Sort/deduplicate READ atoms; keep their generating-premise links.
+
+Wire context is a separate predicate/domain: any byte root parsed by a now
+guard/projection adds strict duplicate-key, nonfinite and malformed-wire
+prerequisites at EVERY actual object depth. Outer bundle faults use
+U/duplicate-json-key or U/nonfinite-json before consumers; embedded raw uses
+R/risk-result-invalid, embedded manifest U/record-selection, embedded cfg
+U/config-malformed. Missing/nonstring cfg remains U/config-absent. Retained
+source bodies use their row's consumer owner. Never substitute a parsed-shape
+mutant for a wire mutant, or borrow outer-wire rejection for a location kill.
+
+For a shape atom the pre-validation domain is: its source is available, its wire
+parses, and its proper ancestor containers have the types needed to reach the
+target. It does NOT assume target presence/type/closure/membership or whole-root
+schema validity. For a wire atom require the bytes, not successful parsing.
+The corresponding semantic relation keeps its own typed/availability domain.
+Each generated implication lists concrete atom IDs: `base-type(p) implied by
+lex(p)` or `base-type(p) implied by member(p,allowed)` only when the retained
+premise includes that type AND has the same invalid-input domain/diagnostic;
+presence is never implied by type. Duplicate schema summaries name the exact
+wire uniqueness premises. Closure is not implied by field presence. No deferred
+premise may discharge a now key: if an approved implication's premises are not
+all now in the exact domain, keep the conclusion direct-proof and require its
+own kill, or report the proof gap. Do not move it to deferred to make counts fit.
+
+**R3 — Canonical six-coordinate algorithm and tie-break.** [A] Run this ordered
+algorithm on all occurrences, including aliases introduced by R1. It is a closed
+algorithm; there is no subsequent manual alias judgment.
+
+1. Expand literal source/prefix tokens; retain their identities, phases and
+   authority namespaces. Normalize root spellings ONLY as follows:
+   `b` is the domain bundle; `cfg=parse(b.config_text)`; `m` is the selected
+   manifest extracted from the uniquely active-record URL; `p_s=b.risk_pair[s]`;
+   `e_s=p_s.envelope`; `r_s=decode(p_s.raw_b64)`; `rc_s=p_s.receipt`;
+   `quality=b.quality`; `qualification=b.accepted.qualification`;
+   `capability=b.capability`; `attempts=b.attempts`; `authors=b.authors`.
+   Manifest-decoded raw is `decode(m.risk_pair[s].raw_b64)`, never r_s.
+   An explicitly declared selected-attempt mirror replaces its attempt index
+   with `last(b.attempts)`; it does not equate all attempts. Other mirrors are
+   exactly the supplemental table's root/suffix substitutions. Source token
+   `REF.original` is parameterized by the particular resolved REF and part.
+   A dictionary observation that is not a JSON path retains its opaque source
+   ID and arguments. No observation is renamed to an implementation field.
+2. Expand union results and compound predicates to their separately owned
+   atoms. Token J emits path-unsafe/tree-collision/gitlink separately. Preserve
+   addendum 11's corrected code, source and domain splits. In a source shorthand
+   `envelope+I01-I23`, raw-to-envelope means that exact envelope leaf; an
+   envelope-to-authority BIND leaf uses R6's family table; nonce retains its
+   original launch source/C-L domain. REVIEW slot/model/variant/vendor/settings
+   uses the exact slot's profile; floor uses R6's floor relation; session/dispatch/
+   runtime identities retain their actual ledger/launch referents and C-L
+   complements, never a profile surrogate. Manifest full-copy leaves source
+   the same-suffix retained bundle object, not its authority source.
+3. Normalize predicates structurally: expand definitions (PC=max comparisons,
+   A=min current starts, E=T+hold); flatten/sort conjunctions; sort equality
+   operands within the predicate but retain the directional source/place key
+   coordinates; preserve array order, strict/inclusive operators and every
+   guard. No commutative reordering of source/place, transitive reduction,
+   capture-to-final folding, boolean theorem proving or removal of a diagnostic
+   domain is allowed. In particular raw==env and env==capture remain two basis
+   keys; raw==capture is an implication conclusion, never their alias.
+4. Group occurrences by EXACT normalized five coordinates
+   `(source,place,predicate,domain,code)`. Different phases, consumers, domain d,
+   guards, locations or owning codes cannot group. Determine the canonical
+   inventory for each group with this priority: explicit Klower/Kupper/Koutcome
+   -> I14; original-REF consumer -> I08 for brief/requirements/design, I27 for
+   runtime, I19 for table/mapping/decision, I15 for author/slot marker source,
+   I22 for effort matching/source, I34 for qualification refs, I16 for quality/
+   finding source, I14 for output/launch source, I13 for prior/disposition;
+   schema/wire atom -> root owner in the next sentence; otherwise smallest
+   inventory number among the group's occurrences. Schema/wire root owners are
+   raw and original PAIR I24, m I11, cfg I07, brief I08, mapping/decision I19,
+   CAPEVID I18, claimed exception I23, attempts I13, authors I15,
+   quality findings I16, runtime I27, qualification I34;
+   projected atoms outside these roots retain the originating relation owner,
+   using the smallest number if several projections produce the same atom.
+   Unlisted original REF consumers retain their explicit supplemental/numeric
+   planned owner; among identical candidates use the smallest inventory number.
+5. Within that group select the representative by `(numeric before supplemental,
+   numeric inventory number, numeric row number, supplemental table order,
+   UTF-8 seed ID, UTF-8 expanded index tuple)` ascending. Rewrite EVERY member's
+   inventory coordinate to the canonical inventory and point nonrepresentatives
+   directly to this representative. Even if no numeric row already carries the
+   chosen consumer inventory, its canonical key carries that inventory. Retain
+   all seed links and obligation IDs. Direct pointers make cycles impossible.
+
+This algorithm is exhaustive also when it finds NO alias. It implements I09's
+consumer aliases, I24's exact-leaf aliases, I07/I04 config_commit, I29/I01
+execution.identity, I30/I03 same-run/context head, I31/I06 counts, I31/I16 findings,
+I31/I11 outcome, I34 inputs and I26-I28/I32-I33 repeats: only exact five-coordinate
+groups collapse. Those named families confer no extra rewrite. Thus a differently
+owned count or a different run/context remains separate. A same-tag mutant or
+equal current value cannot establish an alias. Killed premises and implication
+conclusions are not alias occurrences merely because a theorem relates them.
+
+**R4 — Frozen domain inputs, roots and member applicability.** [A] Use the bytes
+of `.handoff/dev646-a6-seg6/retained-source-atlas.json`, SHA256
+`a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`.
+Its `bundle` objects, not its `entries` census or observed PASS logs, are the
+member inputs. QA records this input/digest in S615. A future different source
+snapshot needs a new QA manifest. These nine domains are ALL the domain inputs:
+
+| Domain d | Required distinct expansion dimension |
+| --- | --- |
+| two-authors | both actual slots, both authors, current attempt/launches |
+| three-authors | both slots crossed with ALL THREE authors |
+| history | EVERY attempt, its own launches/original starts and applicable successor disposition; m.attempt mirrors only the selected last attempt |
+| retry | EVERY launch, including the third launch; same-slot filtering retains its actual order and local original start |
+| linked-record | every actual retained record, selected manifest and actual supersession REF; no latest-record inference |
+| release | actual timeline/stop/release source, hold_release non-null branch and PR/issue target obligations |
+| quality-findings | both actual quality findings and each source REF, including manifest mirrors |
+| raw-findings | BOTH original raw slots and BOTH manifest-decoded raw slots; both findings and both LOC references per finding |
+| exceptions | EACH claimed exception and both slot/author comparisons, including each non-null comparison.exception |
+
+Every seed is evaluated in EVERY d. The table names required special dimensions,
+not exclusive routing of unrelated rules to only one d. A seed's member part
+emits exactly once per actual tuple of its bound indices whose explicit guard
+is true. A conditional branch is selected by these tests ONLY: non-null object
+for nullable descent; actual claimed exception number for EXCEPTION; predecessor/
+successor exists for a history transition; selected manifest contains the actual
+supersedes REF for that link; actual stop/release for release clauses; actual
+finding/reference for finding clauses; at least one same-slot last-attempt
+launch for Dret. Each clause's invalid/absent-input guard is a separately declared
+key; it is not tested by assuming its valid branch. Default unindexed rules
+emit once per d. No result-code/PASS observation decides applicability.
+
+Exact root bindings: `b=atlas[d].bundle`; parse cfg from its config_text; select
+the comment whose URL equals b.active_record_url and parse its JSON manifest
+block as m; qualification=b.accepted.qualification; quality=b.quality;
+capability=b.capability; attempts=b.attempts; authors=b.authors. Parse retained
+brief/runtime/mapping/decision bodies through the exact cfg REF.source in
+b.sources; preserve their original body bytes independently of the parsed value.
+Resolve CLAIMED exceptions by the numbers in capability.exceptions against its
+retained ledger, not by treating every ledger comment as an exception. p/e/r/rc
+bind by R3. cfg profiles and pair slots are joined by slot ID; capability
+comparisons by (slot, author-marker identity), not by array offset or vendor.
+The literal index prefixes remain occurrence addresses. Generalized supplemental
+indices range over actual keyed objects, not the first two values of an array.
+Other concrete roots are the exact same-named members of b (checks, artifacts,
+trees, sources, current, guard_state, etc.). API/Git/launch/human/server/applied
+observation terminals keep their dictionary identity; b.sources is evidence only
+where an original immutable body is actually retained there. Mere path spelling
+or matching hash does not materialize an observation.
+
+`members(d,p)=[0,...,len(value(d,p))-1]`, in retained array order; named object
+field sets use the literal schema order; keyed objects use their declared key,
+then retained index as a diagnostic tie-break (duplicates still fail unique).
+Expand Cartesian products ONLY for the declaration's independent axes: two
+slots x every author for comparisons/exclusions, different slots for cross seals,
+every attempt x ITS launches, every finding x ITS references, every suite case x
+ITS declared variants x ITS actual required repetitions/runs. Do not cross a
+launch with another attempt, or a detection with another run. All 18 suite
+members and all 114 retained runs in EACH d are inputs, never just runs[0/1];
+the suite/repetition set rule independently checks completeness, including the
+at-least-three requirement. Every actual detection, transcript/raw-result slot,
+action/grader REF and input leaf participates. Every actual array length is
+read from these bytes; the observed cardinalities here are not expected outputs.
+
+For an array of length n>0 define first=0, middle=floor((n-1)/2), last=n-1.
+All n member obligations remain; LANDMARK.FIRST/MIDDLE/LAST are additional
+obligation IDs. Keep the IDs even when indices coincide (n=1 or n=2); report
+their logical assertion counts separately from shared physical replays. Empty
+arrays have no concrete element, but keep their container, count/set and empty
+branch obligations. No fabricated third slot/author/attempt/finding is permitted.
+The typed third unknown-slot envelope attack remains an attack, never a control.
+
+Nullable keys always retain presence and union-type obligations. For EACH such
+key generate NULL and TYPED syntactic controls separately. A nullable scalar's
+TYPED value is the first actual non-null value at that generalized path in the
+UTF-8-sorted domain list, breaking ties by retained index. If none exists, use
+the dictionary's syntactic witness: T="x", S="", P=1, N=0, H40/H64=40/64 lower-case
+`a` digits, B=true, D=0, Z=2026-01-01T00:00:00Z, date=2026-01-01, repository=
+laboratory/product, literal=that literal, enum=its first printed literal. This
+is a scalar type-control edit, never a fabricated array member or authenticated
+source. In particular null-only EXCEPTION.supersedes gets the P specimen, not
+an invented retained predecessor. Its lifecycle/source relation stays deferred.
+TYPED object descendants
+range over the actual non-null instances in these nine inputs; NULL introduces
+no descendant members. If the same nullable path is null in one d and non-null
+in another, its typed control names that other d explicitly, never transplants
+its authority into the null domain. If a nullable branch has no non-null
+instance anywhere, retain a `no-typed-instance(path)` profile input gap and
+require an additional independently retained control before claiming its typed
+branch complete; do not create JSON members or waive the obligation. This is an
+input/evidence gap, not a new scope/carrier decision.
+
+Absence has exactly these three outcomes, applied in this PRIORITY ORDER:
+`explicit numeric fixed position or deferred family has no actual member ->
+ONE symbolic planned-member key per requested missing position/leaf (per d),
+domain (d,original-source,owner,no-member-at-that-selector,planned), existing
+deferred carrier`;
+`otherwise optional branch inactive -> zero concrete descendant occurrences,
+recorded inactive(seed,d,branch)`;
+`otherwise concrete destination exists but original source missing -> ONE
+symbolic original-source key per declared relation/leaf, existing S2 carrier/owner`.
+The first rule applies only to already-deferred relations, before their
+member-dependent guard; it preserves I09.83/84 and absent I34 detection
+positions without asserting that an absent REF or detection exists. An empty
+variable family uses the stable binder `future-member(family)`, not an invented
+integer index; a missing fixed index retains that requested index symbolically.
+For nested families, bind every actual outer tuple first, then apply that rule
+at the first empty member range; remaining empty ranges use their own stable
+future-member binder. Expand only the declaration's literal suffix leaf set,
+once per resulting symbolic tuple. No cross product with unrelated roots.
+Merge identical symbolic keys by R3. A now relation requiring a missing member
+instead gets its already specified presence/count/unavailability assertion;
+this rule cannot defer a now key. Every seed has an expanded occurrence or an
+explicit inactive record; no unparsed seed disappears from the declaration audit.
+
+**R5 — Closed obligation grammar and multiplicity for R.** [A] Obligations are
+logical assertions, not keys, input files, mutation anchors or process counts.
+An assertion ID is `(canonical key, obligation ID, seam, d, selector arguments)`.
+Only `now` keys emit assertions. Deferred keys retain their required obligation
+IDs as plans, emit zero assertions/mutants and print one deferred declaration.
+The following is the CLOSED list of obligation constructors. Parameters range
+only over the declared finite literal sets, actual members and cases below.
+
+| Constructor | Exact applicability / cases |
+| --- | --- |
+| EQ.D, EQ.A, EQ.F, EQ.NEW | each equality key: destination wrong; all copies wrong with authority fixed; actual final authority drifts after freeze with copies fixed; genuinely renewed accepted source/reviews/qualification/record/full hold. R6 splits Rule-G A. An equality to a literal has D plus its literal/schema cases, not invented mutable-source A/F/NEW. A copy equality between fixed observations uses the actual shared authority when declared, otherwise D only and keeps its independent source keys. |
+| NEG[j], POS[j] | each non-equality predicate: EVERY separately named contradiction and positive dimension control in its numeric/temporal/behavior/qualification declaration. Split conjunctions and alternatives into their named independently owned atoms. No extra Cartesian product of unrelated contradictions. EQ.D is not added a second time as NEG. |
+| BOUND[-1], BOUND[0], BOUND[+1] | each temporal/numeric inequality and each independently named endpoint of a range: fix the other operand(s), vary the attacked operand by one declared unit around equality; UTC time unit is one second, count/line/byte unit is one. Retain combined applicable refusals if another basis relation also fails; never repair frozen T. |
+| PRESENCE | each required key: omit that key only; distinct from nullable NULL |
+| TYPE[t] | each value/root/member type atom, for EACH incompatible JSON type t in {null,bool,number,string,array,object}; use the compatibility definition below |
+| TEXT.EMPTY, TEXT.SPACE | each T leaf: empty string and whitespace-only string are invalid nonempty TEXT; S permits both and does not acquire these negatives |
+| INT.NEG, INT.ZERO, INT.FRAC, INT.BOOL | P/N/integer-literal keys: -1; zero only where forbidden; 0.5; true. Keep INT.BOOL separately from TYPE[bool] and INT.FRAC separately from TYPE[number]. |
+| HEX.SHORT, HEX.LONG, HEX.CASE, HEX.NONHEX | each H40/H64: length n-1, n+1, upper-case letter-containing string, correct-length string containing g |
+| TIME.DATE, TIME.ZONE, TIME.AUTHORITY | each Z/date: impossible calendar date; missing zone for Z (date-only PIN has no zone requirement); syntactically valid value attributed to an untrusted source. TIME.AUTHORITY belongs to the original-event/source key and its S2 scope, not a fabricated lexical failure. |
+| NUMBER.NONFINITE | finite-number keys and all parsed wire roots: NaN, +Infinity, -Infinity as THREE distinct wire cases, routed to wire owners |
+| ENUM.OK[v], ENUM.UNKNOWN, ENUM.CASE[v], ENUM.TYPE[t] | EACH allowed literal v as a syntactic control; one unknown value of the enum's base type; each string v with a different ASCII case spelling; every incompatible type t as below. Non-string literals and strings with no cased letter have no CASE case. Legal syntax never implies eligible. |
+| NULLABLE.NULL, NULLABLE.TYPED | each nullable key: separate syntactic controls as R4, required key retained |
+| CLOSED.SENTINEL[k] | each closed object and EACH of its required literal keys k: insert sentinel unknown key; k is the triggering selector even though the inserted bytes may coincide |
+| WIRE.DUP.EQUAL[k], WIRE.DUP.DIFFERENT[k] | EACH required key at EVERY actual closed object instance/depth: serialize it twice with equal/different values. Keep each trigger k and byte location. Root has no fictitious parent key. |
+| WIRE.MALFORMED | each parsed byte root: malformed JSON; retained cap/truncation/trailing/wrapper cases remain distinct NEG cases where declared |
+| SET.OMIT[i], SET.DUP[i], SET.ADD | each declared exact count/identity set: omit/duplicate EACH actual member i; add one otherwise typed foreign member. Do not add semantic set rules to arbitrary arrays. |
+| LANDMARK.FIRST, LANDMARK.MIDDLE, LANDMARK.LAST | each nonempty member-indexed relation: THREE primary assertion IDs at the R4 indices, including when those indices coincide; every actual member's ordinary assertion still remains. |
+| SELECT.FIRST[i], SELECT.LAST[i] | each member-indexed relation of length n>1: FIRST for every i!=0, LAST for every i!=n-1, with i the SOLE bad member. The endpoint-only mutant must omit i. No endpoint-only mutant is claimed killed when it still reads i; singleton member/landmark assertions remain with their ordinary DEL proof. |
+| SOURCE.WRONG, SOURCE.URL, SOURCE.ABSENT, SOURCE.DUP, SOURCE.UNACCEPTED | each declared source/root resolution key: well-formed alternate authority; different well-formed URL/object target; absent original bytes; duplicate/ambiguous reference; no accepted source. Apply to that key's exact source/target property, preserving each owning code. |
+| SELECT.WRONG-AUTHORITY, SELECT.VENDOR, SELECT.EXPIRE-SKIP, SELECT.FORGED-EARLIEST, SELECT.B-FOR-G, SELECT.RESET[x] | only the declared authority/copy, independent slot, independently evaluable refusal, earliest-copy, G-path and clock-reset families respectively. RESET x is exactly redispatch/receipt/seal/comparison/reannouncement/later-peer/same-vendor from I33.no-reset; retain its split deadline/ledger/age keys. VENDOR uses distinct same-vendor slots and per-slot retry/deadline controls. EXPIRE-SKIP crosses EACH independently evaluable now referral atom with identity expiry; use its explicit guard list to test availability, never blanket short circuit. |
+
+TYPE compatibility is literal: null accepts null; B/literal true accepts bool
+(literal membership still distinguishes false); P/N/integer literal accepts
+only integer numbers satisfying its own bound, excluding bool; D accepts finite
+numbers excluding bool; string/HEX/repository/Z/date/string enum accepts strings;
+array accepts array; object accepts object; nullable adds null. TYPE[number] for
+an integer uses 0.5; all other incompatible representatives are null, true, 0,
+"x", [], {} for their respective types. Lexical bounds are separate attacks.
+An enum's wrong-type cases are all types incompatible with its declared base
+type. Unknown string is the first of `__S615_UNKNOWN__`, then that string with
+successive underscores appended, outside the finite allowed set; numeric literal
+unknown is literal+1; literal true uses false. A null-only literal or an enum
+exhausting its base type has no same-type UNKNOWN case; its incompatible types
+still have TYPE cases. CASE swaps the first ASCII letter's case. Sentinel name
+uses the same underscore algorithm outside the object's field set. For a
+duplicate-different value use the first different JSON value in
+`[null,false,0,"x",[],{}]` in that order; duplicate-equal preserves the original
+wire value. HEX attacks use `a` digits, NONHEX replaces the first with g.
+TEXT.SPACE uses one ASCII space. TIME.DATE uses 2026-02-30; TIME.ZONE removes
+the explicit zone from a valid Z. These attack representatives do not become
+accepted authorities or new dictionary members.
+
+The type predicate for a container reached as a parent field and the same
+container's root type predicate is ONE canonical key if all coordinates match.
+Its TYPE obligations are deduplicated by assertion ID, not run twice because it
+had two spellings. In contrast INT.BOOL versus TYPE[bool], ENUM.TYPE[t] versus
+TYPE[t], each CLOSED trigger k, each DUP trigger k, and coinciding selector
+landmark IDs remain distinct obligations. No value-level deduplication reduces
+R. A per-invocation execution cache may reuse identical original/mutant/control
+bytes only with complete provenance for ALL logical IDs. Aliased declaration
+occurrences do not multiply identical obligation IDs; their seed links remain.
+
+Seam product is exact: every primary case uses E; SOURCE.* and the declared
+source/root/collector observations additionally use C. A collector-response key
+uses C only; standalone queue/record-reader keys retain their explicitly named
+public reader Seam, never fake E output. A temporal/behavior/schema relation
+does not acquire C just because some dependency was originally collected.
+Each applicable case is an R assertion, including syntactic ENUM/NULLABLE and
+named POS/NEW controls. Its OWN eligible K companion and original/mutant K
+replays are separate replay counts, NOT R assertions. An implied key retains
+its primary assertions/boundary/source cases but no fabricated direct mutant.
+For a direct key, each required field-specific DEL/source/final-recheck and
+named selector mutation is separately identified; own original/control/mutant
+observations and exact ordered code loss remain required. A shared loop deletion
+cannot stand in for selector coverage. First/last-only and same-slot overlap
+equivalences retain the existing implication rules; no source audit replaces a
+kill. If a required case cannot be built with the declared guards and companion,
+report a proof gap with its exact ID; do not erase it from expected R.
+
+**R6 — Rule G and the global manifest.** [A] Emit these relation families BEFORE
+aliasing, partitioning or counting. `d` is retained in every domain.
+
+| Family | Predicate / domain / scope |
+| --- | --- |
+| repository, pr, issue, head, base, decision, attempt | `eq(X,independent_capture(F))`; exact S4 referent/availability, now D/A/F. Capture B/H uses the original artifact-revision rule; no record surrogate. |
+| diff, evidence, requirements, design, policy, instructions, profiles, qualification, table, mapping, per-slot row/marker/effort/exceptions, receipt runtime | `eq(X,final(F)) OR (selected_schema_valid_record AND record(F)!=final(F) AND eq(X,record(F)))`; now classification key with D/F/basis paired-destination cases. Separate `eq(X,original_capture(F))` key, source `original_capture(F)`, original-source/unavailable-capture domain, deferred C-S for its A/authority obligation. Never create that key by suffixing /A to the classification key. |
+| per-slot row/marker/effort/exceptions | record(F) exists iff selected schema-valid record has EXACTLY ONE DISTINCT value for that field across comparisons for the slot; zero or several distinct values means no record copy. This is not first/last comparison selection or an author-independent scalar. Retain all slot x author members. |
+| floor | if record authority floor equals final floor, compare X to cap.e0; if it differs, require BOTH envelope floor values equal; capability/e0 availability guards remain. Keep cross-envelope agreement as its own relation/domain; original capture floor/e0 recomputation remains C-S. |
+| profile model/variant/vendor/receipt settings | compare to configured profile only when profiles did NOT drift; profile drift skips exactly these four, not the resolved-model equality. `reviewer.model==receipt.resolved_model` remains a distinct now relation in both drift branches. |
+
+Record-to-final inequality retains U/identity-binding; Rule G's second disjunct
+never authorizes. Raw-to-envelope basis remains a separate R/risk-binding key;
+envelope-to-referent remains its own R/risk-binding key; runtime/profile
+independence retains R/risk-independence. Different codes/domains cannot alias.
+For per-slot records, floor, profile skip and resolved-model equality use the
+separate row predicates above, never a global equality template. All C4
+availability guards and exact addendum-10 compound ordered outputs survive.
+
+**QA handoff: profile and numeric manifest.** [A] QA, NOT Architect, writes the
+S615 profile and independently computes/publishes the numeric expected counts.
+Use addendum 12's columns, this expression grammar, R1 mappings, explicit R2
+READ atoms/premise IDs, R3 canonicalization, R4 input digest/root/branch/member
+bindings, R5 obligation IDs and R6 splits. Include an input-gap/inactive-seed
+register, complete source/predicate/domain/code terms for annotated result
+splits, exact S2 scope/carrier and each retained implication's concrete premises.
+Use neither fixture-generated selectors nor production constants to derive the
+QA expectations. A schema atom, authority key and assertion are different rows
+of this model. Do not write an expanded-key census by hand.
+
+Compute these classes per family AND d, with a disjoint global owner bucket
+assigned by R3 (seed-family provenance is a separate, potentially overlapping
+view). Assign cross-domain syntactic-control obligations to the explicitly
+named source d of that control, not the null d. Order all output by the canonical
+six-coordinate serialization, then obligation ID/Seam/indices.
+
+| Class | Exact arithmetic on the QA expansion |
+| --- | --- |
+| O | number of expanded occurrences BEFORE R3 grouping, including symbolic planned-source/member occurrences; exclude inactive audit records |
+| A | sum over R3 groups of (group occurrence count - 1); alias occurrences, not implied keys |
+| N | number of canonical six-coordinate groups; N=O-A |
+| K | number of canonical groups selected now by S2 plus R2's schema rule and R6's split; no witness-derived membership |
+| D | N-K; publish separately by —/C-L/C-Q/C-S and planned owner, with exactly one printed deferred declaration per key |
+| I | now canonical keys with an explicit retained implication whose concrete premises are all now, acyclic and domain/diagnostic-valid; definitions are not fictitious observations |
+| P | K-I; all remaining now keys require direct proof, including a now conclusion whose proposed premise is deferred |
+| R | cardinality of the R5 assertion-ID set for K, including retained primary cases of I; publish by constructor and Seam, without merging distinct obligation IDs or adding K companions/mutant replays |
+
+Require `O=A+N`, `N=K+D`, `K=I+P`, global totals equal disjoint owner/domain
+bucket sums, and R equal the sum of the disjoint obligation-constructor/Seam
+buckets. Publish control replay, mutation-selector and mutant-execution counts
+SEPARATELY, with alias provenance. A logical assertion may share a physical
+replay; neither count can impersonate the other. Missing proof never reduces an
+expected numeric count. Every inactive seed and every absent typed-branch input
+must be visible; unresolved input gaps prohibit claiming the affected profile
+complete. QA may retain the full requirement and request missing control inputs;
+it may not replace it with a representative or an invented observation.
+
+Amend ONE C6.COMPLETE sentence to bind this frozen finite profile and QA's
+independent numeric manifest, exact per-key partition and per-obligation counts,
+all falsifiers, exact replay proof coverage, all-now implications and individual
+DEFERRED-701 output. No other scenario edit is prescribed by this ruling.
+The previous declaration counts and atlas-node totals are inputs/audits, never
+O/K/D/R substitutes. No expanded numeric manifest is supplied by Architect.
+
+**MAINTAINER ITEMS: none required by these rulings.** [A] The full completeness
+requirement remains. Dropping a declaration family, counting one representative
+instead of every member, replacing a kill with a source audit, or checking
+generated counts against themselves would each narrow AC5/AC6 completeness and
+remain UNACCEPTED maintainer decisions. If proposed later, the options are
+retain the complete profile/proofs (recommended), or explicitly accept the
+named reduced family/member/proof/independence requirement; the latter would
+establish completeness ONLY for that named reduced requirement, never original
+C6 completeness. An input/proof gap is not implicit approval of that option.
+
+The fixture-local C6 Module, `c6_complete(root)` Interface, public CLI/collector
+Seams and addendum 12's six bounded passes are unchanged. Depth/Locality remain
+in one expansion/validation Module; no extra Adapter or speculative Seam is
+introduced. This clarification does not perform Developer or QA work.
+Doubts: QA still must compute and publish all O/A/N/K/D/R/I/P values; no Architect-generated total is a numerical oracle.
+Doubts: Missing applicable typed controls or unkillable required assertions remain explicit input/proof gaps, never silent exclusions or a completeness waiver.
+Doubts: Required adoption/status/context paths and .agents links are absent; ordinary Codex adoption is the orchestrator's remedy, with live discovery still unverified.
+Doubts: No fresh behavior/53-case run, C6 completion, qualification, enablement, risk acceptance or merge authority is claimed.
