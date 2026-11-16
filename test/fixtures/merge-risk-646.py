@@ -165,6 +165,8 @@ def requalify_lab(b,c):
     if b.get('current'):
         b['current']['policy_sha256']=sha(b['config_text'])
         if c['qualification']: b['current']['qualification_sha256']=c['qualification']['sha256']
+        # Final-source edits must retain the original pair, raw bytes and ledger.
+        if b.get('_frozen'): return
         for p in b['risk_pair']:
             d=json.loads(base64.b64decode(p['raw_b64']))
             for k in ('policy_sha256','qualification_sha256'):
@@ -805,8 +807,17 @@ row(623,'unreadable-control',change(['control'],None),'unresolved','control-unre
 mutate(623,'control-open','closed-control')
 mutate(623,'label-off-control','off-control')
 
+def deadline_return(delta):
+    def edit(b):
+        # Keep receipt/seal/comparison before T; vary only the original start
+        # to retain the exact R-S boundary, including its launch-history copy.
+        relaunch(0,-50-delta)(b)
+        b['now']=stamp(2000)
+    return edit
+
+
 for delta in (1799,1800,1801):
-    row(654,'deadline-'+str(delta),(lambda b,d=delta:(b['risk_pair'][0]['receipt'].update(received_at=stamp(-100+d),sealed_at=stamp(-99+d),compared_at=stamp(-98+d)),b['risk_pair'][1]['receipt'].update(compared_at=stamp(-98+d)),b.update(now=stamp(2000)))),
+    row(654,'deadline-'+str(delta),deadline_return(delta),
         'referred' if delta>1800 else 'eligible','risk-deadline' if delta>1800 else None)
 for age in (86399,86400,86401):
     row(654,'age-'+str(age),change(['now'],stamp(age-100)),'referred' if age>=86400 else 'eligible','risk-expired' if age>=86400 else None)
