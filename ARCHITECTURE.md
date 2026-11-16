@@ -7947,3 +7947,331 @@ protected-contract edit is decided here.
 Doubts: Source/diagnostic audit and laboratory replays confer no pending selector-kill, C6 completeness, live qualification, enablement or merge authority.
 Doubts: Already-deferred source/event obligations remain requirements; a new now-scope or weaker-evidence proposal needs its proper owner/maintainer decision.
 Doubts: Missing adoption/status/context paths and .agents links remain an orchestrator setup remedy; no repair is authorized or attempted here.
+
+### A60 addendum 12 — bounded Segment-6 integration passes, #646
+
+**Ruling (Architect / Planning, 2026-11-16; OR19/OR13, `6321a4b`).** [A]
+Replace addendum 6's remaining Segment-6 work package, not its S1-S4 scope or
+oracle, with 6a-6f below. Each is a separate fresh Developer dispatch at
+`gpt-6.1-sol`, medium, intended to fit one pass below about 150k tokens; unknown
+reported size means fresh dispatch under OR13. Finish and report ONE sub-segment,
+then return. Do not carry on through the list. Five preparation passes are not
+completion of integrated C6. Preserve S625 and all existing rows. This ruling
+neither weakens any refusal/reason code nor promotes/deletes a key. No AC5/AC6 or
+F70-F74 requirement is amended. The numerical completeness request cannot yet be
+answered soundly from the current prose; the precise prerequisite below is part
+of this handoff, not permission to substitute estimated totals.
+
+**Observed inputs, not completeness.** [A] Read pass 5, the checkpoint, all three
+Segment-6 stop reports and REPORT-before-pass3-stop, current S615, S2/S3, and the
+fixture. QA publication is MET by `.handoff/qa-handoff-19.md`; the old publication
+and temporary-laboratory-Git stops are history, not current blockers. The fixture
+already has the real-collector witness, literal dictionaries, atlas traversal,
+and independent two-author basis companions. Read-only AST/registration/retained
+JSON diagnostics at this head establish:
+
+| Input or candidate evidence | Exact observed count |
+| --- | --- |
+| Numeric declarations / plain result-token rows / annotated result rows | 1,305 / 1,119 / 186 |
+| Source / place-prefix / result dictionaries | 138 / 100 / 58 |
+| S2 rows: PART / DEFER / NOW | 34: 21 / 8 / 5 |
+| Literal schema definitions / schema-location families | 47 / 7 |
+| Supplemental / temporal / behavior / qualification families | 11 / 18 / 13 / 8 |
+| Inventory declaration seeds before expansion or aliasing | 1,362 = 1,305+11+7+18+13+8 |
+| Entries across all eleven literal dictionaries/tables | 1,739 |
+| Atlas domains / nodes / scalar-or-null nodes | 9 / 58,926 / 42,135 |
+| Distinct atlas (path,type) pairs, ignoring applicability domain | 6,902 |
+| Existing two-author basis attacks / their own controls | 109 / 109 |
+| Basis mutation entries: S654 / S658 | 199 / 14; total 213 |
+| All registered mutation entries / non-basis candidate entries | 644 / 431 |
+
+The atlas JSON is historical source material, not freshly replayed behavioral
+proof. Its eight eligible domains and one raw-findings referral domain remain
+separate; never union them by path alone. The 1,362 seeds, 6,902 paths, 58,926
+nodes, 644 mutation entries and historical 53-case green are NOT N_inventory,
+`now`, generated assertion rows, killed-key counts or C6 credit. Registration
+inspection executes no evaluator: it observed 1,654 rows across 48 scenario keys,
+including helper registration; it does not replace the actual 53-case campaign
+or its scenario/row totals.
+
+**Computability prerequisite and minimal sound alternative.** [A]
+S615's C6.COMPLETE sentence at this head requires six explicit coordinates for
+EVERY expanded key. The current tables are not a machine grammar for those
+coordinates. `a>b.pr.head` supplies source and place plus a result token, but not
+its complete predicate/dependency domain. Token J splits into three codes. The
+186 annotated result cells can split one occurrence into semantic, shape and
+unavailable-original-source keys. The eleven supplemental rows use `EVERY REF`,
+`ALL ... leaves`, `mirror` and consumer-specific owners; seven location rows
+contain multiple roots and distinct wire/shape/semantic oracles. Eighteen temporal
+rows contain aliases, multi-key splits and conditional implications. S2 is prose
+with mixed carriers and exceptions: even its NOW rows have deferred complements,
+and some DEFER rows have now siblings. A parser cannot infer all of this merely
+by decoding `>` or finding a code string. The atlas supplies finite members and
+original bytes; it does not supply absent original observations or authority,
+and it cannot decide whether two differently described domains are identical.
+
+Minimal sound alternative: QA adds a compact, **normative expansion profile under
+S615**, covering the existing declarations with parameterized rules, and publishes
+it through the usual QA artifact route. No per-expanded-key handwritten list is
+required. The profile must use finite, explicit columns:
+
+`id | occurrence-pattern | inventory | source-expression | place-expression |
+predicate-id(arguments) | domain-id(arguments) | code | axes | canonical-id |
+scope-rule-id | carrier | obligation-ids | implication-id/premise-ids`.
+
+Expressions may reference the literal dictionaries, named atlas roots, actual
+`members(domain,path)`, named literal field sets and Cartesian products. Use
+explicit finite unions for split results; no `other`, wildcard exclusion,
+free-form owner lookup or unresolved English predicate is executable. Occurrence
+patterns must cover all 1,362 seeds; expansions account for actual members rather
+than hardcoded maxima. Pattern rules may share one definition across many numeric
+occurrences. Canonical IDs resolve forward references only by an acyclic declared
+map, retaining the canonical inventory coordinate. Distinct source/shape/wire/
+semantic/invalid-input domains keep distinct keys. For unavailable sources emit
+symbolic declared source selectors and planned owners with their S2 carrier;
+never invent a JSON member or pretend the atlas supplied that source.
+
+QA also normalizes the 34 S2 rows to mutually exclusive predicate/domain/place
+rules, including explicit now exceptions and deferred complements. Scope is
+independent of generated witnesses. Rule-G D/F for a record-copy family and its
+unavailable original-capture A relation must have their *actual* distinct
+predicate/domain coordinates; adding an edit-letter suffix to otherwise identical
+six-tuples is not a scope decision. A claimed schema implication needs explicit
+now premises; containing a now semantic leaf does not promote the schema family.
+Any ambiguous scope, new promotion or unmatched complement returns to Architect;
+a different requirement returns to Product/MAINTAINER as applicable.
+
+QA's independently computed, published count manifest must specify, per family
+and applicability domain: pre-alias occurrences O, alias occurrences A, unique
+keys N, now keys K, deferred keys D by carrier, implied keys I, direct-proof keys
+P, and generated **assertion rows** R by obligation kind. Required identities are
+N=K+D and K=I+P; R is the sum of applicable E/C/D/A/F, boundary, selector and
+schema/wire assertions, not K or a behavioral PASS total. Mutant selectors and
+control replays are separate counts. The manifest must include actual numeric
+expected values and the QA/source digest, not just these equations. Developer
+compares its expansion against that frozen independent manifest before 6b is
+DONE. Counts cannot be bootstrapped from its own output.
+
+**Expected final generated rows / now keys / deferred keys at `6321a4b`: R, K,
+D are presently UNDETERMINED**, not zero and not 1,305. There is no justified
+numerical estimate for the fully expanded partition until the normalization
+above resolves domains, aliases and scope. Publishing invented numbers would
+weaken completeness. The exact input counts above are the immediate 6a checks;
+the QA manifest is the required numerical oracle for 6b-6f. This is a local
+specification-format gap, not evidence of an evaluator defect. 6a's parser work
+can start; dependent full expansion must await that QA artifact. Do not spend a
+sixth open-ended pass guessing its contents.
+
+**Module and Interface.** [A] Keep one fixture-local C6 Module, with the
+integration Interface `c6_complete(root) -> None` (raises existing `Failure` on
+any mismatch). Its Depth is parsing/expansion, independent witness enumeration,
+exact proof replay and partition validation behind that single entry. Internal
+functions below are private test Seams, not new product interfaces. This provides
+Locality for key construction and Leverage across all I01-I34 occurrences. The
+deletion test leaves this complexity at every caller if the Module is removed;
+a pass-through wrapper per inventory key would fail it. No pluggable parser or
+executor framework: the actual existing public CLI and collector probe are the
+real Adapters; do not add a Seam for an imagined replacement. Read the actual
+QA text at ROOT, never import lib schemas/helpers/constants to form expectations.
+
+**Common pass contract.** [A] Only future Developer fixture work is described
+here; this Architect dispatch writes ARCHITECTURE.md and REPORT.md only. Developer
+adds the named function family or single recipe table plus its test rows; no
+production code, schema, policy, skill, pinned core, scenario, earlier architecture,
+old oracle or unrelated test edits. Do not redo S625, dictionaries or companions.
+Report fresh red/green and actual commands; a new harness red is not a production
+regression red. Each pass preserves ALL 53 existing case files, their exact
+ordered causes, addendum-10 compositions and S625/S677 checks. Run the existing
+53-case merge-risk selection (current runner: `bash test/run.sh merge_risk`) once
+after that pass's focused checks; never substitute three targeted suites or
+historic logs. The Architect does not run that Git-writing campaign here.
+Future fixture probes require the already recorded temporary laboratory exception;
+no clone Git writes or network follow from it.
+
+For every pass stop immediately on a newly established oracle/code conflict,
+ambiguous key/domain/scope, a changed refusal, an unmatched production mutation
+anchor, a surviving required mutant, or a need for a second new function family.
+Retain the exact failing key/input/command, completed count and next action;
+return to its owner. Running out of pass budget is INCOMPLETE, not an owner defect.
+Do not relabel absence of implementation as a technical contradiction. No pass may
+silently defer a key, replace a missing comparison with an eligible oracle, or
+claim Segment 6 DONE before 6f.
+
+**6a — QA reader family, one pass (estimated 20-40k tokens).** [A]
+Add `c6_read_qa(text: str) -> dict` and
+`c6_check_literals(qa: dict) -> None`. The dict carries all eleven tables,
+normalized profile/counts if present, source line references and byte digest.
+Use a small Markdown-table reader plus explicit profile-expression grammar;
+parse the QA document, then compare existing literal dictionaries exactly.
+No proof execution or semantic inference. Missing profile returns an explicit
+`unresolved-profile` diagnostic, never an empty inventory or inferred defaults.
+Red first: S615 protocol row `c6a-reader` demands detection of one missing numeric
+row, duplicate token, changed annotated result, unrecognized profile expression
+and missing profile. Observe the absent reader fail, implement, then each changed
+copy must fail while the unchanged 1,305/138/100/58/34/47/11/7/18/13/8 table counts
+pass. Test source strings are in memory; do not edit TEST-SCENARIOS.md.
+Done: exact literal comparison, source digest and those negative checks pass;
+state separately whether the new QA profile is available. All 53 stay green.
+Do not add inventory, partition, selectors or proof rows. Stop after the reader
+report, including the explicit QA prerequisite if still absent.
+
+**6b — oracle expansion family, one pass (estimated 40-80k tokens).** [A]
+After the published QA profile and numerical manifest exist, add
+`c6_inventory(qa: dict, atlas: dict) -> dict` and
+`c6_partition(qa: dict, inventory: dict) -> tuple[set, dict]`.
+Inventory maps six-tuples to occurrence IDs, source/domain members, obligation IDs
+and canonical links; partition returns declared-now set and deferred map
+`key -> {carrier, owner:701}`. Expand all six declaration classes, nested fields,
+actual indexed members, schema/wire attack obligations and mirrors, then apply
+only declared canonical pointers. Do not lose occurrences when deduplicating keys.
+Use c6_source_atlas for retained inputs, not ROWS/MUTANTS or generated selectors.
+Red first: `c6b-expansion` requires a three-author applicable domain to retain its
+third author and both slot comparisons, retry to retain its third launch, and
+raw-findings to retain both findings/two references in BOTH raw slots/mirrors;
+also catch loss of an absent-source deferred key, mixed carrier and alias cycle.
+Done: O/A/N/K/D/R/I/P match QA's independently published numeric manifest in every
+domain, no unparsed seed, key collision or ambiguous scope; all 53 stay green.
+Do not add generated witnesses or change dictionaries to make a count agree.
+Stop on the first unresolved expansion; do not hand-author expanded key rows.
+
+**6c — independent witness recipe table, one pass (estimated 40-90k tokens).** [A]
+Add ONE `C6_WITNESS_RECIPES` table and its family
+`c6_selectors(atlas: dict) -> list[dict]`. Each parameterized recipe names its
+existing scenario/row or explicit new edit builder, applicable control domain,
+actual paths/values, key coordinates, E/C/D/A/F/boundary/selector obligation,
+exact original codes/verdict/exit, mutant tag/replacement, exact expected mutated
+codes/verdict/exit, and own control. Implication recipes name their exact line,
+conclusion domain and canonical premises. No recipe may read c6_inventory,
+c6_partition, the declared-now set or expected count manifest. Enumerate actual
+members using the independent retained inventories and recipe field lists.
+The returned LIST preserves duplicates and records every emitted assertion;
+partition comparison happens only in 6e. Do not generate it by looping over K.
+Red first: `c6c-selectors` changes only the retained third member/domain, then
+requires the appropriate selector to change; a duplicate/drop at first/middle/
+last and each applicability domain must be observable. Include both slots and
+a real prior-attempt/retry domain. A copied declared-now list fails this test.
+Done: all recipes expand deterministically with unique assertion IDs and explicit
+key/obligation metadata; counts are reported, not accepted as completeness;
+all 53 stay green. No mutation engine or completeness assertion in this pass.
+Stop if filling the table needs unplanned new imperative edit families. Report
+those exact gaps for resegmentation instead of folding another family into 6c.
+
+**6d — proof replay family, one pass (estimated 40-100k tokens).** [A]
+Add `c6_replay_proofs(root: Path, selectors: list[dict]) -> dict` and its private
+scratch-mutation/replay helpers. Output maps each direct key/obligation to fresh
+original/control/mutant observations, source digest, input hashes and exact
+selector identity; implication records remain separately typed. Reuse run_row,
+invoke and existing mutation replacement semantics at the public CLI Seam; scratch
+mutants never edit ROOT. A new helper is fixture-local, not evaluator access.
+Fresh own control must be eligible/0/[] on original AND mutant; finding/referral
+negatives retain their eligible companion and exact non-owning causes. Merely
+catching Failure or losing any code is insufficient. No control=None exemption
+for a now proof; use the already prescribed scoped witness or report a gap.
+Red first: `c6d-proof-replay` must reject a missing required mutant, stale input
+hash, wrong-domain same-tag row, absent own diagnostic, loss of an unrelated code,
+changed outer result, and a mutant that also breaks its eligible control.
+Done: every recipe executes and returns its exact expected observations; own
+codes are lost with every other ordered cause retained; all 53 stay green.
+Do not invent proof for an unmapped key or modify production mutation anchors.
+Stop after one replay family; a missing behavioral rule routes to its owner.
+
+**6e — ONE completeness validator family, one pass (estimated 25-60k tokens).** [A]
+Add `c6_validate(inventory: dict, now: set, deferred: dict, selectors: list,
+proofs: dict, implications: dict, counts: dict) -> None`,
+`c6_falsifiers(snapshot: dict) -> None`, and `c6_complete(root: Path) -> None`.
+The last function reads QA, constructs the independent atlas/inventory/partition,
+enumerates recipes independently, replays proofs, validates and prints deferred
+keys in stable canonical order. Register exactly ONE S615 `C6.COMPLETE` command
+row through run_row; earlier protocol rows do not claim completeness. C6 must
+work in a fresh S615 process: never depend on another case having run, historical
+logs or an unverified cross-process proof cache. A per-invocation cache keyed by
+full source/mutant/control-input identity may avoid identical replays without
+collapsing key/obligation provenance.
+Red first: that row is absent/incomplete; then falsify the ACTUAL assembled
+snapshot, not just four synthetic tuples: remove a key from both declarations,
+add one to both, duplicate/drop a generated now selector at first/middle/last
+and every domain, remove a required mutant, break a premise link, introduce a
+cycle/deferred premise, and credit a mutant to a deferred key. Each must make
+this SAME validator fail. Check exact set equality, disjointness/union/complement,
+explicit six coordinates, count manifest, all obligation coverage, all-now acyclic
+implications ending in retained killed premises, and proof/deferred exclusion.
+A deferred key executes no row/mutant, contributes neither PASS nor FAIL, and
+prints exactly one `DEFERRED-701 <key> <carrier>` with owner retained in metadata.
+Done: ONE integrated C6 passes and every falsifier fails it; actual R/K/D equal
+the published expected numbers; all 53 stay green. No count-only or self-list
+substitute. Stop on a missing proof; do not hide it by moving the key.
+
+**6f — final evidence campaign, one pass (estimated 10-25k tokens).** [A]
+No new fixture functions or tables. First verify the red artifacts for 6a-6e and
+all actual C6 falsifier outcomes exist and refer to the final bytes; an absent
+artifact is a failing evidence check, not a reason to fabricate red history.
+Run the complete 53-case campaign at the integrated head, then the dispatched
+lightweight checks, stamp/protected-byte/skill-byte checks as previously required,
+and git diff --check. No full ./check in this Architect task. Reconcile actual
+case/row/mutant/target totals without counting DEFERRED-701 lines or harness
+falsifiers as behavioral passes. REPORT must give expected and observed
+O/A/N/K/D/R/I/P, carrier counts, every log path, remaining gaps and source/head
+identity. Done: 53/53 fresh PASS, no add4 red, ONE C6 pass/all falsifiers killed,
+all deferred keys printed exactly once, no missing direct or implication proof,
+all required checks passed. Only then Segment 6 DONE. No new implementation fix
+inside this reporting pass; a failure returns to the owning sub-segment/role.
+
+**Proof mapping and honest work estimate.** [A]
+Map by full key, actual indexed location, applicability/dependency domain,
+obligation/edit and exact expected code list, not by substring or rule tag alone.
+The 109 existing basis attacks and their 109 own controls mechanically supply
+candidate raw-to-envelope, paired-envelope-to-referent and seven profile-conjunct
+rows: 213 existing mutation entries (199 S654, 14 S658). Recipes can expand these
+parameterized families without 213 handwritten key rows. Multiple mutations for
+one attack remain separate obligations, not 213 distinct keys. Retain Rule-G
+availability and independent-source versus record-copy distinctions.
+
+The other 431 registered mutation entries are candidates, not automatically
+mapped proof: narrative/selection/outcome/queue, attempts/chronology, independent
+quality-author sets, capture/expiry, runtime/G, existing schemas and raw behavior
+need full-domain/control matching. Many old rows use one-author controls; replay
+in a separately built applicable two/three-author domain is required. FIRST/LAST
+must omit the sole bad member; WRONG-AUTHORITY holds record/final fixed; same-slot
+seal overlap keeps its implication; returning lower is domain-limited, while
+BOTH upper and BOTH outcome witnesses still kill. S625's 13 carrier, 9 code and
+4 shipped-default falsifiers remain independent witness evidence, never a proof
+for each deferred key. Token-J splits and unavailable event/source equality
+cannot borrow an adjacent code or parser proof.
+
+New rows are certainly needed where the recipes require unrepresented exact
+positions/domains: both-slot per-leaf presence/type/closure/wire/schema premises
+(current published-field omission attacks use slot 0), nested applicable
+finding/reference positions, three-member first/middle/last selectors, and any
+now domain without a qualifying control. Generate these through the single
+recipe table rather than writing thousands of keys. Estimate: 109 existing
+basis attacks are the directly reusable starting set; up to 431 other mutation
+entries need a mapping/control audit; new assertion rows can be in the thousands
+if many schema obligations are now. There is no defensible exact new-row count
+or assertion that only a few dozen suffice before QA freezes R and scope.
+6c must publish `reused/new/unmapped` by family; a remaining imperative family
+outside its one-table design triggers a new Architect estimate, not another
+unbounded pass. The six-pass envelope is conditional on the finite profile and
+recipe coverage, not a guarantee based on unknown totals.
+
+**QA sentence changes and reservations.** [A]
+S615 only: append the normative expansion profile and numeric count manifest
+specified above; amend its C6.COMPLETE sentence to identify that profile and
+retained applicability domains as the finite expansion grammar and to require
+exact per-obligation R and per-key K/D comparisons. Add the explicit Rule-G
+relation/domain normalization and schema-premise handling above. Keep every
+existing six-coordinate, independence, partition, proof, implication, invalid-input,
+falsifier and deferred-print obligation. No S625/S650/S654/S658/S669 sentence or
+refusal/code changes are prescribed here. QA owns the edits and publication.
+
+MAINTAINER: any proposal to count only 1,305 numeric rows, omit schema/temporal/
+behavior/supplemental families, use one representative member, infer scope from
+implemented rows, accept self-generated counts, replace a per-key behavioral kill
+with a source audit, or let a deferred premise prove a now key weakens completeness
+and is NOT decided here. A new evidence carrier or changed source-authenticity
+claim also remains reserved. If normalization cannot preserve the current
+requirement, return the exact clause and minimal proposed difference to the
+maintainer rather than treating this computational design as acceptance.
+Doubts: R/K/D cannot be stated numerically from the current prose without choosing missing key/domain/scope semantics; QA normalization/count publication is required before full 6b expansion.
+Doubts: Six bounded passes are a conditional plan; an uncovered new imperative witness family must be re-estimated, not hidden in another repeated Segment-6 pass.
+Doubts: Missing .guardrails/source and .agents links require ordinary Codex adoption by the orchestrator; structural/live discovery remains unverified.
+Doubts: No completeness, fresh 53-case campaign, qualification, enablement, risk acceptance or merge authority is established by this Architect report.
