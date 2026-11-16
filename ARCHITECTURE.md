@@ -7855,3 +7855,95 @@ carrier-absence witness and selector kills remain required, not inferred from
 this audit. A genuinely new unexplained failure/survivor still follows OR19.
 Doubts: Eighteen git-writing installer/export probes have source evidence only; synthetic replays establish no live qualification or authority.
 Doubts: Missing adoption/session-context paths and .agents links remain an orchestrator setup remedy, not a repair in this scope.
+
+
+### A60 addendum 11 — literal diagnostic keys and returning-chain aliases, #646
+
+**Ruling (Architect / Planning, 2026-11-16, OR19, `04ab296`).** [A]
+S654's literal I33.chain2 is the SAME returning-launch upper constituent as
+S2/I14 and S669, not a second independence rule. Correct its code to
+R/`risk-attempt-invalid` and ALIAS the occurrence to the canonical key
+`(I14, (last-attempt launches filtered by pair reviewer slot, pair receipt),
+last same-slot launch.started_at, L.started_at <= receipt.received_at,
+Dret, R/risk-attempt-invalid)`. Dret means a nonempty fully typed attempt list,
+a typed actual pair element and at least one matching-slot launch in the last
+attempt; it adds no selection, capability-clear, no-expiry or exactly-two-pair
+prerequisite. An I33 occurrence points to this I14 key; it does not create an
+identical-key alias while retaining a different inventory coordinate. Keep
+DEL-returning-launch upper AND outcome targets in BOTH slots, not DEL-chain2
+with a code the rule never emits. The unchanged supplied public-CLI reproduction
+returns only risk-attempt-invalid for both upper negatives, becomes eligible/0
+on deletion of that tag, and preserves all four independent two-author controls.
+I33.chain1 similarly aliases the key with the SAME source/place/domain/code and
+predicate `receipt.started_at <= L.started_at`. Its lower constituent retains
+addendum 9's implication only where the running ledger's original-deadline,
+same-original-start and last-original-start-to-receipt premises apply; their
+failures themselves emit that SAME attempt-invalid code. Keep both lower
+boundary rows, the complete returning rule outside that implication domain and
+all upper/outcome kills. Neither constituent is an independence diagnostic.
+
+**Complete literal-domain audit and correction register.** [A] REPORT.md records
+the full per-key disagreement register, exact corrected owners/domains, fresh
+public-CLI observations and QA sentence changes. It audits all 1,305 numeric
+rows, 138 source tokens, 100 prefix tokens, 58 result tokens, 47 schemas, seven
+schema locations, eleven supplemental inventory families, eighteen temporal
+families, thirteen raw-behavior families and eight qualification families; their
+fixture transcription matches the actual scenario literals. Every emitted-code
+family and schema-object family has a public-CLI sample; remaining leaves and
+repeated obligations have source audit, not inferred mutation credit. Besides
+chain1/2, correct literal repository/config/project/record owners, remote
+head/base versus capture drift, merge-base versus final-base identity, actual
+quality head/marker versus record mirrors, REF-resolution owners versus copy
+codes, slot-link versus profile identity, envelope/profile versus raw echoes,
+pair cardinality versus two-slot uniqueness, effort-marker lookup versus marker
+source validity, G-root lexical validation versus source identity, missing/duplicate
+disclosed comparisons versus below-author lookup, unsupported
+effort versus unavailable effort, physical verifier cwd versus runtime/record
+copies, receipt runtime/settings versus runtime-profile validation, execution
+host versus actual executor, gate failure versus raw referral, and updated_at
+versus created_at diagnostics exactly as registered. Split result token J into
+its three real codes. These corrections preserve every independently applicable
+cause, stable ordering, Rule G and addendum-10 all-cause compositions.
+
+**Source, parser and temporal domains remain separate.** [A] Outer-bundle
+wire duplicate/nonfinite faults own U/`duplicate-json-key`/`nonfinite-json`;
+embedded cfg parse faults own U/`config-malformed`, embedded selected-manifest
+parse faults own U/`record-selection` in evaluate, and parsed manifest shape
+faults own U/`manifest-schema`. Raw verdict wire/shape faults retain
+R/`risk-result-invalid`. Malformed profiles inside cfg own U/`config-invalid`;
+malformed CAPEVID children invoke its identity-missing fallback and retain any
+independently established effort-unavailable; malformed CLAIMED exceptions own
+exception-invalid. A typed semantic comparison cannot earn proof from another
+location's schema refusal. REVIEW's literal fresh/inherited fields are
+schema-implied inside the conforming-pair domain; variable receipt independence
+checks stay independent. For old attempts use local first/original S[t,s], not
+the current receipt S_s. Preserve the full receipt deadline's lower AND upper
+checks, retained age lower diagnostic, full-hold age, same-code overlap and
+cross-code invalid-input causes. Split no-reset into its actual deadline,
+ledger and expiry keys; same-slot seal bounds retain their existing overlap
+rather than an exclusive kill. An unordered old-event-to-now predicate and an
+original-event/source equality cannot be proved by the current returning chain,
+parser or an agreeing record copy. Such unavailable comparisons, output/launcher
+source links, execution/count/context-ID sweeps and qualification grade-before-now
+remain in their ALREADY DECLARED S2 complements with their planned owner codes
+and printed DEFERRED-701 carriers. This neither moves a key out of now nor accepts
+a weaker refusal. An intended promotion requires owner scope/implementation
+work, never changing a missing-rule negative to an eligible oracle. Virtual
+field names denote only their actual declared observations, not new JSON members.
+
+**QA handoff and limits.** [A] QA changes S654's temporal definition, chain1/2
+rows and implication sentences; S669's returning/old-attempt sentences; S615's
+canonical alias, exact-key/C6 and location/schema protocol; and precisely the
+numeric keys and owning S650/S651/S658/S659/S666/S668/S675/S617 sentences listed
+in REPORT.md. Keep every current schema, refusal, eligible control, addendum-9
+kill construction, addendum-10 composition and S625/S677 obligation. QA publishes
+those corrections before Developer resumes Segment 6 integration step (1), then
+the independent partition/selectors/proofs, ONE C6.COMPLETE, all falsifiers and
+printed deferrals, and final campaign remain required. This audit is not their
+completion. No AC5/AC6 or F70-F74 requirement, Module, Interface or CLI/collector
+Seam changes. MAINTAINER SECURITY TRADE-OFF and CONTRACT-TEXT CHANGE reservations
+remain unaccepted; no new carrier, weakened evidence, scope promotion or
+protected-contract edit is decided here.
+Doubts: Source/diagnostic audit and laboratory replays confer no pending selector-kill, C6 completeness, live qualification, enablement or merge authority.
+Doubts: Already-deferred source/event obligations remain requirements; a new now-scope or weaker-evidence proposal needs its proper owner/maintainer decision.
+Doubts: Missing adoption/status/context paths and .agents links remain an orchestrator setup remedy; no repair is authorized or attempted here.
