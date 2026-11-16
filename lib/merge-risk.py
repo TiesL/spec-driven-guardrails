@@ -8,6 +8,7 @@ merge, posting, repair or live qualification occurs here. Replay inputs are
 recorded evidence, never authentication of their producers.
 """
 import base64
+from collections import namedtuple
 import hashlib
 import html
 import json
@@ -487,6 +488,27 @@ def valid_comment(url,repository,number):
     return bool(match and match.group(1)==repository and match.group(2)=='issues' and int(match.group(3))==number)
 
 
+RecordSelection = namedtuple('RecordSelection', 'comment manifest bound drifted')
+
+
+def capture_revisions(b):
+    capture={'conflict':False}
+    for side,final in (('base',b.get('main_tip')),('head',(b.get('pr') or {}).get('head'))):
+        revisions=set()
+        for artifact in b.get('artifacts') or []:
+            if not isinstance(artifact,dict) or artifact.get('kind') not in ('changed-'+side,'context-'+side): continue
+            source=artifact.get('source')
+            if isinstance(source,str) and re.fullmatch(r'git:[0-9a-f]{40}:[0-9a-f]{40}',source):
+                revisions.add(source.split(':')[1])
+        capture[side]=next(iter(revisions)) if len(revisions)==1 else final
+        capture['conflict']=capture['conflict'] or len(revisions)>1
+    return capture
+
+
+def consistency_checks(b,cfg,r,sel,cap,capture):
+    pass
+
+
 def record_checks(b,cfg,r,cap):
     cs=b.get('issue_comments'); selected=b.get('active_record_url')
     if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None
@@ -510,15 +532,25 @@ def record_checks(b,cfg,r,cap):
     want={'repository':b.get('repository'),'pr':b.get('pr_number'),'issue':issue,'head':pr.get('head'),
           'base':b.get('main_tip'),'diff_sha256':sha(b.get('diff_text','')),'config_sha256':sha(b['config_text']),
           'config_commit':b.get('main_tip')}
-    bound=all(m[k]==v for k,v in want.items()) and all(m['authority'].get(k)==cur.get(k) for k in CURRENT_KEYS)
-    bound=bound and m['evidence']['manifest_sha256']==cur.get('evidence_sha256') and m['evidence']['narrative_sha256']==cur.get('narrative_sha256')
-    bound=bound and m['ac']==cfg['requirements'] and m['design']==cfg['design']
-    bound=bound and m['authority']['acceptance']==cfg['acceptance'] and m['evidence']['base']==b.get('main_tip') and m['evidence']['head']==pr.get('head')
-    bound=bound and m['risk_pair']==b.get('risk_pair') and m['quality']==b.get('quality')
-    bound=bound and m['authors']==b.get('authors')
-    bound=bound and m['assessment']['checks']==b.get('checks') and m['assessment']['protection_sha256']==(b.get('protection') or {}).get('sha256')
-    bound=bound and m['assessment']['risk_outcome']=='clear' and m['assessment']['outcome']=='eligible'
-    bound=bound and m['execution']['host']==cfg['executor_host'] and m['execution']['runtime_sha256']==cur.get('runtime_sha256')
+    families={k:m[k]==v for k,v in want.items()}
+    for key in CURRENT_KEYS:
+        families[key.removesuffix('_sha256')]=m['authority'].get(key)==cur.get(key)
+    families['evidence']=m['evidence']['manifest_sha256']==cur.get('evidence_sha256')
+    families['narrative']=m['evidence']['narrative_sha256']==cur.get('narrative_sha256')
+    families['requirements']=families['requirements'] and m['ac']==cfg['requirements']
+    families['design']=families['design'] and m['design']==cfg['design']
+    families['acceptance']=m['authority']['acceptance']==cfg['acceptance']
+    families['base']=families['base'] and m['evidence']['base']==b.get('main_tip')
+    families['head']=families['head'] and m['evidence']['head']==pr.get('head')
+    families['pair']=m['risk_pair']==b.get('risk_pair')
+    families['quality']=m['quality']==b.get('quality')
+    families['authors']=m['authors']==b.get('authors')
+    families['checks']=m['assessment']['checks']==b.get('checks')
+    families['protection']=m['assessment']['protection_sha256']==(b.get('protection') or {}).get('sha256')
+    families['outcome']=m['assessment']['risk_outcome']=='clear' and m['assessment']['outcome']=='eligible'
+    families['host']=m['execution']['host']==cfg['executor_host']
+    families['runtime']=families['runtime'] and m['execution']['runtime_sha256']==cur.get('runtime_sha256')
+    bound=all(families.values())
     r.need(bound, 'identity-binding')  # rule:record-binding
     attempts=b.get('attempts')
     attempt_bound=isinstance(attempts,list) and bool(attempts) and m['attempt']==attempts[-1]
@@ -552,8 +584,14 @@ def record_checks(b,cfg,r,cap):
     expired=lambda:any(code=='identity-binding' for _,code,_ in r.reasons)
     r.need(table_bytes or expired(), 'identity-binding')  # rule:record-table-bytes
     r.need(mapping_bytes or expired(), 'identity-binding')  # rule:record-mapping-bytes
-    if not (correct_id and bound and floor_bound and pinned and per_slot and per_author and values and excepted and table_bytes and mapping_bytes): return None
-    return c,m
+    families['floor']=floor_bound
+    families['table']=bool(disclosed) and cfg['capability'] is not None and disclosed['table']==cfg['capability']['table']
+    families['mapping']=bool(disclosed) and cfg['capability'] is not None and disclosed['mapping']==cfg['capability']['mapping']
+    families['capability']=per_slot and per_author and values and excepted
+    drifted={name for name in ('repository','pr','issue','head','base','diff','evidence','requirements','design','policy','instructions','profiles','qualification','table','mapping','capability','floor','runtime')
+             if not families.get('diff_sha256' if name=='diff' else name,True)}
+    selected_bound=correct_id and bound and floor_bound and pinned and per_slot and per_author and values and excepted and table_bytes and mapping_bytes
+    return RecordSelection(c,m,selected_bound,drifted)
 
 
 def hold_checks(b,cfg,r,record):
@@ -1380,7 +1418,10 @@ def evaluate(b):
             capability_reasons(cap,r)
             r.add('unresolved','risk-pair-required'); r.note('preparation only; no merge authority')
         else:
-            record=record_checks(b,cfg,r,cap)
+            sel=record_checks(b,cfg,r,cap)
+            capture=capture_revisions(b)
+            consistency_checks(b,cfg,r,sel,cap,capture)
+            record=(sel.comment,sel.manifest) if sel and sel.bound else None
             expired=any(code=='identity-binding' for _,code,_ in r.reasons)
             activation_checks(b,cfg,r,cap,expired)
             capability_reasons(cap,r)  # rule:final-capability
@@ -1400,7 +1441,11 @@ def evaluate(b):
 
 
 def render(verdict,first,r):
-    out=[first]+['reason: '+c+(' '+d if d else '') for _,c,d in r.reasons]+['note: '+n for n in r.notes]
+    reasons=list(dict.fromkeys((code,detail) for _,code,detail in r.reasons))  # rule:display-unique
+    first_cap=next((i for i,(code,_) in enumerate(reasons) if code.startswith('capability-')),len(reasons))
+    late_identity=[reason for reason in reasons[first_cap:] if reason[0]=='identity-binding']
+    reasons=reasons[:first_cap]+late_identity+[reason for reason in reasons[first_cap:] if reason[0]!='identity-binding']
+    out=[first]+['reason: '+c+(' '+d if d else '') for c,d in reasons]+['note: '+n for n in r.notes]
     return '\n'.join(out)+'\n',EXIT[verdict]
 
 

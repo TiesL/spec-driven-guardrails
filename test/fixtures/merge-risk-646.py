@@ -2256,6 +2256,10 @@ def matching_wrong_binding(key,value):
     return edit
 
 
+row(654,'same-code-both-slots',matching_wrong_binding('repository','wrong/repository'),'referred','risk-binding')
+mutate(654,'display-unique','same-code-both-slots',('dict.fromkeys','tuple'))
+
+
 for key,value in [('issue',999),('decision_id','MR-999-deadbee-99')]:
     row(654,'matching-wrong-'+key,matching_wrong_binding(key,value),'referred','risk-binding')
     mutate(654,'envelope-'+key,'matching-wrong-'+key)
@@ -2315,6 +2319,8 @@ def run_row(root,entry):
     check(p.returncode==expected and first.startswith(prefix),
           f'{name}: want {want}/{expected}; actual exit={p.returncode} {p.stdout[-600:]!r}')
     if code: check((code if command=='queue' else 'reason: '+code) in p.stdout, name+': missing '+code+' '+p.stdout[-600:])
+    if name=='same-code-both-slots':
+        check(p.stdout.splitlines().count('reason: risk-binding')==1, name+': risk-binding must display once '+repr(p.stdout))
     check('SENTINEL' not in p.stdout and 'SENTINEL' not in p.stderr,name+': leaked candidate text')
     return p
 
