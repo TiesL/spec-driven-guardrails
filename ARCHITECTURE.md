@@ -7063,3 +7063,416 @@ the reported C6 contradiction only, not the seven open review slugs or missing
 carriers. Any protected contract-text/schema/carrier change remains a
 **maintainer decision**; accepting weaker evidence or refusals remains a
 **maintainer security trade-off**. Neither is decided by this addendum.
+
+
+### A60 addendum 6 — A1+B scope: implemented rows, deferred carriers, Developer segments, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] This
+append-only ruling implements the maintainer's 2026-11-15 decision **A1+B**
+(ledger 139) against WIP `3e55e2b`, `.handoff/review-report-646-r2.md`, the
+Developer stop at the C8 carrier boundary (`.handoff/dev-report-646-6-stop.md`)
+and the withdrawn exploratory patch that failed 4 of 53 merge-risk cases. Earlier
+A-text remains history; addenda 3-5 stand. No eligibility condition, refusal,
+reason code, exit, ordering or C4 dependency rule is weakened. This addendum only
+decides WHICH addendum-4 relations #646 adds and asserts; every other expanded
+relation is declared deferred to #701, which blocks #682 and enabling (enabling
+needs ALL rows). #646 changes no skill, pinned core, policy, closed schema or other
+contract text. It is a design handoff, not closure of a finding, qualification,
+acceptance or authority to enable or merge.
+
+**S1 — Scope rule and why real evidence stays noneligible.** [A] Every C6 key
+(inventory row x field/place x relation, expanded per addendum 4/5) gets exactly
+one status:
+
+- `now`: a relation #646 adds or changes because one of the seven code/test slugs
+  (C7) or a direct sibling named there needs it. The QA matrix asserts it with its
+  own control, edits, exact code/result and a killed mutant or addendum-5 line.
+- `deferred-701`: every other key. Declared by name with its carrier (S3), never
+  executed, never asserted red, never silently omitted.
+
+Checks shipped before this addendum (`existing`) keep their behavior and their
+current scenario rows unchanged; their addendum-4 expansions are `deferred-701`
+unless S2 lists them as `now`. The eighth slug, `traceability-gates`, owns no
+inventory row: it stays with the orchestrator's live gate run before merge.
+
+An eligible outcome stays unreachable on real evidence by three independent layers,
+none of which this addendum relaxes: (1) shipped policy is `enabled:false` with null
+acceptance/qualification, so the evaluator returns R/`autonomy-disabled`; changing
+that is a protected human-path PR. (2) The live collector deliberately produces no
+launch, pair, ledger, quality, author, capability-slot, runtime, queue, host,
+instruction-file, `current` or `accepted` evidence (`collect()`, "never invents"),
+so real evidence always draws the owning unavailable-evidence codes R/`risk-pair-required`,
+R/`risk-attempt-invalid`, U/`gate-quality`, U/`instruction-load-invalid`,
+U/`runtime-invalid`, U/`executor-invalid`, R/`qualification-unavailable` and,
+with no author or slot markers, an R/`capability-*` referral; its guard state
+carries no bundle digest, so
+U/`guard-invalid` also applies. These codes are owned by I14, I16, I22, I26-I29 and
+I34, whose carriers #701 adds. (3) A new S625 witness (S6) runs the real collector
+Seam and pins that refusal set, so any tool change that starts producing a carrier
+without #701's rows fails a test. **[MAINTAINER SECURITY TRADE-OFF, already taken by
+A1+B; recorded, not decided here]:** a hand-built laboratory bundle can still reach
+eligible/0 while its deferred relations are unchecked; that is acceptable only while
+the gate is inert and must be listed with M8 in the enabling record.
+
+**S2 — The I01-I34 scope.** [A] `PART` means: the listed places are `now`, all other
+places of the row are `deferred-701`. Carriers: **C-L** = per-launch launcher record;
+**C-Q** = retained quality record with participants and approval time; **C-S** =
+capture snapshot of accepted sources at preparation; **—** = no new carrier,
+implementation only. "Real evidence" names the owning code that refuses today; "+G"
+means the S1 layer-2 codes also refuse. Rule G and capture referents are S4.
+
+| Row | Status | `now` in #646 (slug or sibling) | `deferred-701` (carrier) | Refusal on real evidence |
+| --- | --- | --- | --- | --- |
+| I01 | PART | Envelope/raw `binding.repository` against accepted `cfg.repository` (R/`risk-binding`) under S4 (expiry). | `m.execution.identity` equals captured `b.identity`; exception and source-URL repository sweep (—). | U/`repository-identity` +G |
+| I02 | PART | Sole closing issue equals `b.issue.number` (U/`record-selection`); selected record URL targets that issue (U/`record-selection`); `binding.issue` equals the sole closing issue (R/`risk-binding`); skipped only while closing list or issue is unreadable (their owning U). (record binding) | Control-number copies, exception issue/PR (I23), acceptance-target sweep (—). | U/`closing-issues`, U/`issue-unreadable` +G |
+| I03 | PART | Capture H (S4) equals `binding.head` (R/`risk-binding`) and final head (U/`identity-binding`). (expiry) | Head tree/artifact sweep; exception and queue H (—). | U/`identity-binding`, U/`gate-quality` +G |
+| I04 | PART | Capture B equals `binding.base` (R) and final `main_tip` (U/`identity-binding`). (expiry) | Base inventory sweep (I05) (—). | U/`behind-base`, U/`verifier-not-at-base` +G |
+| I05 | DEFER | — | All object path/mode/OID/content correspondences (—). | R/`evidence-incomplete`, R/`corpus-invalid` +G |
+| I06 | PART | `binding.diff_sha256` under S4 Rule G (record copy `m.diff_sha256`). (expiry) | Capture diff from the exported diff artifact (C-S; the laboratory corpus has none); `m.assessment` counts (—). | R/`remote-identity` +G |
+| I07 | DEFER | Only the `binding.policy_sha256` echo under Rule G. | Digest recomputation in every domain (—); capture-versus-final classification (C-S). | U/`config-invalid`, R/`project-unconfigured` +G |
+| I08 | DEFER | Only the requirements/design echoes under Rule G. | Source-and-bytes identities, brief, acceptance hashes (C-S). | U/`acceptance-unverified`, R/`project-unconfigured` +G |
+| I09 | DEFER | — | Resolution of every REF not already resolved today: launch/effort refs (C-L), quality/finding refs (C-Q), prior-attempt/disposition and others (—). Existing resolutions stay. | Each owning code +G |
+| I10 | NOW | Actual title/body digest via `narrative()` with the product repository and sole closing issue equals `current.narrative_sha256` and `m.evidence.narrative_sha256` (U/`identity-binding`); malformed or duplicate trailer R/`narrative-invalid`; the single valid trailer URL equals `active_record_url` (U/`record-selection`). Skipped only while the closing issue is unreadable. (record binding) | — | U/`closing-issues` +G |
+| I11 | NOW | Own `m.outcome == eligible`, all six other values U/`record-selection`; selected record not superseded by another schema-valid record whose `supersedes.source` is the selected URL (U/`record-selection`); at most one active eligible record, where active means schema-valid, eligible and not superseded by another valid record; a record's own outgoing `supersedes` does not remove it (U/`record-duplicate`). (selected outcome) | Linked-history disposition sweep (I13) (—). | U/`record-selection` +G |
+| I12 | NOW | Every ledger attempt's `decision_id == MR-<pr>-<capture H[:7]>-<its ordinal>` (R/`risk-attempt-invalid`); `m.decision_id` equals the last attempt's (U/`identity-binding`); `binding.decision_id` equals the last attempt's (R/`risk-binding`); `m.queue_key == m.execution.queue_key == m.decision_id` (U/`identity-binding`). Existing `record-id` stays. (record binding) | — | R/`risk-attempt-invalid` +G |
+| I13 | PART | Existing whole `m.attempt` equality, attempt-ID binding, ordinals and previous links now also run after expiry (S4). | `m.prior_attempts` resolution; disposition source/words/time against retained human source (—). | R/`risk-attempt-invalid` +G |
+| I14 | PART | Per slot, the returning launch is the LAST launch of the last attempt, with outcome `returned` and `S <= L.started_at <= R`; every launch starts after its attempt's `created_at`; each slot's first launch has `started_at == original_start` (all R/`risk-attempt-invalid`). Existing session/raw/bytes/original-start links stay. (announcement chronology) | Per-launch dispatch, nonce, run, runtime, applied args/settings, output source; no unaccounted launch/output; transport attestation source (C-L). | R/`risk-pair-required`, R/`risk-attempt-invalid` |
+| I15 | PART | Every `b.authors[].session_id` enters the S2/I17 author set. (quality-author) | Completeness of the author/implementer inventory against retained pipeline records (C-Q, extended to authors). | R/`capability-*` |
+| I16 | PART | `b.quality.session_id` enters the I17 quality set. Existing approval/head/marker/findings checks stay. (quality-author) | `quality.source` resolution and structured equality, model against marker source, lens participants, finding provenance sources, approval time (C-Q). | U/`gate-quality`, U/`gate-review-marker` |
+| I17 | NOW | Quality set Q = `{quality.session_id}` ∪ `quality_sessions`; author set A = `{authors[].session_id}` ∪ `author_sessions`; Q ∩ A empty, also with both summaries empty (R/`risk-independence`). Existing risk-session separation, uniqueness and freshness now also run after expiry. (quality-author, expiry) | Lens participants (C-Q). | U/`gate-quality` +G |
+| I18 | PART | Per-slot profile comparisons are skipped only when the `profiles` family drifted (S4). | Profile-digest recomputation (—); resolved launcher identity per launch (C-L). | R/`risk-independence` +G |
+| I19 | PART | Envelope `table_sha256`/`mapping_sha256` echoes under Rule G, preserving addendum-3 exactness. (expiry) | Qualification floor input sameness (I34) (—); capture classification (C-S). | R/`capability-table-invalid` +G |
+| I20 | PART | Envelope `row` echo per slot under Rule G. (expiry) | Addendum-4 expansion (—). | R/`capability-*` +G |
+| I21 | PART | Envelope `floor_evidence_sha256` under Rule G (`floor` family). (expiry) | Capture e0 recomputation (C-S). | R/`capability-*` +G |
+| I22 | PART | Envelope `marker_sha256`/`effort_sha256` echoes per slot under Rule G. (expiry) | Applied effort/settings/receipt bound to each actual launch; launch REF parse contract (C-L). | R/`capability-effort-unavailable` |
+| I23 | PART | Envelope `exceptions` echo per slot under Rule G. (expiry) | Exception lifecycle/scope expansion (—). | R/`capability-exception-invalid` +G |
+| I24 | PART | Every raw binding/reviewer leaf equals the envelope (existing, R/`risk-binding`); envelope binding leaves against S4 referents; unknown reviewer slot R/`risk-binding` unless capability derivation already refused; `m.risk_pair == b.risk_pair` (existing). (record binding, expiry) | Nonce, dispatch-ID and runtime-ID referents; output-sink identity (C-L). | R/`risk-pair-required` |
+| I25 | PART | `corpus_checks()` uses capture revisions (S4); a side naming two revisions is R/`corpus-invalid`. (expiry) | Corpus manifest digest recomputation, read logs (—). | R/`corpus-invalid` +G |
+| I26 | DEFER | Only the `binding.instructions_sha256` echo under Rule G. | Launcher hash and loaded-args binding (C-L). | U/`instruction-load-invalid` |
+| I27 | PART | Product cwd is physical B (existing); checker and preflight equal the accepted G root plus `lib/merge-risk.py` / `merge-preflight.sh` (U/`runtime-invalid`); the collector validates accepted G before invoking preflight; receipt `runtime_sha256` under Rule G. (external guard, expiry) | Profile leaves against observed tools/hooks/settings/wiring at collection AND final; `m.execution` copies (C-S). | U/`runtime-invalid` |
+| I28 | PART | G root is absolute `guard_state.toplevel`, used by I27; G=B and external G both valid. (external guard) | Bundle/content/wiring sweep at collection and final (—). | U/`guard-invalid` |
+| I29 | DEFER | Only I12's queue-key equality. | Host/run/lock/queue/preflight copies (—). | U/`executor-invalid` |
+| I30 | DEFER | — | Run/context ID and protection copies (—); check completion time needs a closed `RUN` field (maintainer, S7). | U/`gate-check`, R/`protection-invalid` +G |
+| I31 | PART | Own outcome (I11). | Hard stops, counts, open findings, reasons, uncertainties disclosure (—). | +G |
+| I32 | PART | Release source time before T (H/`hold-release-stale`); stop/void/off/release rules run on any selected schema-valid record (C4). (chronology) | Manifest labels/control/`timeline_sha256` capture copies (—). | U/`timeline-unreadable` +G |
+| I33 | NOW | C3: `pair_complete < T` and `T <= now` (R/`risk-independence`); `m.earliest_merge == T + hold` (U/`identity-binding`); `max(now, T + hold) < min(S1,S2) + max_age` (R/`risk-expired`); `m.execution.last_check < T` (U/`identity-binding`); ledger chronology in I14. (announcement chronology) | Quality approval before T (C-Q); check completion before T (`RUN` time, S7). | U/`record-time`, U/`now-unreadable` +G |
+| I34 | DEFER | — | Whole row (—). Existing qualification checks stay. | R/`qualification-unavailable` |
+
+C1 is `now` through S4 (capture referents and Rule G); its all-copies classification
+for families without an independent capture referent is `deferred-701` (C-S). C3 is
+I33. C4 is `now` (S4). C5 is `now` (I27/I28). C2's whole-object and schema
+expansions (`Ixx.SCH`) are `deferred-701` except the type/enum/omission rows of the
+fields a `now` relation reads (for example all seven `m.outcome` values).
+
+**S3 — QA matrix and C6.COMPLETE scoped to `now` keys.** [A]
+
+1. Every matrix key carries `now` or `deferred-701:<carrier>`, taken from S2. The
+   17 WIP witness rows (`add4-*`) are `now` keys.
+2. `now` keys keep the full addendum-4 C6 protocol: own eligible control K(row); D
+   (destination alone wrong), A (all lower-authority copies changed together, source
+   fixed) and F (source drift after freezing the valid announcement) edits; exact
+   outer result and ordered applicable codes; one killed behavioral mutant per
+   non-implied rule with K(row) passing. For Rule G families WITHOUT an independent
+   capture referent (S4 rows that name a record copy), the A edit is `deferred-701:C-S`:
+   today it is indistinguishable from drift and returns U/`identity-binding`. D and F
+   edits stay `now`. Families WITH an independent referent (repository, PR, issue,
+   head, base, decision, attempt) keep A as `now` with R/`risk-binding`.
+3. `deferred-701` keys are listed in ONE declaration table owned by S615: inventory
+   row, field/place stem, relation, carrier tag, owner #701. They run no row and no
+   mutant, count as neither pass nor fail, and print one `DEFERRED-701 <key>
+   <carrier>` line each so they stay visible.
+4. C6.COMPLETE becomes a partition check over the SAME independently transcribed
+   N_inventory: generated `now` keys equal the declared `now` set exactly; the
+   declared deferred set equals N_inventory minus `now` exactly; the two sets are
+   disjoint and their union is N_inventory; every non-implied `now` key has its
+   killed mutant and surviving control. Falsifiers: drop a key from both sets, list
+   one key in both, duplicate or drop a generated `now` selector, credit a mutant to
+   a deferred key. Moving a key between sets is a scope change routed through
+   Architect, never a test edit.
+5. Addendum-5 implication handling is unchanged, with one domain rule: an implied
+   `now` rule needs ALL premises `now`. If a premise is deferred, the rule needs its
+   own mutant or is itself declared deferred. Acyclicity is checked within `now`.
+6. Existing rows of the 53 case files stay as they are, except the sentences S6
+   names. A pass total is still no completeness evidence.
+
+**S4 — Capture referents, Rule G and availability (C1/C4 under A1+B).** [A]
+
+*Capture revisions.* For side in (base, head), collect the revision field of every
+artifact whose `kind` is `changed-<side>` or `context-<side>` and whose `source` is
+`git:<40 hex>:<40 hex>`. Exactly one revision: that is capture B or H. Two or more:
+R/`corpus-invalid`. None: use the final revision (`main_tip`, `pr.head`) as the
+referent, as today. `corpus_checks()` checks completeness of a side against
+`b.trees` ONLY when that side's capture revision equals the final one (or is
+absent); a captured side that differs from final is expiry, reported once as
+U/`identity-binding` by the I03/I04 capture-equals-final rule, never as
+`corpus-invalid`. This removes the draft's derivative `corpus-invalid` (S606
+`identity-head`, `identity-base`).
+
+*Rule G.* A capture copy X of family F (envelope, raw or receipt) is consistent iff
+`X == referent(F)`. For families with an independent capture referent, the referent
+is that source. For the others, X is consistent iff `X == final(F)` OR (a selected
+schema-valid record exists, `record(F) != final(F)` AND `X == record(F)`). The second
+branch only classifies an already-refused expiry: `record(F) != final(F)` always
+emits U/`identity-binding` in `record_checks()`, so the record copy never authorizes.
+Any other mismatch keeps its owning referral.
+
+| Family | Capture copy checked | Referent / final value | Record copy | Code on mismatch |
+| --- | --- | --- | --- | --- |
+| repository | `binding.repository` | `cfg.repository` (independent) | — | R/`risk-binding` |
+| pr | `binding.pr` | `b.pr_number` (independent) | — | R/`risk-binding` |
+| issue | `binding.issue` | sole closing issue (independent; skip if unreadable) | — | R/`risk-binding` |
+| head, base | `binding.head`, `binding.base` | capture H/B, else final (independent) | — | R/`risk-binding` |
+| decision, attempt | `binding.decision_id`, `binding.attempt_id` | last ledger attempt (independent; skip if ledger invalid) | — | R/`risk-binding`; attempt R/`risk-attempt-invalid` (existing) |
+| diff | `binding.diff_sha256` | `sha(diff_text)` | `m.diff_sha256` | R/`risk-binding` |
+| evidence | `binding.evidence_sha256` | `current.evidence_sha256` | `m.evidence.manifest_sha256` | R/`risk-binding` |
+| requirements, design, policy, instructions, profiles, qualification | `binding.<k>_sha256` | `current.<k>_sha256` | `m.authority.<k>_sha256` | R/`risk-binding` |
+| table, mapping | envelope `capability.table_sha256` / `mapping_sha256` | `cfg.capability` pin | `m.capability.table` / `mapping` | R/`risk-binding` |
+| capability (per slot) | envelope `row`, `marker_sha256`, `effort_sha256`, sorted `exceptions` | that slot's derivation in `cap['slots']` | the single value over `m.capability.comparisons` for that slot (several distinct values: no record copy) | R/`risk-binding` |
+| floor | `reviewer.floor_evidence_sha256` | `cap['e0']` | drifted iff `m.authority.floor_sha256 != cap['floor']`; then both envelopes must carry the same value | R/`risk-binding` |
+| runtime | receipt `runtime_sha256` | `current.runtime_sha256` | `m.authority.runtime_sha256` | R/`risk-independence` |
+| profiles | reviewer model/variant/vendor, receipt settings | `cfg.reviewer_profiles[slot]` | when `profiles` drifted, skip these four comparisons; keep `reviewer.model == resolved_model` | R/`risk-independence` |
+
+*Availability (C4).* A comparison whose referent is unavailable because its own
+source already drew an owning refusal is skipped, never passed: sole closing issue
+unreadable (U/`closing-issues`), `b.issue` not an object (U/`issue-unreadable`),
+ledger not schema-valid (R/`risk-attempt-invalid`), capability derivation refused
+(`cap['codes']` non-empty, or the slot or `cap['e0']` absent), record or now time
+unreadable (U/`record-time`, U/`now-unreadable`). An unknown reviewer slot while
+`cap['codes']` is empty stays R/`risk-binding`. No other skip is allowed; in
+particular no `identity-binding` reason gates any consumer.
+
+*Display.* `render()` prints each `(code, detail)` once, at its first occurrence,
+and moves every `identity-binding` line before the first `capability-*` line if it
+would otherwise follow it. Precedence (R > U > H), exits and notes are unchanged.
+This keeps addendum 3's exact two-line witness and the identity-only witness exact
+once more consumers run after expiry.
+
+**S5 — Developer segments.** [A] Order: QA amends scenarios (S6) and publishes its
+artifact; then Segments 0-6, each alone, each one commit by the orchestrator.
+Every segment follows these common rules:
+
+- Files: only `lib/merge-risk.py`, `test/fixtures/merge-risk-646.py` and, where a
+  segment says so, a `test/cases/s6*_merge_risk_*.sh` case file. Do NOT touch
+  `skills/**` (merge-risk-panel files are at 15,997 and 15,995 of 16,000 bytes),
+  `skills/role-contracts/ORCHESTRATOR.md`, `test/behavior/orchestrator-scenarios.md`,
+  `test/fixtures/orchestrator-core-pins.tsv`, `test/behavior/orchestrator-diff.stamp`,
+  `policy/merge-autonomy.json`, `merge-risk-evidence.sh`, hooks, `TEST-SCENARIOS.md`,
+  `ARCHITECTURE.md`, any closed schema constant (`MANIFEST`, `VERDICT`, `BINDING`,
+  `REVIEWER`, `PAIR`, `PAIR_RECEIPT`, `LAUNCH`, `ATTEMPT`, `QUALITY`, `RUN`,
+  `CONFIG` and friends), the reason-code set, exit codes or `Result.verdict()`.
+- Every new rule is one line `r.need(<named_predicate>, '<code>'[, '<kind>'])  # rule:<tag>`
+  with a unique tag at line end and no `, ` inside the first argument, so the
+  existing mutation harness (`mutate()`, default "first argument becomes True")
+  works. Keep every existing `# rule:` tag unique on a line that still implements
+  that rule. When a predicate moves to a new tag, retarget the existing `mutate()`
+  entries so each row killed before is still killed; never delete a mutant without
+  a replacement that kills the same row.
+- Red first: write the segment's QA-specified rows, run them, keep the red output;
+  then change lib; then green; then add one mutant per new tag and see `KILLED`.
+- Never change an existing row's expected result or code. If any row outside the
+  segment's list changes outcome, STOP and report the row, old and new output.
+- Commands: one scenario `TMPDIR=/tmp python3 -I test/fixtures/merge-risk-646.py 606`;
+  all cases `for f in test/cases/*merge_risk*.sh; do bash "$f" >"/tmp/mr-$(basename "$f").log" 2>&1 && echo "PASS $f" || echo "FAIL $f"; done`
+  (53 files). Done for every segment also means: both Python files compile,
+  `git diff --check` passes, and `python3 -I test/behavior/orchestrator_diff.py stamp-check --repo .`
+  prints `stamp matches`.
+- Until Segment 6, the 53-case run may show FAIL only for case files whose sole
+  failing rows are `add4-*` witnesses owned by a LATER segment (list below).
+
+The withdrawn draft's four regressions and how the segments avoid them: S606
+`identity-head`/`identity-base` drew `corpus-invalid` because the corpus was checked
+against final H/B (S4 capture revisions, Segment 5); S606 `identity-diff_sha256`
+and every `add2-*` table/mapping/marker/effort/date row drew `risk-binding` because
+envelope echoes were compared with final derivations (Rule G, Segment 5); S606
+`identity-brief_sha256` and the `add2-*`/S618 `add2-accepted-*` rows drew
+`risk-attempt-invalid` because the fixture's `requalify_lab()` re-sealed the frozen
+pair without its ledger (Segment 0); S611 `closing-unreadable`/`issue-unreadable`
+drew derivative `risk-binding`/`record-selection` from a missing source
+(availability guards, Segments 2 and 5); S654 `deadline-1799`/`deadline-1800`
+announced before their pair completed (Segment 0).
+
+Witness ownership: Segment 2 — `add4-selected-{held,vetoed,unresolved,referred,failed,merged}`,
+`add4-actual-title`, `add4-malformed-trailer`, `add4-duplicate-trailer`,
+`add4-ledger-decision`; Segment 3 — `add4-quality-author`, `add4-late-pair`,
+`add4-announcement-tie-0`, `add4-announcement-tie-1`; Segment 4 —
+`add4-actual-external-paths`; Segment 5 — `add4-expiry-reuse`, `add4-expiry-referral`.
+
+**Segment 0 — fixture fidelity (test code only).**
+Boundary: `test/fixtures/merge-risk-646.py`; `lib/merge-risk.py` unchanged.
+(a) In `requalify_lab()`, when `b.get('_frozen')` is true, update only final
+sources (`config_text`, `sources`, `accepted`, `current`) and do NOT touch
+`b['risk_pair']` (no envelope/raw rewrite, no `seal()`). Find every other helper an
+edit passed to `freeze_edit()` calls that runs `seal(`, `sync(`, `sync_corpus(`,
+`announcement(` or assigns `risk_pair`, `attempts`, `issue_comments`, `artifacts`
+or capability effort receipt hashes, and apply the same rule. (b) Rebuild the S654
+eligible deadline controls (`deadline-1799`, `deadline-1800` and any other eligible
+deadline/relaunch control whose `compared_at` is not before T) so that every
+receipt's `received_at <= sealed_at <= compared_at < T`, `now >= T + hold` and
+`max(now, T + hold) < min(started_at) + max_age`, keeping the tested `R - S` values
+exactly; `deadline-1801` keeps R/`risk-deadline`.
+Red tests: none (fidelity); show each touched row's output before and after.
+Done: identical PASS/FAIL per row as at `3e55e2b` (only the 17 `add4-*` rows red);
+`git diff --stat` shows the fixture only. Do not change any expectation.
+
+**Segment 1 — selection object, drift families, capture revisions, display.**
+Boundary: `record_checks()`, new `capture_revisions(b)`, new empty
+`consistency_checks(b,cfg,r,sel,cap,capture)` called from `evaluate()` right after
+`record_checks()` and outside the expiry guard, `render()`; plus fixture rows.
+(a) `record_checks()` returns `None` exactly where it does today up to and
+including the `manifest-schema` check; otherwise a small private object with
+`comment`, `manifest`, `bound` (today's return condition at its final `if not (...)`
+line, unchanged) and `drifted` (the S4 family names whose record copy differs from
+final). Add no other field. Split today's
+`bound` conjunction into per-family booleans but keep ONE
+`r.need(bound, 'identity-binding')  # rule:record-binding` line over their AND.
+(b) `evaluate()` passes `(sel.comment, sel.manifest) if sel and sel.bound else None`
+to `hold_checks()` and `envelope_checks()`: today's behavior, until Segment 5.
+(c) `capture_revisions()` implements S4 and returns `{'base','head','conflict'}`;
+nothing consumes it yet. (d) `render()` implements S4 display.
+Red tests: the QA row "same code from both slots displays once" (for example both
+envelopes' `binding.repository` wrong without drift: exactly one `reason:
+risk-binding` line; add a line-count assertion to `run_row()` if needed).
+Done: that row green; every other row identical to Segment 0; all existing mutants
+KILLED. Do not add any `need()` line in this segment.
+
+**Segment 2 — record, narrative, decision and issue bindings (I02, I10-I12, I24).**
+Boundary: `record_checks()` (own outcome `rule:record-own-outcome`, not superseded
+`rule:record-not-superseded`, redefined active count on the existing
+`rule:single-active`, `m.decision_id` against the last attempt
+`rule:record-decision-ledger`, queue keys `rule:record-queue-key`);
+`consistency_checks()` (`rule:issue-target`, `rule:selected-url-target`,
+`rule:narrative-valid` (R), `rule:narrative-current`, `rule:narrative-record`,
+`rule:trailer-selection`, `rule:ledger-decision-id` (R/`risk-attempt-invalid`,
+capture H from `capture_revisions()`, else final H)); `envelope_checks()`
+(`rule:envelope-issue` compares with the sole closing issue and `b.issue.number`;
+`rule:envelope-decision_id` compares with the last ledger attempt; neither needs a
+record any more). Guard every issue/narrative/trailer comparison per S4
+availability. Fixture fidelity in this segment: the honest `announcement()` takes
+`decision_id` and both queue keys from the last ledger attempt instead of the
+hard-coded first-attempt ID, so a dispositioned second-attempt control stays
+eligible; if the control's narrative digest ignores the trailer rule, fix it with
+an independently written fixture helper (never imported from lib).
+Red tests first: the ten Segment-2 witnesses plus QA's `now` rows for these keys
+(trailer naming another comment; selected record superseded by a later valid
+record; two active eligible records where one has an outgoing `supersedes`;
+`m.queue_key` alone wrong; a prior attempt carrying the final decision ID; decision
+from another PR; `m.decision_id` alone wrong; D/A/F per place).
+Regressions to watch: S611 `closing-unreadable`/`issue-unreadable` keep only their
+owning U code (assert absence of `risk-binding`, `record-selection`,
+`narrative-invalid`); S615 history/supersession rows; S606 narrative rows.
+
+**Segment 3 — separation and chronology (I14, I17, I32, I33).**
+Boundary: `consistency_checks()` (`rule:quality-author-separation`,
+`rule:launch-after-attempt`, `rule:first-launch-start`, `rule:returning-launch`,
+`rule:pair-before-announcement`, `rule:announcement-not-future`,
+`rule:earliest-copy`, `rule:full-hold-age`, `rule:last-check-before-announcement`,
+codes as S2) and `hold_checks()` (`rule:release-before-announcement`,
+H/`hold-release-stale`). T is the selected comment's `created_at` from `sel`
+(any schema-valid selection); skip each relation whose time is unreadable.
+Strict `<` wherever S2 says `<`: a tie never proves order.
+Red tests first: the four Segment-3 witnesses plus QA's boundary rows (each
+inequality at equality and one second either side; forged earliest; T after now;
+last check at T; release at T; attempt created at launch time; final launch not
+`returned`; quality only in `author_sessions`; author only in `quality_sessions`;
+both summaries empty with distinct sessions as eligible control).
+Regressions to watch: S617, S618, S619, S654, S658, S669 controls.
+
+**Segment 4 — external guard paths (C5, I27/I28).**
+Boundary: `runtime_checks()` and `collect()`; fixture. Replace the two
+`Path(top)/...` expectations by separate rules `rule:runtime-guard-root` (absolute
+string `guard_state.toplevel`), `rule:runtime-checker-in-guard` and
+`rule:runtime-preflight-in-guard` (U/`runtime-invalid`); keep `rule:runtime` for the
+rest; never build an executable path from the product top unless the guard root
+equals it. In `collect()`, when `cfg['guard']` is not None, `clean` also requires
+`guard_state` present with head equal to the accepted revision, empty mismatches
+and untracked lists, tree digest equal to `cfg['guard']['tree_sha256']` and
+`toplevel` equal to the resolved `script_dir`; otherwise preflight is not invoked.
+Fixture: base `guard_state` gains `'toplevel':'/lab/B'`; fold
+`actual_external_guard()` into `external_guard()` so the S677 external control uses
+`/lab/G` paths with renewed profile/qualification; retarget `rule:runtime` mutants.
+Red tests first: `add4-actual-external-paths`; external G with paths under B
+(U/`runtime-invalid`); relative or missing G root; checker under G with preflight
+under B; collector row through the existing `export_probe()` Seam showing that an
+unaccepted G is never executed; B-FOR-G mutant (product-root expectation) killed by
+the external control. Regressions: S666, S676, S677.
+
+**Segment 5 — run every consumer after expiry (C1/C4 flip).**
+Boundary: `evaluate()`, `corpus_checks()`, `envelope_checks()`,
+`independence_checks()`, `hold_checks()` call site, `consistency_checks()`.
+(a) Replace the `if not any(... identity-binding ...)` guard by
+`run_independent=True  # rule:no-expiry-skip` and `if run_independent:` (the
+EXPIRE-SKIP mutant replaces `True` with the old condition). (b) Pass the
+selection's `(comment, manifest)` to `hold_checks()` and `envelope_checks()`
+whenever a selection exists, not only when `bound`; `envelope_checks()` also gets
+`sel.drifted` for Rule G. (c)
+`corpus_checks()` per S4 capture revisions (`rule:capture-single-revision`); add
+`rule:capture-head-final` and `rule:capture-base-final` (U/`identity-binding`) to
+`consistency_checks()`. (d) `envelope_checks()` and `independence_checks()` follow
+the S4 table: one tagged rule per family (keep `rule:risk-binding` on the
+raw-equals-envelope line; new tags `rule:envelope-<family>`), existing capability
+echo tags keep their names with Rule G predicates, `rule:envelope-slot` skips when
+`cap['codes']` is non-empty, `rule:risk-independence` uses Rule G for runtime and
+the profiles skip.
+Red tests first: the two Segment-5 witnesses; QA's cross rows (identity expiry
+crossed with raw `refer`, session reuse, ledger contradiction, one invalid raw slot,
+deadline breach: one outer R with identity and every cause); F rows per S4 family
+asserting U/`identity-binding` and ABSENCE of `risk-binding`, `risk-independence`,
+`risk-attempt-invalid`, `corpus-invalid` (add an `absent` option to `row()` if
+needed).
+Regression checklist (all must stay as specified): S606 `identity-*` and every
+`add2-*` row; S618 `add2-accepted-*`; S611 `closing-unreadable`/`issue-unreadable`;
+the exact `add2-frozen-table-score-drift`, `add2-frozen-table-byte-only` and
+identity-only rows (exact reason lists); S654/S658/S659/S669 controls.
+
+**Segment 6 — completeness, deferred declaration, real-evidence witness.**
+Boundary: fixture and the S625 case file. (a) Transcribe QA's S615 `now` and
+`deferred-701` tables as literal dictionaries (never imported from lib) and
+implement C6.COMPLETE per S3, including its falsifier self-tests. (b) Implement the
+S625 witness through `export_probe()`'s real-collector Seam with a laboratory
+`enabled:true` policy committed at B: outer `referred`/3 and each S1 layer-2 code
+present. (c) Add any remaining named mutants (FIRST/LAST, WRONG-AUTHORITY, VENDOR)
+for `now` keys. Done: 53/53 PASS, no `add4-*` red, C6.COMPLETE passes and each of
+its falsifiers fails it, every `DEFERRED-701` line printed, stamp and byte checks
+as above.
+
+**S6 — Scenario sentences QA must change before Developer resumes.** [A] QA owns
+the wording; Architect edits no scenario. IDs and the change:
+
+| Scenario | Change |
+| --- | --- |
+| S615 | Matrix-protocol bullet: add the `now`/`deferred-701:<carrier>` status per key (S3.1-3). Replace the C6.COMPLETE bullet with S3.4-5. Add the deferred declaration table. Record selection: own outcome (six values), supersession by a valid linked record, and the active-count definition of S2 I11. |
+| S606 | Then/Test seam: frozen-drift edits change only final sources, no helper re-seals the pair, ledger or record; each S4 family's F row returns U/`identity-binding` without derivative referral; identity expiry crossed with each referral family returns one R keeping all causes; the S4 display rule. Actual title/body/trailer rows per I10. |
+| S611 | Then: an unreadable closing list or issue returns only its owning U code; no referral or selection failure derived from the missing source. |
+| S654 | Per binding/reviewer leaf: D and F rows `now` as S4; A rows `deferred-701:C-S` for record-copy families; nonce, dispatch-ID and runtime-ID referent rows `deferred-701:C-L`; deadline controls complete before T (S5 Segment 0). |
+| S658 | Separation uses Q and A of S2 I17 (including empty summaries); lens-participant rows `deferred-701:C-Q`. |
+| S669 | Ledger decision/ordinal and returning-launch chronology `now`; per-launch dispatch/nonce/run/runtime/args/output rows `deferred-701:C-L`; disposition source/words/time and prior-attempt reference rows `deferred-701`. |
+| S617 | Earliest copy, `last_check < T` (U/`identity-binding`) and the full-hold age rule `now`; quality-approval and check-completion before T `deferred-701`. |
+| S618 | Stop/void/off rules run on any selected schema-valid record, also when it is expired; manifest labels/control/timeline copy rows `deferred-701`. |
+| S619 | Release source time before T (H/`hold-release-stale`) `now`. |
+| S666 | Product cwd rows `now`; profile-leaf-versus-observation rows at collection and final `deferred-701:C-S`. |
+| S677 | Actual external checker/preflight paths, G root, collector validate-before-invoke and B-FOR-G rows `now`; G bundle/content/wiring sweep `deferred-701`. |
+| S625 | New bullet: the real-collector refusal witness of S1 layer 3 (S5 Segment 6). |
+| S650, S651, S655, S656, S659, S668, S675, S676 | Addendum-4 expansions of I05, I07-I09, I18-I23, I25, I26, I30, I34 `deferred-701` except the `now` places of S2 (S659: envelope capability echoes under drift; S650: raw-equals-envelope leaves; S676: I01/I02 places). Existing rows unchanged. |
+
+S662 stays byte-identical, including all seven E1 controls.
+
+**S7 — Maintainer marks and limits.** [A] Not decided here:
+
+- **[MAINTAINER SECURITY TRADE-OFF]** S1's residual: laboratory bundles can be
+  eligible without deferred relations while the gate is inert (already within A1+B).
+- **[MAINTAINER SECURITY TRADE-OFF]** For Rule G families without an independent
+  capture referent, all-copies-wrong returns U/`identity-binding` instead of
+  R/`risk-binding` until C-S exists. Both are noneligible; routing differs. It is
+  no regression: `3e55e2b` returns the same U.
+- **[CONTRACT-TEXT CHANGE, maintainer]** Every #701 carrier: closed-schema additions
+  (`LAUNCH`, `QUALITY`, `RUN`, a capture artifact kind), wording in
+  `skills/merge-risk-panel/*` and `skills/pre-merge-review/*`. #646 needs none.
+- Collector preflight invocation when `cfg.guard` is null is unchanged (inert;
+  guard-invalid refuses). Enabling must not run without accepted G.
+
+Doubts (one line each):
+- The partition makes C6.COMPLETE honest only if QA transcribes N_inventory independently; a copied `now` list proves nothing.
+- Rule G leans on the record copy for classification; a future reader must not mistake it for authority.
+- Real-evidence non-eligibility rests on collector behavior plus inert policy; the S625 witness is the tripwire, not a proof against forged bundles (M8).
+- Segment 5 is the risky step; any unexplained outcome change must stop the segment rather than be absorbed into expectations.
+- Synthetic green results establish no live independence, provenance, qualification or permission to enable.
