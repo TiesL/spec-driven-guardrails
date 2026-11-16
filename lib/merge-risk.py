@@ -506,6 +506,10 @@ def capture_revisions(b):
 
 
 def consistency_checks(b,cfg,r,sel,cap,capture):
+    head_final=capture['head']==(b.get('pr') or {}).get('head')
+    r.need(head_final, 'identity-binding')  # rule:capture-head-final
+    base_final=capture['base']==b.get('main_tip')
+    r.need(base_final, 'identity-binding')  # rule:capture-base-final
     pr=b.get('pr') or {}; closing=pr.get('closing_issues'); issue=b.get('issue')
     closing_ok=isinstance(closing,list) and len(closing)==1
     if closing_ok and isinstance(issue,dict):
@@ -735,7 +739,12 @@ def hold_checks(b,cfg,r,record):
     r.note('earliest-merge='+fmt(earliest))
 
 
-def envelope_checks(b,cfg,r,cap,record):
+def capture_copy_matches(value,final,record):
+    """A record copy classifies refused drift; it never grants authority."""
+    return value==final or (record is not None and record!=final and value==record)
+
+
+def envelope_checks(b,cfg,r,cap,record,drifted,capture):
     now=ts(b.get('now')); pair=b.get('risk_pair')
     if not isinstance(pair,list): return
     for p in pair:
@@ -744,12 +753,33 @@ def envelope_checks(b,cfg,r,cap,record):
         try: d=valid_verdict(p,b.get('artifacts',[]))
         except (Invalid,ValueError,KeyError,UnicodeError,TypeError): continue
         expected=env['binding']; current=b.get('current') or {}; pr=b.get('pr') or {}
-        identity_ok=(d['binding']==expected and d['reviewer']==env['reviewer'] and expected['head']==pr.get('head')
-                     and expected['base']==b.get('main_tip') and expected['repository']==b.get('repository')
-                     and expected['pr']==b.get('pr_number') and expected['diff_sha256']==sha(b['diff_text'])
-                     and all(expected[k]==current.get(k) for k in ('evidence_sha256','requirements_sha256','design_sha256',
-                                                                 'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')))
-        r.need(identity_ok, 'risk-binding','referred')  # rule:risk-binding
+        raw_equal=d['binding']==expected and d['reviewer']==env['reviewer']
+        r.need(raw_equal, 'risk-binding','referred')  # rule:risk-binding
+        repository_ok=expected['repository']==cfg['repository']
+        r.need(repository_ok, 'risk-binding','referred')  # rule:envelope-repository
+        pr_ok=expected['pr']==b.get('pr_number')
+        r.need(pr_ok, 'risk-binding','referred')  # rule:envelope-pr
+        head_ok=expected['head']==capture['head']
+        r.need(head_ok, 'risk-binding','referred')  # rule:envelope-head
+        base_ok=expected['base']==capture['base']
+        r.need(base_ok, 'risk-binding','referred')  # rule:envelope-base
+        m=record[1] if record else None
+        diff_ok=capture_copy_matches(expected['diff_sha256'],sha(b['diff_text']),m['diff_sha256'] if m else None)
+        r.need(diff_ok, 'risk-binding','referred')  # rule:envelope-diff
+        evidence_ok=capture_copy_matches(expected['evidence_sha256'],current.get('evidence_sha256'),m['evidence']['manifest_sha256'] if m else None)
+        r.need(evidence_ok, 'risk-binding','referred')  # rule:envelope-evidence
+        requirements_ok=capture_copy_matches(expected['requirements_sha256'],current.get('requirements_sha256'),m['authority']['requirements_sha256'] if m else None)
+        r.need(requirements_ok, 'risk-binding','referred')  # rule:envelope-requirements
+        design_ok=capture_copy_matches(expected['design_sha256'],current.get('design_sha256'),m['authority']['design_sha256'] if m else None)
+        r.need(design_ok, 'risk-binding','referred')  # rule:envelope-design
+        policy_ok=capture_copy_matches(expected['policy_sha256'],current.get('policy_sha256'),m['authority']['policy_sha256'] if m else None)
+        r.need(policy_ok, 'risk-binding','referred')  # rule:envelope-policy
+        instructions_ok=capture_copy_matches(expected['instructions_sha256'],current.get('instructions_sha256'),m['authority']['instructions_sha256'] if m else None)
+        r.need(instructions_ok, 'risk-binding','referred')  # rule:envelope-instructions
+        profiles_ok=capture_copy_matches(expected['profiles_sha256'],current.get('profiles_sha256'),m['authority']['profiles_sha256'] if m else None)
+        r.need(profiles_ok, 'risk-binding','referred')  # rule:envelope-profiles
+        qualification_ok=capture_copy_matches(expected['qualification_sha256'],current.get('qualification_sha256'),m['authority']['qualification_sha256'] if m else None)
+        r.need(qualification_ok, 'risk-binding','referred')  # rule:envelope-qualification
         closing=pr.get('closing_issues'); issue=b.get('issue'); attempts=b.get('attempts')
         closing_ok=isinstance(closing,list) and len(closing)==1
         if closing_ok and isinstance(issue,dict):
@@ -758,30 +788,39 @@ def envelope_checks(b,cfg,r,cap,record):
         if isinstance(attempts,list) and attempts and all(conforms(a,ATTEMPT) for a in attempts):
             decision_ok=expected['decision_id']==attempts[-1]['decision_id']
             r.need(decision_ok, 'risk-binding','referred')  # rule:envelope-decision_id
-        # Capability identities retained with the envelope, compared one by one
-        # with what this Module derives from the accepted sources.
+            attempt_ok=expected['attempt_id']==attempts[-1]['attempt_id']
+            r.need(attempt_ok, 'risk-binding','referred')  # rule:envelope-attempt_id
+        ontime=(0<=(received-original).total_seconds()<=cfg['deadline_seconds'])
+        r.need(ontime, 'risk-deadline','referred')  # rule:risk-deadline
+        # An unavailable derivation owns its refusal; do not invent an echo mismatch.
+        if cap['codes']: continue
         mine=next((x for x in cap['slots'] if x['slot']==env['reviewer']['slot']),None)
         known_slot=mine is not None
         r.need(known_slot, 'risk-binding','referred')  # rule:envelope-slot
         if not known_slot: continue
         held=env['capability']; pin=cfg['capability'] or {'table':{'sha256':None},'mapping':{'sha256':None}}
         derived=mine
-        floor_ok=env['reviewer']['floor_evidence_sha256']==cap['e0']
-        r.need(floor_ok, 'risk-binding','referred')  # rule:envelope-floor
-        table_ok=held['table_sha256']==pin['table']['sha256']
+        if cap['e0'] is not None:
+            floor_copies=[p['envelope']['reviewer']['floor_evidence_sha256'] for p in pair if conforms(p,PAIR)]
+            floor_ok=env['reviewer']['floor_evidence_sha256']==cap['e0'] or ('floor' in drifted and len(floor_copies)==2 and len(set(floor_copies))==1)
+            r.need(floor_ok, 'risk-binding','referred')  # rule:envelope-floor
+        table_ok=capture_copy_matches(held['table_sha256'],pin['table']['sha256'],m['capability']['table']['sha256'] if m and m['capability'] else None)
         r.need(table_ok, 'risk-binding','referred')  # rule:envelope-table
-        mapping_ok=held['mapping_sha256']==pin['mapping']['sha256']
+        mapping_ok=capture_copy_matches(held['mapping_sha256'],pin['mapping']['sha256'],m['capability']['mapping']['sha256'] if m and m['capability'] else None)
         r.need(mapping_ok, 'risk-binding','referred')  # rule:envelope-mapping
-        row_ok=held['row']==derived['row']
+        copies=[x for x in m['capability']['comparisons'] if x['slot']==env['reviewer']['slot']] if m and m['capability'] else []
+        def slot_copy(key):
+            values=[x[key] for x in copies]
+            return values[0] if values and all(x==values[0] for x in values) else None
+        row_ok=capture_copy_matches(held['row'],derived['row'],slot_copy('row'))
         r.need(row_ok, 'risk-binding','referred')  # rule:envelope-row
-        marker_ok=held['marker_sha256']==derived['marker_sha256']
+        marker_ok=capture_copy_matches(held['marker_sha256'],derived['marker_sha256'],slot_copy('marker_sha256'))
         r.need(marker_ok, 'risk-binding','referred')  # rule:envelope-marker
-        effort_ok=held['effort_sha256']==derived['effort_sha256']
+        effort_ok=capture_copy_matches(held['effort_sha256'],derived['effort_sha256'],slot_copy('effort_sha256'))
         r.need(effort_ok, 'risk-binding','referred')  # rule:envelope-effort
-        exception_ok=held['exceptions']==derived['exceptions']
+        exception_values=sorted({x['exception'] for x in copies if x['exception'] is not None}) if copies else None
+        exception_ok=capture_copy_matches(sorted(held['exceptions']),sorted(derived['exceptions']),exception_values)
         r.need(exception_ok, 'risk-binding','referred')  # rule:envelope-exception
-        ontime=(0<=(received-original).total_seconds()<=cfg['deadline_seconds'])
-        r.need(ontime, 'risk-deadline','referred')  # rule:risk-deadline
     starts=[ts(p.get('receipt',{}).get('started_at')) for p in pair]
     if len(starts)==2 and all(starts) and now:
         age=(now-min(starts)).total_seconds()
@@ -1144,7 +1183,9 @@ RUNTIME_PROFILE={'project_dir':TEXT,'checker':TEXT,'preflight':TEXT,'isolated_co
 BRIEF={'purpose':TEXT,'sensitive_assets':[TEXT],'users':[TEXT],'trust_boundaries':[TEXT]}
 
 
-def corpus_checks(b,r):
+def corpus_checks(b,r,capture):
+    single_revision=not capture['conflict']
+    r.need(single_revision, 'corpus-invalid','referred')  # rule:capture-single-revision
     artifacts=b.get('artifacts'); trees=b.get('trees'); valid=isinstance(artifacts,list) and bool(artifacts) and isinstance(trees,dict)
     ids=[]; available=set()
     if valid:
@@ -1160,6 +1201,7 @@ def corpus_checks(b,r):
             except (ValueError,KeyError,TypeError,UnicodeError): valid=False
         valid=valid and len(set(ids))==len(ids)
         for side,revision in (('base',b.get('main_tip')),('head',(b.get('pr') or {}).get('head'))):
+            if capture[side]!=revision: continue
             for entry in trees.get(side,[]):
                 if entry.get('mode')=='160000': continue
                 # Collector supplies every snapshot entry, including unchanged B.
@@ -1328,7 +1370,7 @@ def check_runs(b,cfg,r):
     r.need(good, 'gate-check')  # rule:all-checks
 
 
-def independence_checks(b,cfg,r,cap):
+def independence_checks(b,cfg,r,cap,record,drifted):
     pair=b.get('risk_pair')
     if not isinstance(pair,list) or len(pair)!=2: return
     receipts=[]; sessions=[]; dispatches=[]; nonces=[]; slots=[]; vendors=[]; raws=[]; outputs=[]
@@ -1353,10 +1395,13 @@ def independence_checks(b,cfg,r,cap):
         r.need(author_separate, 'risk-independence','referred')  # rule:authoritative-author-separation
         sealing=started<=received<=sealed<=compared
         r.need(sealing, 'risk-independence','referred')  # rule:seal-before-compare
+        profile_ok=('profiles' in drifted or (reviewer['model']==prof.get('model') and reviewer['vendor']==prof.get('vendor')
+                    and reviewer['variant']==prof.get('variant') and rc['settings_sha256']==prof.get('settings_sha256')))
+        m=record[1] if record else None
+        runtime_ok=capture_copy_matches(rc['runtime_sha256'],b['current'].get('runtime_sha256'),m['authority']['runtime_sha256'] if m else None)
         separated=(rc['peer_exposed'] is False and rc['forbidden_actions']==[]
-                   and reviewer['model']==rc['resolved_model']==prof.get('model') and reviewer['vendor']==prof.get('vendor')
-                   and reviewer['variant']==prof.get('variant') and rc['settings_sha256']==prof.get('settings_sha256')
-                   and rc['prompt_sha256']==binding['instructions_sha256'] and rc['runtime_sha256']==b['current'].get('runtime_sha256'))
+                   and reviewer['model']==rc['resolved_model'] and profile_ok
+                   and rc['prompt_sha256']==binding['instructions_sha256'] and runtime_ok)
         r.need(separated, 'risk-independence','referred')  # rule:risk-independence
         receipts.append(rc); sessions.append(reviewer['session_id']); dispatches.append(reviewer['dispatch_id'])
         nonces.append(binding['nonce']); vendors.append(reviewer['vendor'])
@@ -1526,16 +1571,19 @@ def evaluate(b):
             sel=record_checks(b,cfg,r,cap)
             capture=capture_revisions(b)
             consistency_checks(b,cfg,r,sel,cap,capture)
-            record=(sel.comment,sel.manifest) if sel and sel.bound else None
+            record=(sel.comment,sel.manifest) if sel else None  # rule:hold-selection
+            envelope_record=record  # rule:envelope-selection
+            drifted=sel.drifted if sel else set()
             expired=any(code=='identity-binding' for _,code,_ in r.reasons)
             activation_checks(b,cfg,r,cap,expired)
             capability_reasons(cap,r)  # rule:final-capability
             hold_checks(b,cfg,r,record)
-            if not any(c=='identity-binding' for _,c,_ in r.reasons):
-                corpus_checks(b,r)
+            run_independent=True  # rule:no-expiry-skip
+            if run_independent:
+                corpus_checks(b,r,capture)
                 pair_checks(b,cfg,r)
-                envelope_checks(b,cfg,r,cap,record)
-                independence_checks(b,cfg,r,cap)
+                envelope_checks(b,cfg,r,cap,envelope_record,drifted,capture)
+                independence_checks(b,cfg,r,cap,record,drifted)
                 attempt_checks(b,cfg,r)
     pr=b.get('pr') or {}; n=b.get('pr_number'); H=identity(pr.get('head'),SHA40); B=identity(b.get('main_tip'),SHA40)
     D=sha(b['diff_text']) if isinstance(b.get('diff_text'),str) else '-'

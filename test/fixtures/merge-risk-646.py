@@ -446,8 +446,8 @@ ROWS = {}
 MUTANTS = {}
 
 
-def row(s, name, edit=None, verdict='eligible', code=None, command='evaluate'):
-    ROWS.setdefault(str(s), []).append((name, edit, verdict, code, command))
+def row(s, name, edit=None, verdict='eligible', code=None, command='evaluate', absent=()):
+    ROWS.setdefault(str(s), []).append((name, edit, verdict, code, command, {'absent':absent}))
 
 
 def mutate(s, tag, name, replacement=None, control=0):
@@ -2371,6 +2371,12 @@ def run_row(root,entry):
     check(p.returncode==expected and first.startswith(prefix),
           f'{name}: want {want}/{expected}; actual exit={p.returncode} {p.stdout[-600:]!r}')
     if code: check((code if command=='queue' else 'reason: '+code) in p.stdout, name+': missing '+code+' '+p.stdout[-600:])
+    if command=='evaluate' and len(entry)>5:
+        for forbidden in entry[5].get('absent',()):
+            check('reason: '+forbidden not in p.stdout,name+': forbidden '+forbidden+' '+p.stdout[-700:])
+    if name in SEG5_CODES:
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        check(actual==SEG5_CODES[name],name+': ordered codes '+repr(actual)+' != '+repr(SEG5_CODES[name]))
     if name.startswith('a6s4-'):
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         expected=() if want=='eligible' else ('runtime-invalid',)
@@ -2731,6 +2737,139 @@ for fault,predicate in (
            control='a6s4-collector-control')
 mutate(677,'collector-guard-present','a6s4-collector-present',('clean=False','clean=True'),
        control='a6s4-collector-control')
+
+
+# A60 addendum 6 Segment 5: capture/final separation and ungated consumers.
+SEG5_CODES={}
+DERIVATIVES=('risk-binding','risk-independence','risk-attempt-invalid','corpus-invalid')
+def seg5(s,name,edit=None,want='eligible',codes=(),absent=()):
+    name='a6s5-'+name
+    row(s,name,edit,want,codes[0] if codes else None,absent=absent)
+    SEG5_CODES[name]=tuple(codes)
+    return name
+
+expiry=freeze_edit(change(['current','narrative_sha256'],sha('changed')))
+for name,edit,codes in (
+    ('refer',verdict_edit(valid_refer),('risk-referral',)),
+    ('reuse',reidentify(1,session='session-slot-1'),('risk-independence','risk-attempt-invalid')),
+    ('ledger',change(['attempts',0,'provider_retries_visible'],False),('risk-attempt-invalid',)),
+    ('contradiction',change(['attempts',0,'decision_id'],'MR-700-1a2b3c4-2'),('risk-attempt-invalid','risk-binding')),
+    ('invalid',lambda b:seal(b['risk_pair'][0],b'{'),('risk-result-invalid',)),
+    ('deadline',deadline_return(1801),('risk-deadline',))):
+    seg5(606,'expiry-'+name,both(edit,expiry),'referred',('identity-binding',)+codes)
+# A removed stop remains relevant even when the announcement has expired.
+seg5(606,'expiry-stop',both(lambda b:b['timeline']['pr'].append(
+    {'event':'labeled','label':'hold','created_at':stamp(-100)}),expiry),
+    'unresolved',('identity-binding','hold-release-missing'))
+
+# Capture-final kills must not borrow the selected record's identity refusal.
+def final_revision(side,no_selection=False):
+    def edit(b):
+        if side=='head':
+            revision=H[:7]+'0'*33
+            b['pr']['head']=b['remote']['head']=revision
+            b['quality']['head']=revision
+            b['quality']['marker']=b['quality']['marker'].replace(H,revision)
+            for run in b['checks']['runs']+b['checks']['contexts']: run['head']=revision
+        else:
+            b['main_tip']=b['merge_base']=b['verifier']['head']=b['remote']['base']='0'*40
+        if no_selection:
+            c=b['issue_comments'][0]; m=json.loads(c['body'].split('```json\n')[1].split('\n```')[0])
+            m.pop('authority'); c['body']=record_body(m)
+    return freeze_edit(edit)
+for side in ('head','base'):
+    seg5(606,'capture-'+side+'-no-selection',final_revision(side,True),'unresolved',('manifest-schema','identity-binding'),DERIVATIVES)
+    seg5(606,'capture-'+side+'-F',final_revision(side),'unresolved',('identity-binding',),DERIVATIVES)
+    def conflict(b,side=side):
+        a=copy.deepcopy(next(a for a in b['artifacts'] if a['kind']=='context-'+side))
+        a['artifact_id']+='-other'; a['source']='git:'+('0'*40)+':'+a['source'].split(':')[2]
+        b['artifacts'].append(a)
+    seg5(606,'capture-conflict-'+side,conflict,'referred',('corpus-invalid',))
+seg5(606,'capture-missing',lambda b:b['artifacts'].remove(next(a for a in b['artifacts'] if a['kind']=='context-head')),
+     'referred',('corpus-invalid',))
+
+# Both slots: paired destinations keep the captured record and referent fixed.
+def destination(slot,section,key,value,raw_only=False):
+    def edit(b):
+        p=b['risk_pair'][slot]; d=json.loads(base64.b64decode(p['raw_b64']))
+        if section!='capability': d[section][key]=copy.deepcopy(value)
+        if not raw_only: p['envelope'][section][key]=copy.deepcopy(value)
+        if section=='binding' and key=='instructions_sha256' and not raw_only:
+            p['receipt']['prompt_sha256']=value
+        seal(p,d)
+        # Retain honest launcher hashes, without renewing the selected record.
+        for launch in b['attempts'][-1]['launches']:
+            if launch['slot']==p['envelope']['reviewer']['slot']:
+                launch.update(raw_sha256=p['raw_sha256'],bytes=p['byte_length'])
+        for e in b['capability']['efforts']:
+            if e['session_id']==p['envelope']['reviewer']['session_id']:
+                e['receipt_sha256']=sha(canonical_fixture(p['receipt']))
+    return freeze_edit(edit)
+BINDING_EDITS={'repository':'wrong/repository','pr':999,'issue':999,'head':'0'*40,'base':'0'*40,
+               'decision_id':'MR-700-1a2b3c4-2','attempt_id':'attempt-wrong',
+               **{k+'_sha256':sha('wrong') for k in ('diff','evidence','requirements','design','policy','instructions','profiles','qualification')}}
+for slot in range(2):
+    for key,value in BINDING_EDITS.items():
+        for form in ('paired','raw'):
+            codes=('identity-binding','risk-binding')
+            if key=='attempt_id' and form=='paired': codes+=('risk-attempt-invalid',)
+            seg5(654,key+'-'+str(slot)+'-'+form,destination(slot,'binding',key,value,form=='raw'),'referred',codes)
+    for key,value in {'table_sha256':sha('wrong'),'mapping_sha256':sha('wrong'),'row':{'model':'Z','effort':'high'},
+                      'marker_sha256':sha('wrong'),'effort_sha256':sha('wrong'),'exceptions':[99]}.items():
+        seg5(654,'cap-'+key+'-'+str(slot),destination(slot,'capability',key,value),'referred',('identity-binding','risk-binding'))
+    for form in ('paired','raw'):
+        seg5(654,'floor-'+str(slot)+'-'+form,destination(slot,'reviewer','floor_evidence_sha256',sha('wrong'),form=='raw'),
+             'referred',('identity-binding','risk-binding'))
+
+# Honest final-only source drifts preserve ALL captured bytes.
+for key in ('diff_sha256','evidence_sha256','requirements_sha256','design_sha256','policy_sha256',
+            'instructions_sha256','profiles_sha256','qualification_sha256','runtime_sha256'):
+    edit=next(e[1] for e in ROWS['606'] if e[0]=='identity-'+key)
+    source_codes=('instruction-load-invalid',) if key=='instructions_sha256' else ('runtime-invalid',) if key=='runtime_sha256' else ()
+    seg5(606,'F-'+key,edit,'unresolved',source_codes+('identity-binding',),DERIVATIVES)
+for name in ('protected-table-update','protected-mapping-update','slot-0-marker-source','slot-1-marker-source',
+             'slot-0-effort-source','slot-1-effort-source','exception-bytes','exception-source'):
+    edit=next(e[1] for e in ROWS['606'] if e[0]=='add2-'+name)
+    seg5(606,'F-'+name,edit,'unresolved',('identity-binding',),DERIVATIVES)
+
+
+# Preserve the already-refused third-slot attack while isolating envelope-slot.
+def third_slot(b):
+    p=copy.deepcopy(b['risk_pair'][0]); p['envelope']['reviewer']['slot']='unknown-slot'
+    d=json.loads(base64.b64decode(p['raw_b64'])); d['reviewer']['slot']='unknown-slot'; seal(p,d)
+    b['risk_pair'].append(p)
+seg5(654,'unknown-third-slot',after(third_slot),'referred',('risk-pair-required','risk-binding','risk-attempt-invalid'))
+
+# Independent runtime/profile conjuncts: retain final and record referents.
+for slot in range(2):
+    for key,value in (('runtime_sha256',sha('wrong')),('settings_sha256',sha('wrong')),
+                      ('prompt_sha256',sha('wrong')),('resolved_model','unresolved-model')):
+        row(658,'a6s5-receipt-'+key+'-'+str(slot),receipt_edit(slot,**{key:value}),'referred','risk-independence')
+    for key,value in (('model','unresolved-model'),('variant','unresolved-variant'),('vendor','unresolved-vendor')):
+        row(658,'a6s5-reviewer-'+key+'-'+str(slot),reviewer_edit(slot,**{key:value}),'referred','risk-independence')
+
+mutate(606,'no-expiry-skip',tuple('a6s5-expiry-'+n for n in ('refer','reuse','ledger','invalid','deadline')),
+       ('run_independent=True',"run_independent=not any(c=='identity-binding' for _,c,_ in r.reasons)"))
+mutate(606,'hold-selection','a6s5-expiry-stop',('if sel else None','if sel and sel.bound else None'))
+mutate(606,'envelope-selection','a6s5-F-diff_sha256',('envelope_record=record','envelope_record=record if sel and sel.bound else None'))
+for side in ('head','base'):
+    mutate(606,'capture-'+side+'-final','a6s5-capture-'+side+'-no-selection')
+mutate(606,'capture-single-revision',('a6s5-capture-conflict-head','a6s5-capture-conflict-base'))
+mutate(606,'corpus','a6s5-capture-missing')
+for key in BINDING_EDITS:
+    family=key.removesuffix('_sha256')
+    mutate(654,'envelope-'+family,tuple('a6s5-'+key+'-'+str(i)+'-paired' for i in range(2)))
+# Delete the one raw equality anchor, checking every binding leaf independently.
+mutate(654,'risk-binding',tuple('a6s5-'+key+'-'+str(i)+'-raw' for i in range(2) for key in BINDING_EDITS))
+for tag,key in (('table','table_sha256'),('mapping','mapping_sha256'),('row','row'),
+                ('marker','marker_sha256'),('effort','effort_sha256'),('exception','exceptions')):
+    mutate(654,'envelope-'+tag,tuple('a6s5-cap-'+key+'-'+str(i) for i in range(2)))
+mutate(654,'envelope-floor',tuple('a6s5-floor-'+str(i)+'-paired' for i in range(2)))
+mutate(654,'risk-binding',tuple('a6s5-floor-'+str(i)+'-raw' for i in range(2)))
+mutate(654,'envelope-slot','a6s5-unknown-third-slot')
+mutate(658,'risk-independence',tuple('a6s5-receipt-'+key+'-'+str(i) for i in range(2)
+       for key in ('runtime_sha256','settings_sha256','prompt_sha256','resolved_model'))+
+       tuple('a6s5-reviewer-'+key+'-'+str(i) for i in range(2) for key in ('model','variant','vendor')))
 
 
 def main():
