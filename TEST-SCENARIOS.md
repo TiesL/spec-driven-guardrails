@@ -9284,17 +9284,17 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 | Row | Source>place | Result |
 |---|---|---|
 |I03.1|a>b.pr.head|a|
-|I03.2|a>b.remote.head|a|
+|I03.2|a>b.remote.head|K; complete typed source inventories, current H/diff/counts versus remote|
 |I03.3|a>head.tree.revision|a|
 |I03.4|a>head.artifact.revision|a|
 |I03.5|a>m.head|a|
 |I03.6|a>m.evidence.head|a|
-|I03.7|a>@bn:head|a|
-|I03.8|a>@bn:marker|a|
+|I03.7|a>@bn:head|O; actual approved quality.head == final H|
+|I03.8|a>@bn:marker|P; actual expected quality marker for final H|
 |I03.9|a>queue.head|a|
 |I04.1|b>b.main_tip|a|
-|I04.3|b>b.merge_base|a|
-|I04.2|b>b.remote.base|a|
+|I04.3|b>b.merge_base|b; main_tip == b.merge_base in source domain|
+|I04.2|b>b.remote.base|K; complete typed source inventories, current main_tip/diff/counts versus remote|
 |I04.4|b>verifier.head|W|
 |I04.5|b>base.tree.revision|a|
 |I04.6|b>base.artifact.revision|a|
@@ -9737,7 +9737,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |G|U:now-unreadable|
 |H|R:evidence-incomplete|
 |I|R:corpus-invalid|
-|J|R:path-unsafe/tree-collision/gitlink|
+|J|expand separately by typed inventory: unsafe.path -> R:path-unsafe; normalized-prefix collision -> R:tree-collision; gitlink mode -> R:gitlink; never one serialized reason|
 |K|R:remote-identity|
 |L|R:cap-lines|
 |M|R:cap-files|
@@ -9787,20 +9787,20 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I09.2|v>cfg.requirements.sha256|a|
 |I09.3|v>cfg.design.source|a|
 |I09.4|v>cfg.design.sha256|a|
-|I09.5|v>@bF:brief.source|a|
-|I09.6|v>@bF:brief.sha256|a|
+|I09.5|v>@bF:brief.source|R:project-unconfigured; I08 retained_json/body brief consumer|
+|I09.6|v>@bF:brief.sha256|R:project-unconfigured; I08 retained_json/body brief consumer|
 |I09.7|v>@bF:acceptance.source|a|
 |I09.8|v>@bF:acceptance.sha256|a|
-|I09.9|v>cfg.runtime_profile.source|a|
-|I09.10|v>cfg.runtime_profile.sha256|a|
-|I09.11|v>cfg.qualification.source|a|
-|I09.12|v>cfg.qualification.sha256|a|
+|I09.9|v>cfg.runtime_profile.source|X; I27 retained_json runtime consumer|
+|I09.10|v>cfg.runtime_profile.sha256|X; I27 retained_json runtime consumer|
+|I09.11|v>cfg.qualification.source|i; I34 retained_json qualification consumer|
+|I09.12|v>cfg.qualification.sha256|i; I34 retained_json qualification consumer|
 |I09.13|v>cfg.guard.source.source|a|
 |I09.14|v>cfg.guard.source.sha256|a|
-|I09.15|v>@bb:decision.source|a|
-|I09.16|v>@bb:decision.sha256|a|
-|I09.17|v>@bs:source|a|
-|I09.18|v>@bs:sha256|a|
+|I09.15|v>@bb:decision.source|S; I19 retained_json decision/map consumer|
+|I09.16|v>@bb:decision.sha256|S; I19 retained_json decision/map consumer|
+|I09.17|v>@bs:source|S; I19 retained_json decision/map consumer|
+|I09.18|v>@bs:sha256|S; I19 retained_json decision/map consumer|
 |I09.19|v>m.ac.source|a|
 |I09.20|v>m.ac.sha256|a|
 |I09.21|v>m.design.source|a|
@@ -9809,48 +9809,48 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I09.24|v>m.supersedes.sha256|a|
 |I09.25|v>release.original.source|a|
 |I09.26|v>release.original.sha256|a|
-|I09.27|v>@bG:source|a|
-|I09.28|v>@bG:sha256|a|
+|I09.27|v>@bG:source|d; I15 actual author-marker body consumer|
+|I09.28|v>@bG:sha256|d; I15 actual author-marker body consumer|
 |I09.29|v>@bH:source|a|
 |I09.30|v>@bH:sha256|a|
 |I09.31|v>@bc:source|d|
 |I09.32|v>@bc:sha256|d|
-|I09.33|v>@bt:marker.source|d|
-|I09.34|v>@bt:marker.sha256|d|
+|I09.33|v>@bt:marker.source|e; I22 one matching applied effort.marker entry for actual participant marker in typed CAPEVID; marker-source validity is distinct d|
+|I09.34|v>@bt:marker.sha256|e; I22 one matching applied effort.marker entry for actual participant marker in typed CAPEVID; marker-source validity is distinct d|
 |I09.35|v>@bt:launch.source|e|
 |I09.36|v>@bt:launch.sha256|e|
-|I09.37|v>@T:output_source.source|f|
-|I09.38|v>@T:output_source.sha256|f|
+|I09.37|v>@T:output_source.source|deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not raw integrity|
+|I09.38|v>@T:output_source.sha256|deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not raw integrity|
 |I09.39|v>m.evidence.read_logs[0].source|a|
 |I09.40|v>m.evidence.read_logs[0].sha256|a|
-|I09.41|v>m.prior_attempts[0].source|g|
-|I09.42|v>m.prior_attempts[0].sha256|g|
-|I09.43|v>@9:source|g|
-|I09.44|v>@9:sha256|g|
-|I09.45|v>@bI:source|a|
-|I09.46|v>@bI:sha256|a|
+|I09.41|v>m.prior_attempts[0].source|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.42|v>m.prior_attempts[0].sha256|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.43|v>@9:source|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.44|v>@9:sha256|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.45|v>@bI:source|d; I15 actual author-marker body consumer|
+|I09.46|v>@bI:sha256|d; I15 actual author-marker body consumer|
 |I09.47|v>@bJ:source|a|
 |I09.48|v>@bJ:sha256|a|
 |I09.49|v>@bd:source|d|
 |I09.50|v>@bd:sha256|d|
-|I09.51|v>@bu:marker.source|d|
-|I09.52|v>@bu:marker.sha256|d|
+|I09.51|v>@bu:marker.source|e; I22 one matching applied effort.marker entry for actual participant marker in typed CAPEVID; marker-source validity is distinct d|
+|I09.52|v>@bu:marker.sha256|e; I22 one matching applied effort.marker entry for actual participant marker in typed CAPEVID; marker-source validity is distinct d|
 |I09.53|v>@bu:launch.source|e|
 |I09.54|v>@bu:launch.sha256|e|
-|I09.55|v>@U:output_source.source|f|
-|I09.56|v>@U:output_source.sha256|f|
+|I09.55|v>@U:output_source.source|deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not raw integrity|
+|I09.56|v>@U:output_source.sha256|deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not raw integrity|
 |I09.57|v>m.evidence.read_logs[1].source|a|
 |I09.58|v>m.evidence.read_logs[1].sha256|a|
-|I09.59|v>history.attempt[1].record.source|g|
-|I09.60|v>history.attempt[1].record.sha256|g|
-|I09.61|v>@ba:source|g|
-|I09.62|v>@ba:sha256|g|
-|I09.63|v>@bn:source.source|a|
-|I09.64|v>@bn:source.sha256|a|
-|I09.65|v>@be:source|h|
-|I09.66|v>@be:sha256|h|
-|I09.67|v>@bf:source|h|
-|I09.68|v>@bf:sha256|h|
+|I09.59|v>history.attempt[1].record.source|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.60|v>history.attempt[1].record.sha256|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.61|v>@ba:source|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.62|v>@ba:sha256|deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source resolution|
+|I09.63|v>@bn:source.source|{original quality source:deferred-701:C-Q, planned O; manifest mirror:a}|
+|I09.64|v>@bn:source.sha256|{original quality source:deferred-701:C-Q, planned O; manifest mirror:a}|
+|I09.65|v>@be:source|{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}|
+|I09.66|v>@be:sha256|{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}|
+|I09.67|v>@bf:source|{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}|
+|I09.68|v>@bf:sha256|{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}|
 |I09.69|v>@A:source.source|a|
 |I09.70|v>@A:source.sha256|a|
 |I09.71|v>@a:enabling.source|i|
@@ -9865,8 +9865,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I09.80|v>@a:M1_M9.sha256|i|
 |I09.81|v>@a:M8.source|i|
 |I09.82|v>@a:M8.sha256|i|
-|I09.83|v>@a:failed_disposition.source|g|
-|I09.84|v>@a:failed_disposition.sha256|g|
+|I09.83|v>@a:failed_disposition.source|deferred-701:—; planned R:qualification-unavailable, I34 failed-disposition source resolution|
+|I09.84|v>@a:failed_disposition.sha256|deferred-701:—; planned R:qualification-unavailable, I34 failed-disposition source resolution|
 |I09.85|w>retained.source.duplicate|a|
 |I09.86|w>retained.source.ambiguous|a|
 |I09.87|w>retained.bytes.absent|a|
@@ -9877,7 +9877,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I10.8|y>trailer.malformed|j|
 |I11.1|z>selected.URL|c|
 |I11.7|z>selected.work-item|c|
-|I11.2|z>selected.schema|k|
+|I11.2|z>selected.schema|k for parsed selected MANIFEST shape; c for original selected body embedded-wire duplicate/nonfinite/malformed parse/selection; record-reader manifest-malformed is a separate Interface|
 |I11.3|z>selected.label|l|
 |I11.4|z>selected.updated_at=created_at|m|
 |I11.5|z>selected.active.count|n|
@@ -9917,16 +9917,16 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I16.14|G>m.quality.marker|a|
 |I16.10|G>m.quality.source.source|a|
 |I16.11|G>m.quality.source.sha256|a|
-|I16.15|H>@4:id|h|
-|I16.16|H>@4:severity|h|
-|I16.17|H>@4:status|h|
-|I16.18|H>@be:source|h|
-|I16.19|H>@be:sha256|h|
-|I16.20|H>@5:id|h|
-|I16.21|H>@5:severity|h|
-|I16.22|H>@5:status|h|
-|I16.23|H>@bf:source|h|
-|I16.24|H>@bf:sha256|h|
+|I16.15|H>@4:id|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.16|H>@4:severity|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.17|H>@4:status|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.18|H>@be:source|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.19|H>@be:sha256|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.20|H>@5:id|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.21|H>@5:severity|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.22|H>@5:status|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.23|H>@bf:source|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
+|I16.24|H>@bf:sha256|{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}|
 |I16.29|H>open.finding.hidden-by-approval|p|
 |I20.3|I>@m:slot|a|
 |I20.4|I>@m:marker_sha256|a|
@@ -10087,14 +10087,14 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I24.178|O>@u:output_source.sha256|a|
 |I29.1|P>b.host|q|
 |I29.2|P>cfg.executor_host|q|
-|I29.3|P>m.executor_host|q|
-|I29.4|P>@L:host|q|
-|I29.5|Q>@L:run_id|q|
+|I29.3|P>m.executor_host|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
+|I29.4|P>@L:host|a; cfg.executor_host == m.execution.host in selected typed manifest|
+|I29.5|Q>@L:run_id|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
 |I29.6|Q>lock.owner=executor_session|q|
-|I29.7|Q>@bv:exit|q|
-|I29.8|Q>@bv:stdout|q|
-|I29.9|Q>@bv:stderr|q|
-|I29.10|Q>@bv:escape_hatch|q|
+|I29.7|Q>@bv:exit|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
+|I29.8|Q>@bv:stdout|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
+|I29.9|Q>@bv:stderr|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
+|I29.10|Q>@bv:escape_hatch|deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; actual host/lock/reconciled predicate q remains separate|
 |I29.11|R>m.queue_key.repository|a|
 |I29.12|R>m.queue_key.pr|a|
 |I29.13|R>m.queue_key.head|a|
@@ -10135,27 +10135,27 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I31.9|U>m.reasons|a|
 |I31.10|V>assessment.clear-vs-refer|s|
 |I31.11|V>assessment.clear-vs-reject|s|
-|I31.12|V>assessment.clear-vs-gate|s|
-|I33.23|W>@L:last_check|a|
+|I31.12|V>assessment.clear-vs-gate|actual failed gates U:gate-quality/U:gate-check and each own gate code, not s; selected assessment risk_outcome/outcome a; full counts/reasons/uncertainties/disclosure deferred-701:—|
+|I33.23|W>@L:last_check|{last_check<T:a; original last-check event equality:deferred-701:—, planned a}; Compare=T-29/last_check=T-2 cannot prove absent source equality|
 
 - A60 addenda 4/5 — expansion contract for ALL matrix tables. A selector is a path in retained evidence OR a named observation/relation, not permission to add a JSON member. `content/bytes` means original decoded `content_b64`, `length` means `byte_length`, `line_map` includes `lines` and inventory-line addressing, `corpus` means the complete `artifacts` manifest, `runtime.profile/tools/hooks/settings/wiring` means every accepted RUNTIME_PROFILE leaf/direct observed object. A bare source token denotes its corresponding leaf, not equality between an object and a scalar. `selected.*` denotes the selected original comment; `m` is its decoded manifest. Receipt/launch observations absent from a closed carrier must come from an independently identified existing retained source; otherwise the owning unavailable-evidence oracle applies. No new schema or inferred observation is authorized.
 - Literal domains: s={0,1} stable slots; a={0,1} distinct relevant author contributions; t={0,1} first and second counted attempt; j=EVERY retained launch of t, including both slots and allowed redispatches; k=EVERY actual member of the addressed array. Controls include three-member arrays where allowed, with a defect separately first/middle/last; the two-slot/two-attempt limits are never enlarged. A second-attempt control retains a failed/dispositioned first attempt; a current first-attempt control has no invented predecessor. For conditional sources use a separate applicable control (release, exception, prior attempt, finding), not an absent optional value attacked as if present. Valid negative raw refer/reject examples use an eligible/0 approval companion control, not a claimed eligible refer control.
 - Expansion: each `{x,y}` or named field set in a place expands to ONE row per literal member; Cartesian products expand all selectors, never a whole-object assertion. Name each assertion `S<owner>/I<inventory>.<stem>[indices].<leaf>/<edit>`; retain base Ixx.n names. A relation place produces one row per indexed relation; MISSING/TYPE/KEY/COUNT are separate rule rows, not field-equality credit. Prefix `mirror(p)` is the exact same suffix under `m.attempt` for the selected attempt, `m.risk_pair[s]`, `m.quality`, `m.authors[a]`, `m.assessment.checks`, `m.evidence.read_logs` or `m.capability`, as explicitly declared below. Recurse through every actual leaf, including nullable objects in an applicable control and nested arrays. Decode manifest raw_b64 independently too; it must retain exactly the original pair bytes. No implementation schema/table/helper supplies the expected selectors or values.
 - Independent K(row) is eligible/0 with no refusals. E and C, D/A/F and DEL(row) from the protocol apply to supplemental equality rows too; each field/place has its own control/edit/oracle/mutant. D changes one destination; A changes all copies with the original capture fixed; F changes the real final source after freeze. For source/path resolution use a well-formed alternate allowed-looking object/URL in D/A, not merely a wrong type. D/A must reach the named semantic code after legitimate byte-wrapper updates. Record-copy faults return U:identity-binding, raw/envelope echo faults R:risk-binding, and actual-source faults use their owning code. F consistent-source identity drift is U:identity-binding; independently invalid final sources retain their owning codes as well. Exact isolated result means that code alone unless the declared edit independently establishes another cause. No schema refusal may substitute for a typed equality oracle.
-- Addendum-5 basis expansion (one implication line is generated per exact selector, not a whole-I exemption): `raw[s].binding[f] == capture[f] implied by raw[s].binding[f] == env[s].binding[f] AND env[s].binding[f] == capture[f]`, f=all BIND fields below; likewise each REVIEW leaf with its field-specific launch/profile/e0 referent. Retain both basis mutants, raw-to-env and env-to-capture, for every s/f; raw-alone edits kill the former, paired raw+envelope destination edits with record and final/reference fixed kill the latter under addendum 9. These basis witnesses preserve deferred all-copies A and every availability guard; honest F drift admitted by Rule G is not an envelope-rule kill. `copy1[f] == copy2[f] implied by copy1[f] == capture[f] AND copy2[f] == capture[f]` only for explicitly identical referents/domains/diagnostics; retain both leaf basis mutants. `whole-object/subset/first-match equality implied by ALL expanded leaf basis equalities AND exact count AND unique-key/set rules`; each premise has its own mutant. Never credit a whole-loop deletion for a missing leaf.
-- Repeated-rule implication expansion: identical `(source, place, predicate, dependency domain, owning code)` occurrences across the numeric and supplemental rows name the earlier owning exact row: `later exact selector implied by earlier exact selector`. This is an acyclic alias, not permission to drop boundary/source cases or a second independently observable code. I09 resolution aliases its owning I05/I08/I13/I15/I16/I22/I23/I24/I25/I32/I34 source rule; I24 echoes alias I01-I04/I06-I08/I12-I14/I18-I23/I25-I26/I34 exact leaves; I07 config_commit aliases I04; I29 execution.identity aliases I01; I30 head aliases I03 only for the SAME run/context; I31 counts/findings/own outcome alias I06/I16/I11 only for the SAME check. I34 inputs alias earlier qualification-input comparisons only for identical leaves. I26-I28/C5 paths/wiring and I32-I33/C3 time copies alias only the identical expanded obligation. Different sources, capture versus final, missing data, or different diagnostic domains keep separate mutants. For invalid-input diagnostics use an input with those dependencies typed and present; implication credit never suppresses an applicable code.
+- Addendum-5 basis expansion (one implication line is generated per exact selector, not a whole-I exemption): `raw[s].binding[f] == capture[f] implied by raw[s].binding[f] == env[s].binding[f] AND env[s].binding[f] == capture[f]`, f=all BIND fields below; likewise each REVIEW leaf only with its actual field-specific profile/e0 or independently retained launch referent. Raw/env I24 risk-binding, envelope/profile I18 risk-independence and ledger-session I14 risk-attempt-invalid remain distinct diagnostic keys; envelope-slot/C4/two-slot membership is not a fabricated scalar profile-field comparison; raw-to-profile occurrences use this two-basis implication without aliasing them. Closed LAUNCH has no dispatch/nonce/run/runtime member; absent launch/output source relations remain deferred-701:C-L and acquire neither a raw echo code nor schema/source proof. Retain both basis mutants, raw-to-env and env-to-capture, for every s/f; raw-alone edits kill the former, paired raw+envelope destination edits with record and final/reference fixed kill the latter under addendum 9. These basis witnesses preserve deferred all-copies A and every availability guard; honest F drift admitted by Rule G is not an envelope-rule kill. `copy1[f] == copy2[f] implied by copy1[f] == capture[f] AND copy2[f] == capture[f]` only for explicitly identical referents/domains/diagnostics; retain both leaf basis mutants. `whole-object/subset/first-match equality implied by ALL expanded leaf basis equalities AND exact count AND unique-key/set rules`; each premise has its own mutant. Never credit a whole-loop deletion for a missing leaf.
+- Repeated-rule implication expansion: identical `(inventory, source, place, predicate, dependency domain, owning code)` keys across numeric and supplemental occurrences use a canonical occurrence pointer to the earlier owning key: `later exact selector implied by earlier exact selector`; the pointer retains the canonical inventory coordinate. Apply the A60 addendum-11 register transcribed here: I33.chain1/2 point to I14 Klower/Kupper, never new I33 keys with a different diagnostic. Source resolution, parsed shape, wire parsing and semantic equality have distinct keys/domains/codes; an absent source prints its existing `DEFERRED-701 <key> <carrier>`, never borrowing a neighboring schema/echo/chronology proof. This is an acyclic alias, not permission to drop boundary/source cases or a second independently observable code. I09 resolution aliases its actual retained_json/body consumer only when the complete canonical key matches; unresolved quality/finding C-Q, launch/output C-L and prior/disposition/qualification-run/other declared — source keys remain deferred with their planned owner; I24 echoes alias I01-I04/I06-I08/I12-I14/I18-I23/I25-I26/I34 exact leaves; I07 config_commit aliases I04; I29 execution.identity aliases I01; I30 head aliases I03 only for the SAME run/context; I31 counts/findings/own outcome alias I06/I16/I11 only for the SAME check. I34 inputs alias earlier qualification-input comparisons only for identical leaves. I26-I28/C5 paths/wiring and I32-I33/C3 time copies alias only the identical expanded obligation. Different sources, capture versus final, missing data, or different diagnostic domains keep separate mutants. For invalid-input diagnostics use an input with those dependencies typed and present; implication credit never suppresses an applicable code.
 
 | Supplemental inventory stem | Source | Exact expanded places/relations | Owning result |
 |---|---|---|---|
 |I02.targets[t]|API.PR/closing issue, actual prior decision|attempts[t].disposition.{pr,previous}; mirror for selected attempt; each scoped exception.{repository,issue,pr}; actual selected comment.{repository,issue,URL}|R:risk-attempt-invalid for disposition; R:capability-exception-invalid for exception; U:record-selection for target; mirror U:identity-binding|
-|I09.refs[p,f]|owning original immutable source|EVERY REF location in literal schema/location dictionary below, f={source,sha256}; actual retained bytes, unique resolution and allowed origin; repeat in every manifest mirror|owning source code; mirror U:identity-binding|
+|I09.refs[p,f]|owning original immutable source|EVERY REF location, f={source,sha256}; actual retained_json/body consumer where implemented; no universal resolver; unresolved quality/finding C-Q, launch/output C-L, prior/disposition/qualification-run and other declared — source complements|exact owning consumer code/domain from addendum-11 numeric register; mirror U:identity-binding is separate; print each deferred key/carrier/planned owner|
 |I13.full[t,f]|actual complete immutable ledger[t]|m.attempt (selected t): ALL ATTEMPT, DISPOSITION and LAUNCH leaves from literal dictionary, including each launch/retry; prior_attempts[k] resolves to actual prior record, not final record|U:identity-binding; independent ledger R:risk-attempt-invalid|
 |I15.author[a,f]|complete relevant-author inventory + original marker|b.authors[a] and m.authors[a], f=AUTHOR leaves plus actual marker's model/session/variant and applied-effort source linkage|R:capability-identity-missing; manifest U:identity-binding|
-|I16.full[k,f]|actual quality artifact, finding and lens provenance|m.quality.findings[k].{id,severity,status,source.source,source.sha256}; b.quality.findings[k] status/disposition bytes; every quality/lens participant's retained session/model/marker/source|U:finding-provenance, U:gate-quality/ gate-review-marker for participant/marker; mirror U:identity-binding|
+|I16.full[k,f]|actual quality artifact, finding and lens provenance|m.quality.findings[k].{id,severity,status,source.source,source.sha256}; b.quality.findings[k] status/source shape; participant/model/source and original finding truth distinct|current closed status/source shape U:finding-provenance; actual approved/head U:gate-quality and expected marker U:gate-review-marker; arbitrary typed participant/finding source equality deferred-701:C-Q with planned owners; mirror U:identity-binding|
 |I20.full[s,a,f]|independent finite lookup and complete source set|m.capability.comparisons keyed by EACH (slot,author-marker); all COMP leaves below; exact 2 x author-count keys, no omission/duplicate/addition|U:identity-binding for disclosure; actual missing row R:capability-entry-missing; bad comparison R:capability-below-author or capability-effort-no-gain|
 |I24.full[s,f]|original pair, launch, envelope and consumer sink|m.risk_pair[s]: ALL PAIR leaves below, including decoded raw verdict ALL VERDICT leaves and nested coverage/finding/reference; no truncation, substitution or omission|U:identity-binding; independent raw faults R:risk-result-invalid/risk-binding|
 |I29.execution[f]|captured identity/run/queue/preflight/control observations|m.execution: ALL EXEC leaves below; top queue_key and execution.queue_key are literal canonical strings denoting same repository/PR/H/decision, not new object schemas|U:identity-binding; actual executor/lock defect U:executor-invalid|
-|I30.full[k,f]|all independently fetched runs/contexts/protection|m.assessment.checks: ALL CHECKS/RUN/CONTEXT leaves; m.assessment.protection_sha256; exact run/context ID sets, no dropped red or duplicate ID|U:identity-binding; actual run fault U:gate-check; protection R:protection-invalid|
+|I30.full[k,f]|all independently fetched runs/contexts/protection|m.assessment.checks: ALL CHECKS/RUN/CONTEXT leaves; m.assessment.protection_sha256; unique RUN IDs current; exact external ID-set/CONTEXT-ID uniqueness expansion distinct|current all-run/context success/head and expected/required membership U:gate-check; protection R:protection-invalid; expanded source/set/context-ID disclosure deferred-701:— with planned U:identity-binding/U:gate-check subkeys|
 |I31.full[k,f]|capture gate/risk computation before hold-only wait|m.assessment.{hard_stops[k],open_findings[k],reasons[k],uncertainties[k],risk_outcome,outcome,lines,paths}; m.reasons[k]; preserve exact sets/order where specified, no hidden applicable cause|U:identity-binding plus each independently established gate/risk code|
 |I32.full[k,f]|captured PR/issue/control + original release|m.labels[k]; m.execution.control.{number,state,labels[k]}; timeline digest; m.hold_release.{link,words} versus actual comment target/words/time|U:identity-binding; actual release H:hold-release-target/hold-release-words/hold-release-stale|
 
@@ -10214,17 +10214,17 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 | Literal location dictionary / owner | Schema locations (each expands all keys, elements and nested REF leaves) | Invalid-source result |
 |---|---|---|
 |S650/I24|decoded r[s]:VERDICT, including all 11 coverage categories, two findings and two references/finding in applicable negative controls|R:risk-result-invalid|
-|S615/I11-I14/I24/I29-I33|selected m:MANIFEST; each nested pair/attempt/disposition/launch/ref/check/finding/comparison; original m raw bytes separately retained|U:manifest-schema|
-|S676/I01-I09/I18-I19/I26-I28|B cfg:CFG; retained accepted brief:BRIEF|U:config-invalid for cfg; R:project-unconfigured for unavailable accepted brief/project|
-|S659/I18-I23|retained mapping:MAP, decision:DECISION, b.capability:CAPEVID, each accepted profile:PROFILE; each author/slot EFFORT; each numbered original decision:EXCEPTION|R:capability-table-invalid for mapping/decision; R:capability-identity-missing for slots/markers; R:capability-effort-unavailable for effort; R:capability-profile-mismatch for profiles|
+|S615/I11-I14/I24/I29-I33|selected m:MANIFEST; each nested pair/attempt/disposition/launch/ref/check/finding/comparison; original m raw bytes separately retained|parsed selected shape U:manifest-schema; embedded manifest duplicate/nonfinite/malformed wire U:record-selection in evaluate (record-reader Interface separate); semantic copy U:identity-binding; outer-bundle duplicate/nonfinite U:duplicate-json-key/U:nonfinite-json before source consumers|
+|S676/I01-I09/I18-I19/I26-I28|B cfg:CFG, including PROFILE; retained accepted brief:BRIEF|parsed cfg/profile closure/type/enum U:config-invalid; embedded cfg duplicate/nonfinite/malformed U:config-malformed; absent/nonstring cfg U:config-absent; readable repository mismatch U:config-repository; typed project policy/repository equality or unavailable accepted brief/project R:project-unconfigured; outer-wire faults use parser owners|
+|S659/I18-I23|retained mapping:MAP, decision:DECISION, b.capability:CAPEVID with SLOT/EFFORT/LEDGER_COMMENT; PROFILE inside CFG; each CLAIMED original EXCEPTION|mapping/decision source R:capability-table-invalid; malformed CAPEVID/children fallback R:capability-identity-missing plus independently established R:capability-effort-unavailable; well-typed requested EFFORT R:capability-effort-unavailable; cfg PROFILE U:config-invalid; malformed CLAIMED EXCEPTION R:capability-exception-invalid retaining below-author/no-gain; unclaimed history is no claimed-exception negative; outer-wire parser owners remain separate|
 |S669/I12-I14|b.attempts[t]:ATTEMPT and retained launch/disposition observations|R:risk-attempt-invalid|
 |S666/I27|accepted actual runtime-profile:RUNTIME_PROFILE|U:runtime-invalid|
 |S675/I34|accepted retained qualification:QUAL; EACH suite case/run/repetition/detection/reference/input|R:qualification-unavailable|
 
 - Schema row expansion, owned by the location's scenario: `Ixx.SCH[p,key,attack]` for EACH required key at EVERY closed object instance in the literal location dictionary: omit key, add one sentinel unknown key, serialize duplicate JSON key with equal AND differing values, and replace its value with each incompatible type from {null,bool,number,string,array,object}. Container roots also get these type attacks; arrays get wrong-typed members at every actual position. Nullable keys get both null and fully typed controls; missing key never equals null. For text add empty/whitespace-only; for integers add -1,0 where forbidden, fraction,bool; hex add length -1/+1, uppercase, nonhex; time/date add invalid date/zone-less/untrusted source; number add nonfinite. ENUM[p,value] enumerates EACH allowed literal as a syntactic control and unknown, case-changed and wrong-type values as negatives; separate semantic applicability governs whether a legal literal can authorize. Unknown status in QFIND is syntactically history but unavailable provenance cannot clear. Do not make all syntactic enum controls eligible when their semantics forbid that value.
-- Every schema expansion has its own single-oracle assertion of the location's exact code and DEL-presence/type/closure/enum selector mutant with its eligible companion control surviving; parser duplicate-key rejection remains an independent retained premise when schema deletion cannot admit duplicate keys. `object no-omission/no-duplicate summary implied by expanded required-key checks AND parser duplicate-key refusal`; keep per-key omission, duplicate wire cases, exact cardinality and unique identity cases. Raw schema mutants use both slots, manifest nested schemas both slots/authors/attempt launch positions, never just a representative depth. For noneligible finding-bearing raw controls, temporarily violate the SAME leaf in an otherwise valid refer/reject, require risk-result-invalid independently of risk-referral, and retain the companion eligible approval control; the mutant must change the exact code, not necessarily clear the refer.
+- Every schema expansion has its own exact location AND wire/parsed-shape/semantic-domain oracle and DEL-presence/type/closure/enum selector mutant with its eligible companion control surviving; retain every independently applicable fallback cause from the addendum-11 register. Outer-bundle duplicate/nonfinite wire faults use U:duplicate-json-key/U:nonfinite-json before consumers, never a location-specific schema kill; embedded raw wire faults use R:risk-result-invalid, embedded selected manifest U:record-selection and cfg U:config-malformed. Retained runtime/table/project/qualification/claimed-exception parse faults keep their actual source owner. Parser duplicate-key rejection remains an independent retained premise when schema deletion cannot admit duplicate keys. `object no-omission/no-duplicate summary implied by expanded required-key checks AND parser duplicate-key refusal`; keep per-key omission, duplicate wire cases, exact cardinality and unique identity cases. Raw schema mutants use both slots, manifest nested schemas both slots/authors/attempt launch positions, never just a representative depth. For noneligible finding-bearing raw controls, temporarily violate the SAME leaf in an otherwise valid refer/reject, require risk-result-invalid independently of risk-referral, and retain the companion eligible approval control; the mutant must change the exact code, not necessarily clear the refer.
 - Schema implication expansion for EACH exact leaf p: `general string/type bound at p implied by retained exact literal/enum/HEX40/HEX64/repository/time/date lexical predicate at p` where that predicate already includes the type; retain the lexical/membership mutant and every wire/type boundary case. `duplicate-key schema summary at p implied by retained parser duplicate-key rejection at p`; retain per-object-depth parser mutant. Neither implication exempts required-key presence, exact set/cardinality, source authority, raw-byte integrity or invalid-input diagnostics.
-- Completeness assertion C6.COMPLETE (ONE assertion, owner S615; addendum 6): independently expand the literal addendum-4 I01-I34 field/place declarations, numeric owner tables and schema/temporal/behavior supplements into N_inventory of `(inventory,source,place,predicate,domain,code)` keys, including every actual slot/author/attempt/array member. Cardinalities come from retained fixture/source inventories, never the evaluator or generated rows; 1,305 numeric rows alone are not completeness. Classify each key from the independently transcribed S2 declaration table below, never by copying the generated `now` list. Require generated `now` keys to equal declared `now` exactly, without duplicates; declared deferred keys must equal N_inventory minus `now` exactly; sets must be disjoint with union N_inventory. Each non-implied `now` key has its killed behavioral mutant and surviving eligible control; each implied `now` key retains its addendum-5 line or addendum-9 S669 lower-bound line with its exact domain and ALL premises `now` and acyclic retained killed premises. Credit only that returning-launch constituent implication; retain upper/outcome kills in BOTH slots, never imply the whole tag. Apply the audited all-cause lists from the addendum-10 table headed 'Complete changed-row list, BEFORE the newly prescribed S658 input corrections' in `.handoff/architect-report-A60-add10.md` without changing the now/deferred partition or implications; retain addendum-9 scoped credits: B4 paired-destination basis witnesses with record/final fixed preserve deferred A, envelope-slot uses the typed third-entry loss-of-risk-binding attack, B6 capture-final uses no-selection rows, and S625 requires EACH missing-carrier absence as well as EACH owning code. A deferred premise requires an own mutant or declaration of the conclusion as deferred; earlier implication lines themselves remain unchanged. Retain all four partition falsifiers below as well as the required-mutant/implication-link check. Falsifiers: drop a key from BOTH sets; list a key in both; duplicate or drop a generated `now` selector (first/middle/last and domain positions); delete a required mutant or break an implication link; credit a mutant to a deferred key. Each must fail C6.COMPLETE. Moving any key between sets is an Architect scope decision, never a test edit. Deferred keys execute no row/mutant, count as neither pass nor fail, are DECLARED rather than asserted red or silently skipped, and each prints `DEFERRED-701 <key> <carrier>`. Pass totals and self-generated-list/count-only comparisons earn no completeness credit.
+- Completeness assertion C6.COMPLETE (ONE assertion, owner S615; addendum 6): independently expand the literal addendum-4 I01-I34 field/place declarations, numeric owner tables and schema/temporal/behavior supplements into N_inventory of `(inventory,source,place,predicate,domain,code)` keys, including every actual slot/author/attempt/array member. Apply the transcribed addendum-11 exact literal owner/domain register and canonical occurrence pointers before partitioning; every source/place/predicate/domain/code is explicit, and aliases retain the canonical inventory coordinate. Unavailable independent source/event equality keeps its existing S2 `DEFERRED-701 <key> <carrier>` and planned owner, with no neighboring schema/echo/chronology credit. Cardinalities come from retained fixture/source inventories, never the evaluator or generated rows; 1,305 numeric rows alone are not completeness. Classify each key from the independently transcribed S2 declaration table below, never by copying the generated `now` list. Require generated `now` keys to equal declared `now` exactly, without duplicates; declared deferred keys must equal N_inventory minus `now` exactly; sets must be disjoint with union N_inventory. Each non-implied `now` key has its killed behavioral mutant and surviving eligible control; each implied `now` key retains its addendum-5 line or addendum-9 S669 lower-bound line with its exact domain and ALL premises `now` and acyclic retained killed premises. Credit only that returning-launch constituent implication; retain upper/outcome kills in BOTH slots, never imply the whole tag. Apply the audited all-cause lists from the addendum-10 table headed 'Complete changed-row list, BEFORE the newly prescribed S658 input corrections' in `.handoff/architect-report-A60-add10.md` without changing the now/deferred partition or implications; retain addendum-9 scoped credits: B4 paired-destination basis witnesses with record/final fixed preserve deferred A, envelope-slot uses the typed third-entry loss-of-risk-binding attack, B6 capture-final uses no-selection rows, and S625 requires EACH missing-carrier absence as well as EACH owning code. A deferred premise requires an own mutant or declaration of the conclusion as deferred; retain earlier implication lines with only the prescribed addendum-11 canonical-key/domain/diagnostic corrections. Retain all four partition falsifiers below as well as the required-mutant/implication-link check. Falsifiers: drop a key from BOTH sets; list a key in both; duplicate or drop a generated `now` selector (first/middle/last and domain positions); delete a required mutant or break an implication link; credit a mutant to a deferred key. Each must fail C6.COMPLETE. Moving any key between sets is an Architect scope decision, never a test edit. Deferred keys execute no row/mutant, count as neither pass nor fail, are DECLARED rather than asserted red or silently skipped, and each prints `DEFERRED-701 <key> <carrier>`. Pass totals and self-generated-list/count-only comparisons earn no completeness credit.
 
 - Addendum-6 independent scope transcription and ONE deferred declaration table (owner S615). Each cell names field/place stems and relations to expand against N_inventory; each deferred alternative is a separate declaration with owner #701, not an executed assertion. `—` means no new carrier (implementation only). PART assigns the listed places `now` and every other expansion of that inventory row to the declared deferred complement. NOW/DEFER are the S2 classifications, not an inference from test output: DEFER rows I07/I08/I26/I29 retain only their explicitly named echo/queue siblings as `now`; NOW rows I11/I17/I33 still have the explicitly listed deferred relations. Rule G record-copy families defer A to C-S even where D/F are `now`. No schema/whole-object expansion becomes `now` merely because it contains a `now` leaf.
 
@@ -10297,7 +10297,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 | Row | Source>place | Result |
 |---|---|---|
 |I33.20|X>selected.created_at|t|
-|I33.21|X>selected.updated_at|t|
+|I33.21|X>selected.updated_at|m; canonical I11 typed selected.updated_at == created_at; invalid created_at separately t|
 |I33.22|Y>m.earliest_merge|a|
 
 - A60 addenda 4/5 I33 hold rules (same E/C, K/edits/mutants as S615). For h={1,300}, test now-T={h-1,h,h+1}: only h-1 is H:hold-window, h/h+1 eligible/0 after all final gates. Test h=0/-1/type faults as U:config-invalid, no zero hold. T must come from the selected complete immutable eligible comment, not PR creation/earlier record/local time; missing T is U:record-time. m.earliest_merge must equal T+h: independently test -1, equality, +1 with full hold otherwise ready; disagreement is U:identity-binding. Test forged early earliest_merge with now between forged and genuine E: it must not clear. DEL-m.earliest_merge-equality and FORGED-EARLIEST each kill while the correct control passes.
@@ -10359,9 +10359,9 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I32.11|1>release.link.target|B|
 |I32.12|1>release.words|C|
 |I32.13|1>release.time|D|
-|I33.24|2>policy.commit_time|a|
-|I33.25|2>release.created_at|a|
-|I33.26|2>latest.stop.time|a|
+|I33.24|2>policy.commit_time|{config date availability:U:config-date-unreadable; off-since-config:z; original policy-event equality:deferred-701:—, planned a}; advancing time is not a|
+|I33.25|2>release.created_at|{actual release freshness:D; original release-event equality:deferred-701:—, planned a}; advancing time is not a|
+|I33.26|2>latest.stop.time|{actual stop-at-T:v; original stop-event equality:deferred-701:—, planned a}; advancing time is not a|
 
 - A60 addenda 4/5 I32 release expansion: test EACH actual release {link repository,issue/PR target,original words,created_at,source bytes/hash} against the retained linked comment, plus m.hold_release.{link,words}; correct sources/new complete T/full hold stay eligible. Wrong target/words are H:hold-release-target/hold-release-words; absent link is H:hold-release-missing. Latest_stop < release_time < T uses difference -1,0,+1 at BOTH boundaries; stale/tied/wrong-order release is H:hold-release-stale; addendum 6 assigns release-before-T this owning code, without a derivative C3 risk-independence cause. PR/issue upper-bound companions are the named addendum-6 T-1/T/T+1 rows above, with both equality attacks required to kill release-before-announcement. Stop history remains complete even for removed/ancient labels. Kill each source/target/words/time selector, stale-at-equality, latest-stop-versus-first, release-between-stops and pre-release-hold-credit mutants.
 - `latest_stop < T implied by latest_stop < release_time AND release_time < T`; `latest_stop <= now and release_time <= now implied by latest_stop < release_time AND release_time < T AND T <= now`. Keep the independent adjacent release-order mutants and stop identity/history/stop-at-T/off rules. These source/word equalities establish detectable consistency, never human authorship.
@@ -10485,14 +10485,14 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I24.28|3>p0.raw_sha256|f|
 |I24.29|3>p0.byte_length|f|
 |I24.30|3>p0.overflow|f|
-|I24.31|3>@T:output_source.bytes|f|
+|I24.31|3>@T:output_source.bytes|deferred-701:C-L; planned R:risk-result-invalid, original output-source bytes/REF; current raw byte/hash/length integrity is distinct f|
 |I24.122|3>p1.raw_b64|f|
 |I24.123|3>p1.raw_sha256|f|
 |I24.124|3>p1.byte_length|f|
 |I24.125|3>p1.overflow|f|
-|I24.126|3>@U:output_source.bytes|f|
+|I24.126|3>@U:output_source.bytes|deferred-701:C-L; planned R:risk-result-invalid, original output-source bytes/REF; current raw byte/hash/length integrity is distinct f|
 
-- A60 addenda 4/5 I24.SCH expands the complete literal VERDICT dictionary in S615 at BOTH s positions; every key/type/enum/category and nested finding/reference is a separate named oracle, including two reference positions per finding and every coverage row. Strict raw-byte rows expand independently: original hash, byte length, output-source bytes/reference, immutable sink, cap at 65535/65536/65537 BYTES, overflow flag, malformed base64/UTF-8, empty/whitespace/truncated/trailing-second-object/wrapper and duplicate JSON key at EACH object depth. All are R:risk-result-invalid; original legal complete raw approval is eligible/0. Recompute only permitted wrappers, never normalize/sanitize raw bytes. Each parsing/bound/hash/length/sink/closure/type/enum rule retains its own selector mutant with eligible control; when two checks logically imply a summary, name the exact retained premises under S615, do not remove both. Published-only field control remains independent of production schemas; S662 and its finite mapping stay byte-identical.
+- A60 addenda 4/5 I24.SCH expands the complete literal VERDICT dictionary in S615 at BOTH s positions; every key/type/enum/category and nested finding/reference is a separate named oracle, including two reference positions per finding and every coverage row. Strict raw-byte rows expand independently: original hash, byte length, output-source bytes/reference, immutable sink, cap at 65535/65536/65537 BYTES, overflow flag, malformed base64/UTF-8, empty/whitespace/truncated/trailing-second-object/wrapper and duplicate JSON key at EACH object depth. Current raw byte/hash/length/wire/shape faults are R:risk-result-invalid; actual output-source bytes/REF provenance remains deferred-701:C-L with planned R:risk-result-invalid, not a current sink/source kill. Artifact-manifest ID duplication owns I25 R:corpus-invalid; external uniqueness retains its S2 complement. Original legal complete raw approval is eligible/0. Recompute only permitted wrappers, never normalize/sanitize raw bytes. Each parsing/bound/hash/length/sink/closure/type/enum rule retains its own selector mutant with eligible control; when two checks logically imply a summary, name the exact retained premises under S615, do not remove both. Published-only field control remains independent of production schemas; S662 and its finite mapping stay byte-identical.
 
 ### S651 — Contradictory and uncertain returns never become approvals (#646; A60 + addendum 1)
 **Covers:** F71
@@ -10547,7 +10547,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I24.refer-evidence|refer with neither finding nor uncertainty; valid concern/uncertainty referral|
 |I24.reject-confirmed|reject with no confirmed finding; confirmed reject refers|
 |I24.finding-ID|duplicate ID with distinct findings; unique IDs|
-|I24.reference|absent/duplicate-ambiguous artifact ID, wrong digest, empty evidence array; unique actual retained artifact|
+|I24.reference|missing artifact ID, wrong digest, line bounds or empty evidence array -> R:risk-result-invalid; artifact-manifest ID duplication -> I25 R:corpus-invalid, not a raw-reference kill; valid_verdict selects first matching ID, external uniqueness remains its S2 deferred complement; unique actual retained artifact control|
 |I24.lines|start<1, start>end, end>actual inventory lines; equality at first/last line valid; binary/deleted/empty inventory-line controls|
 |I24.pair-AND|approve/refer, refer/approve, approve/reject, reject/approve; approve/approve alone clears dimension|
 |I24.raw-over-summary|manifest nested clear/eligible cannot suppress a valid raw refer/reject, any severity; immutable capture disclosure mismatch also U:identity-binding|
@@ -10636,35 +10636,35 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I13.47|7>@G:attempt_id|E|
 |I13.48|7>@8:attempt_id|E|
 |I13.49|7>@H:attempt_id|E|
-|I14.25|8>@bo:session_id|E|
-|I14.26|8>@bo:dispatch_id|E|
-|I14.27|8>@bo:runtime_id|E|
-|I14.28|8>@2:nonce|E|
-|I14.57|8>@bp:session_id|E|
-|I14.58|8>@bp:dispatch_id|E|
-|I14.59|8>@bp:runtime_id|E|
-|I14.60|8>@8:nonce|E|
+|I14.25|8>@bo:session_id|g; last selected slot launch.session_id == reviewer.session_id in typed attempt ledger/current pair; raw/env equality separately E; original launch provenance deferred-701:C-L|
+|I14.26|8>@bo:dispatch_id|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
+|I14.27|8>@bo:runtime_id|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
+|I14.28|8>@2:nonce|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
+|I14.57|8>@bp:session_id|g; last selected slot launch.session_id == reviewer.session_id in typed attempt ledger/current pair; raw/env equality separately E; original launch provenance deferred-701:C-L|
+|I14.58|8>@bp:dispatch_id|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
+|I14.59|8>@bp:runtime_id|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
+|I14.60|8>@8:nonce|deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct|
 |I18.7|9>@bo:slot|E|
-|I18.8|9>@bo:model|E|
-|I18.9|9>@bo:variant|E|
-|I18.10|9>@bo:vendor|E|
-|I18.11|9>@bo:runtime_id|E|
+|I18.8|9>@bo:model|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.9|9>@bo:variant|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.10|9>@bo:vendor|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.11|9>@bo:runtime_id|deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from LAUNCH; raw/env I24 equality remains E|
 |I18.12|9>@R:slot|E|
 |I18.13|9>@R:model|E|
 |I18.14|9>@R:variant|E|
 |I18.15|9>@R:vendor|E|
-|I18.16|9>@R:runtime_id|E|
+|I18.16|9>@R:runtime_id|deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from LAUNCH; raw/env I24 equality remains E|
 |I18.17|ba>@T:settings_sha256|F|
 |I18.26|9>@bp:slot|E|
-|I18.27|9>@bp:model|E|
-|I18.28|9>@bp:variant|E|
-|I18.29|9>@bp:vendor|E|
-|I18.30|9>@bp:runtime_id|E|
+|I18.27|9>@bp:model|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.28|9>@bp:variant|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.29|9>@bp:vendor|F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no profiles drift; independent capability model/variant causes retained|
+|I18.30|9>@bp:runtime_id|deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from LAUNCH; raw/env I24 equality remains E|
 |I18.31|9>@S:slot|E|
 |I18.32|9>@S:model|E|
 |I18.33|9>@S:variant|E|
 |I18.34|9>@S:vendor|E|
-|I18.35|9>@S:runtime_id|E|
+|I18.35|9>@S:runtime_id|deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from LAUNCH; raw/env I24 equality remains E|
 |I18.36|ba>@U:settings_sha256|F|
 |I18.46|j>@2:profiles_sha256|E|
 |I18.47|j>@G:profiles_sha256|E|
@@ -10749,51 +10749,51 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I26.17|l>@8:instructions_sha256|E|
 |I26.18|l>@H:instructions_sha256|E|
 |I26.19|bk>@T:prompt_sha256|F|
-|I26.20|bk>@T:launcher_sha256|F|
+|I26.20|bk>@T:launcher_sha256|deferred-701:C-L; planned R:risk-independence, accepted-launcher source equality; receipt.prompt/binding.instructions F is distinct|
 |I26.21|bk>@U:prompt_sha256|F|
-|I26.22|bk>@U:launcher_sha256|F|
-|I33.1|2>@T:started_at|F|
-|I33.2|2>@T:received_at|F|
-|I33.3|2>@T:sealed_at|F|
-|I33.4|2>@T:compared_at|F|
-|I33.9|2>@U:started_at|F|
-|I33.10|2>@U:received_at|F|
-|I33.11|2>@U:sealed_at|F|
-|I33.12|2>@U:compared_at|F|
-|I33.27|bl>b.now|G|
-|I33.28|bl>missing.Date|G|
-|I33.29|bl>failed.request|G|
-|I33.30|bl>zone-less.Date|G|
+|I26.22|bk>@U:launcher_sha256|deferred-701:C-L; planned R:risk-independence, accepted-launcher source equality; receipt.prompt/binding.instructions F is distinct|
+|I33.1|2>@T:started_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.2|2>@T:received_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.3|2>@T:sealed_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.4|2>@T:compared_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.9|2>@U:started_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.10|2>@U:received_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.11|2>@U:sealed_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.12|2>@U:compared_at|{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event equality:deferred-701:C-L, planned F}; distinct exact keys|
+|I33.27|bl>b.now|G; evaluator ts(b.now) availability, selected-record final domain; collector response/Date validation distinct|
+|I33.28|bl>missing.Date|collector successful-response/Date failure -> None; selected-record final evaluator G, no invented request-status/equality field|
+|I33.29|bl>failed.request|collector successful-response/Date failure -> None; selected-record final evaluator G, no invented request-status/equality field|
+|I33.30|bl>zone-less.Date|collector successful-response/Date failure -> None; selected-record final evaluator G, no invented request-status/equality field|
 |I34.10|m>@2:qualification_sha256|E|
 |I34.11|m>@G:qualification_sha256|E|
 |I34.12|m>@8:qualification_sha256|E|
 |I34.13|m>@H:qualification_sha256|E|
 
-- A60 addenda 4/5 — temporal expansion. s={0,1}, t={0,1}, j=every actual launch. T=selected complete eligible comment server creation; S_s=first trusted slot launch; L_s=returning launch; R_s/Z_s/P_s=actual receipt/seal/comparison; PC=max(P_0,P_1); A=min(S_0,S_1); E=T+h; M=cfg.max_age_seconds. All events independently retained, no values supplied by reviewers/local clock. Each table inequality expands into three named rows with left-minus-right = -1,0,+1 seconds, all other independent premises valid where jointly possible. For `<`: only -1 satisfies; for `<=`: -1 and 0 satisfy. Equality/source-copy rows test correct/-1/+1 and false source with correct spelling. Where transitivity makes an isolated boundary impossible, retain the combined refusal and name ALL violated basis relations; do not claim a single-rule kill for that implied row. Full-hold eligible companions are constructed separately (not by silently changing the attacked T).
+- A60 addenda 4/5 — temporal expansion. s={0,1}, t={0,1}, j=every actual launch. T=selected complete eligible comment server creation; S_s=ts(p_s.receipt.started_at), the current original slot start; S[t,s]=FIRST same-slot launch.original_start in attempt t, local to that attempt (only the last attempt binds it to current receipt S_s). Let Aledger be a nonempty fully ATTEMPT-conforming b.attempts list, p_s a PAIR-conforming actual element, J_s the ordered subsequence of Aledger[-1].launches matching p_s.envelope.reviewer.slot, and L_s=J_s[-1]. Dret(s) means those conditions and nonempty J_s, without selected-record, capability-clear, no-expiry or exactly-two-pair prerequisites. R_s/Z_s/P_s=ts of actual receipt/seal/comparison; PC=max(P_0,P_1); A=min(S_0,S_1); E=T+h; M=cfg.max_age_seconds. Actual-event/source equality, wire/parsed shape and retained chronology are distinct keys; no reviewer/local-clock value supplies an independent original event. Unavailable original sources retain their declared C-L/C-Q/— complements, not chronology proof. Each table inequality expands into three named rows with left-minus-right = -1,0,+1 seconds, all other independent premises valid where jointly possible. For `<`: only -1 satisfies; for `<=`: -1 and 0 satisfy. Equality/source-copy rows test correct/-1/+1 and false source with correct spelling. Where transitivity makes an isolated boundary impossible, retain the combined refusal and name ALL violated basis relations; do not claim a single-rule kill for that implied row. Full-hold eligible companions are constructed separately (not by silently changing the attacked T).
 
 | Inventory/stem / owner | Exact relation or event identity | Violating oracle / mutant |
 |---|---|---|
 |I33.created[t,j] / S669|attempts[t].created_at < launch[t,j].started_at|R:risk-attempt-invalid; DEL-created-before-launch[t,j]|
-|I33.first[s,t] / S669|S_s equals actual FIRST launch.started_at; every retry.original_start == S_s; repeated attempt uses its own actual original events without resetting retained evidence identity clocks|R:risk-attempt-invalid; FIRST/LAST-entry and RESET-clock selectors|
-|I33.chain1[s] / S654|S_s <= returning L_s.started_at|R:risk-independence; DEL-chain1[s]|
-|I33.chain2[s] / S654|L_s.started_at <= R_s|R:risk-independence; DEL-chain2[s]|
+|I33.first[s,t] / S669|FIRST same-slot launch.started_at == S[t,s]; each retry.original_start == S[t,s], typed applicable attempt; only last attempt original_start == current receipt S_s|canonical K14(attempt[t].launches,first.started_at and retry.original_start,equality to S[t,s],typed applicable attempt,R/risk-attempt-invalid); FIRST/LAST-entry and RESET-clock selectors; valid old S=T-300/current S=T-100 history eligible/0|
+|I33.chain1[s] / S654|occurrence pointer to Klower(s)=(I14,(Aledger[-1].launches filtered by p_s.envelope.reviewer.slot,p_s.receipt),J_s[-1].started_at,S_s <= L_s.started_at,Dret(s),R/risk-attempt-invalid)|S669 owner; domain-limited original-deadline/same-original-start/last-original-start-to-receipt implication only; both lower boundary rows retained, no exclusive DEL-chain1 kill|
+|I33.chain2[s] / S654|occurrence pointer to Kupper(s)=(I14,(Aledger[-1].launches filtered by p_s.envelope.reviewer.slot,p_s.receipt),J_s[-1].started_at,L_s.started_at <= R_s,Dret(s),R/risk-attempt-invalid)|S669 owner; DEL-returning-launch upper AND distinct Koutcome(s)=(I14,same source,J_s[-1].outcome,outcome==returned,Dret(s),R/risk-attempt-invalid) targets in BOTH slots; no DEL-chain2 independence diagnostic|
 |I33.chain3[s] / S654|R_s <= Z_s|R:risk-independence; DEL-chain3[s]|
-|I33.chain4[s] / S654|Z_s <= P_s|R:risk-independence; DEL-chain4[s]|
+|I33.chain4[s] / S654|Z_s <= P_s; same-slot seal bound overlaps peer-sealed|R:risk-independence; retain implication/overlap audit and boundary behavior, no exclusive DEL-chain4 kill|
 |I33.cross[s,j!=s] / S658|Z_s <= P_j (both cross-slot directions)|R:risk-independence; DEL-cross[s,j]|
 |I33.complete / S654|PC < T|R:risk-independence; DEL-pair-before-T; retain exact reviewed T+100 start/T+170 compare witness and each slot late separately|
 |I33.final / S654|T <= trusted final now|R:risk-independence; DEL-T-before-now|
-|I33.deadline[s] / S654|R_s-S_s <= cfg.deadline_seconds (1800)|1799/1800 pass dimension; 1801 R:risk-deadline; inclusive-to-exclusive and DEL-deadline[s]|
+|I33.deadline[s] / S654|K33((receipt,cfg.deadline_seconds),receipt received/start,0 <= R_s-S_s <= cfg.deadline_seconds,typed pair plus valid raw parsing,R/risk-deadline)|1799/1800 pass dimension; 1801 and negative elapsed R:risk-deadline; inclusive-to-exclusive and DEL-deadline[s]; returning-chain implication never waives invalid-input cause|
 |I33.survive / S654|max(now,E) < A+M (86400)|bound-1 passes dimension; equality/+1 R:risk-expired; DEL-full-hold-survival, earlier-start-to-later, `<` to `<=`|
-|I33.age[s] / S654|now-A < M and E < A+M separately restated|86399/86400/86401 retain exclusive-age cases, R:risk-expired at equality/+1; implication below|
-|I33.no-reset[x] / S654|x={redispatch,receipt,seal,comparison,reannouncement,later-peer,same-vendor}; none replaces original S/A|R:risk-deadline or risk-expired with exact isolated deadline/age setup; RESET-x mutant|
+|I33.age[s] / S654|two exact keys: K33((min(current starts),now,cfg),now-A,now-A<M,typed age inputs,R/risk-expired); K33((min(current starts),T,cfg),E,E<A+M,typed full-hold inputs,R/risk-expired); s is occurrence only|86399/86400/86401 retain exclusive-age cases, equality/+1 R:risk-expired; survival implication below; retained 0<=now-A R:risk-expired invalid-input cause and age-negative/no-selection rows stand|
+|I33.no-reset[x] / S654|x={redispatch,receipt,seal,comparison,reannouncement,later-peer,same-vendor}; split exact receipt received/start versus cfg.deadline_seconds, ledger launch/original-start versus local S[t,s], and min(current starts)/now/T/cfg pair-age/full-hold keys|receipt deadline R:risk-deadline in typed-pair/raw-parse domain; ledger original-start/deadline R:risk-attempt-invalid in running-ledger domain; age/full-hold R:risk-expired in typed age domain; RESET-x per exact key; late redispatch retains independently applicable deadline AND attempt-invalid causes|
 |I33.prereq[x] / S617|last_check < T now; release < T now (S619); quality approval deferred-701:C-Q; check completion deferred-701:—; disposition-source/time expansion deferred-701:—|last_check U:identity-binding; release H:hold-release-stale; deferred keys DECLARED in S615, no row/mutant|
-|I33.disposition[t] / S669|actual disposition.created_at < next attempt.created_at|R:risk-attempt-invalid; DEL-disposition-before-next[t]|
-|I33.unordered[t,j] / S669|every launch/event not already ordered through T <= final now|R:risk-attempt-invalid; DEL-unordered-now[t,j]|
-|I33.copy[p] / S615|each attempt/disposition/launch/original-start/receipt/seal/compare/last_check/config date/release/stop/exception creation/qualification seal-grade-expiry copy equals ITS original event|owning inventory code; manifest U:identity-binding; DEL-event-copy[p], never a time-parser-only kill|
-|I33.now / S654|successful trusted final server request; Date parseable, zoned, actual final observation|U:now-unreadable for absent/failed/malformed/zone-less, no clock-derived derivative causes; DEL-server-time/LOCAL-fallback/ignore-request-status|
+|I33.disposition[t] / S669|K13((successor.disposition,successor.created_at),disposition.created_at,< successor.created_at,actual typed successor transition with prior attempt,R/risk-attempt-invalid)|DEL-disposition-before-next[t]; no first-attempt disposition; external human source/words/time equality deferred-701:—, planned R:risk-attempt-invalid|
+|I33.unordered[t,j] / S669|otherwise unordered old launch/event <= final now, distinct from current returning chain|existing I13/I14 complement deferred-701:—, planned R:risk-attempt-invalid; no current DEL-unordered-now credit; history first.created=T+400/old starts=T+401 exposes absent comparison, not an eligible replacement oracle; promotion requires owner scope/implementation|
+|I33.copy[p] / S615|original-event equality for each attempt/disposition/launch/original-start/receipt/seal/compare/last_check/config date/release/stop/exception/qualification event retains original source and planned owner in existing C-L/—/C-Q complement; numeric I33.1-19,23-26 are occurrences, not invented sources|retained ledger chronology I14 R:risk-attempt-invalid; receipt chronology I33 R:risk-independence; m.attempt/m.risk_pair copies U:identity-binding; last_check<T/earliest U:identity-binding distinct; config date availability U:config-date-unreadable, release freshness H:hold-release-stale, stop-at-T U:void-after-announcement, off-since-config R:off-since-config distinct; no parser/chronology/copy proves missing original-event equality|
+|I33.now / S654|collector successful-response/Date parse validation separate from evaluator ts(b.now) availability; I33.27-30 point to actual collector source, not invented evaluator request-status/equality fields|missing/failed/malformed/zone-less Date -> None, selected-record final evaluator U:now-unreadable; no clock-derived derivative causes; collector DEL-server-time/LOCAL-fallback/ignore-request-status|
 
 - Addendum-5 temporal implication expansion, one exact line per s and every applicable t/j/event: `P_s <= now implied by P_s <= PC AND PC < T AND T <= now`; `P_s < T implied by P_s <= PC AND PC < T`; `PC <= now implied by PC < T AND T <= now`. `x <= now and x < T implied by x <= next <= ... <= P_s <= PC < T <= now`, x={S_s,L_s.started_at,R_s,Z_s}; list each intervening adjacent chain rule in the expanded line. `same-slot seal <= comparison implied by I33.chain4[s]`; every other nonadjacent same-chain bound names its intervening chain premises. Keep independent CROSS-slot seal rules. Definitions min/max provide mathematical bounds, no extra observed-field mutant.
-- `R_s-S_s >= 0 implied by S_s <= L_s.started_at AND L_s.started_at <= R_s`; `now-A >= 0 implied by A <= PC AND PC < T AND T <= now`; `now-T >= 0 implied by T <= now`. `now-A < M implied by max(now,E) < A+M`; `E < A+M implied by max(now,E) < A+M`. The stronger survival rule retains its OWN mutant. For prerequisite x, `x <= now implied by x < T AND T <= now`; only when the retained chain actually reaches x. Earlier unordered launch/disposition bounds stay independent. Missing/untrusted clocks/event sources, actual-copy binding and inclusive deadlines keep separate mutants and refusals.
+- `R_s-S_s >= 0 mathematically implied by Klower(s) AND Kupper(s)` uses canonical I14 returning constituents R:risk-attempt-invalid in Dret(s); the distinct K33 receipt-deadline predicate retains R:risk-deadline on invalid negative elapsed, so cross-code implication never suppresses it; `now-A >= 0 implied by A <= PC AND PC < T AND T <= now`; `now-T >= 0 implied by T <= now`. `now-A < M implied by max(now,E) < A+M`; `E < A+M implied by max(now,E) < A+M`. The stronger survival rule retains its OWN mutant. For prerequisite x, `x <= now implied by x < T AND T <= now`; only when the retained chain actually reaches x. Earlier unordered old-event-to-now and original disposition source/time equalities stay distinct in their existing deferred-701:— complements; retained successor.disposition.created_at < successor.created_at remains the current independent attempt-invalid key. Prior-attempt first/original clocks use local S[t,s], never current S_s. Missing/untrusted clocks/event sources, actual-copy binding and inclusive deadlines keep separate mutants and refusals.
 - Exact full-hold controls: for 1800-second receipt controls set both completions strictly BEFORE a later T, then wait h; changing to 1801 mutates only the deadline dimension. For age boundaries use M large enough to distinguish pair chronology and a complete held/ready window as specified; at 86400 the oracle is risk-expired regardless of a superficially complete hold. Time advancing by itself never emits identity-binding. An invalid timeline gets a NEW complete announcement/full hold, never max(T,PC), backdating, in-place timestamp repair or subtraction of pre-pair elapsed time. Kill each such repair mutant using the same frozen timeline.
 
 ### S655 — Complete B/H source is exported as inert identified evidence (#646; A60 + addendum 1)
@@ -10858,9 +10858,9 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I05.44|bq>rename.new-side|H|
 |I05.45|bq>unchanged.context|H|
 |I05.46|bq>symlink.link-text|H|
-|I05.47|br>unsafe.path|J|
-|I05.48|br>collision.normalized-prefix|J|
-|I05.49|br>gitlink.mode|J|
+|I05.47|br>unsafe.path|R:path-unsafe; actual typed inventory and predicate, not combined J reason|
+|I05.48|br>collision.normalized-prefix|R:tree-collision; actual typed inventory and predicate, not combined J reason|
+|I05.49|br>gitlink.mode|R:gitlink; actual typed inventory and predicate, not combined J reason|
 |I06.1|bs>b.diff_text|K|
 |I06.2|bs>remote.diff_sha256|K|
 |I06.8|r>remote.lines|K|
@@ -10955,13 +10955,13 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 | Row | Source>place | Result |
 |---|---|---|
 |I14.72|bw>@2:attempt_id=e1.binding.attempt_id|E|
-|I16.1|G>b.quality.session_id|O|
-|I16.2|G>b.quality.model|O|
+|I16.1|G>b.quality.session_id|deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source equality; actual session exclusion I17 F is distinct|
+|I16.2|G>b.quality.model|deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source equality; actual session exclusion I17 F is distinct|
 |I16.5|G>b.quality.head|O|
 |I16.6|G>b.quality.approved|O|
-|I16.7|G>b.quality.marker|O|
-|I16.3|G>b.quality.source.source|O|
-|I16.4|G>b.quality.source.sha256|O|
+|I16.7|G>b.quality.marker|P; actual expected quality marker for final H|
+|I16.3|G>b.quality.source.source|deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source equality; actual session exclusion I17 F is distinct|
+|I16.4|G>b.quality.source.sha256|deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source equality; actual session exclusion I17 F is distinct|
 |I16.25|G>@bn:marker.H|P|
 |I16.26|G>@bn:marker.model|P|
 |I16.27|G>@bn:lens[0].provenance|P|
@@ -10997,17 +10997,17 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I17.21|by>@T:no_inheritance|F|
 |I17.22|by>@T:peer_exposed|F|
 |I17.23|by>@T:forbidden_actions|F|
-|I17.24|by>@bo:fresh|F|
-|I17.25|by>@bo:inherited_session|F|
+|I17.24|by>@bo:fresh|schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw nonliteral R:risk-result-invalid; pair shape retains independently applicable availability/independence causes|
+|I17.25|by>@bo:inherited_session|schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw nonliteral R:risk-result-invalid; pair shape retains independently applicable availability/independence causes|
 |I17.34|by>@U:no_inheritance|F|
 |I17.35|by>@U:peer_exposed|F|
 |I17.36|by>@U:forbidden_actions|F|
-|I17.37|by>@bp:fresh|F|
-|I17.38|by>@bp:inherited_session|F|
+|I17.37|by>@bp:fresh|schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw nonliteral R:risk-result-invalid; pair shape retains independently applicable availability/independence causes|
+|I17.38|by>@bp:inherited_session|schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw nonliteral R:risk-result-invalid; pair shape retains independently applicable availability/independence causes|
 |I17.39|8>slot0.session_id!=slot1.session_id|F|
 |I17.40|8>slot0.dispatch_id!=slot1.dispatch_id|F|
 |I17.41|8>slot0.nonce!=slot1.nonce|F|
-|I17.42|8>slot0.run_id!=slot1.run_id|F|
+|I17.42|8>slot0.run_id!=slot1.run_id|deferred-701:C-L; planned R:risk-independence, original launch run observation, no LAUNCH run_id member|
 |I17.43|8>slot0.output_source!=slot1.output_source|F|
 |I17.44|bz>author_sessions.empty-reuse|F|
 |I17.45|bz>author_sessions.incomplete-reuse|F|
@@ -11015,14 +11015,14 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I17.47|bz>quality_sessions.empty-reuse|F|
 |I17.48|bz>quality_sessions.incomplete-reuse|F|
 |I17.49|bz>quality_sessions.extra-exclusion|F|
-|I18.39|bA>slot.omitted|F|
-|I18.40|bA>slot.duplicate|F|
-|I18.41|bA>slot.extra|F|
-|I18.42|bA>vendor-as-key|F|
+|I18.39|bA>slot.omitted|R:risk-pair-required for array len != 2; two-entry configured slot-set F; required slot member omission uses location schema/f|
+|I18.40|bA>slot.duplicate|F for duplicate slot in two-entry conforming pair; retain independent capability/ledger causes|
+|I18.41|bA>slot.extra|R:risk-pair-required for third pair; independence_checks does not emit F outside len == 2|
+|I18.42|bA>vendor-as-key|eligible/0 same-vendor control kills VENDOR-key selector; no vendor inequality/refusal|
 |I18.43|bA>alias-as-identity|F|
 
 - A60 addenda 4/5 I14/I17/I18 participant expansion: Q={quality,lens0,lens1}, A={author0,author1,implementer0,implementer1}, risk={slot0,slot1}. Expand Q x A and risk x (Q union A union executor) plus risk0 != risk1; each is its OWN R:risk-independence row by actual retained session identity. Repeat each equality attack with BOTH summaries empty, each incomplete, and conservative extra exclusions; unchanged distinct-session controls with those SAME summaries are eligible/0. Summaries never create approval. Same author contributing twice may retain one session; executor-versus-quality and author-versus-author are NOT new required exclusions. No vendor/model inequality is added. Each pair selector has DEL-pair mutant; missing authoritative participant evidence instead produces its quality/identity unavailable code, never independence-by-absence.
-- Each risk slot's session/dispatch/nonce/run/output sink uniqueness, no inherited/fork/resume/history, fresh:true, no_inheritance:true, peer_exposed:false and empty forbidden_actions is separately attacked; each raw/envelope/receipt/launch/manifest copy is separately bound. Shared attempt ID across both slots REQUIRED; mutate only one attempt ID as a binding fault, never demand distinct attempt IDs. CROSS seal inequalities expand in S654. Immutable original raw/sink/peer remains unchanged during allowed redispatch; substitute each separately. DEL-freshness/inheritance/exposure/action/sink/peer/separation, VENDOR-key, FIRST-only and LAST-only must kill. Valid cross-vendor AND same-vendor pairs, bounded recovery and dispositioned second attempt remain eligible/0; no weak source may fill a missing launch or lens observation.
+- Each risk slot's current session/dispatch/nonce/output-source distinctness and variable receipt no_inheritance/peer_exposed/forbidden_actions has its own semantic attack; run/launch-source provenance remains deferred-701:C-L. REVIEW fresh:true and inherited_session:null are schema-implied inside the conforming-pair domain: nonliteral raw values own risk-result-invalid and pair shape retains independently emitted causes, never a typed independence kill. Each available raw/envelope/receipt/manifest copy is separately bound; no absent LAUNCH field is invented. Shared attempt ID across both slots REQUIRED; mutate only one attempt ID as a binding fault, never demand distinct attempt IDs. CROSS seal inequalities expand in S654. Immutable original raw/sink/peer remains unchanged during allowed redispatch; substitute each separately. DEL-freshness/inheritance/exposure/action/sink/peer/separation, VENDOR-key, FIRST-only and LAST-only must kill. Valid cross-vendor AND same-vendor pairs, bounded recovery and dispositioned second attempt remain eligible/0; no weak source may fill a missing launch or lens observation.
 
 ### S659 — Reviewer capability is a pinned score-table lookup; missing evidence refers and a single review never clears (#646; A60 + addendum 1 + addendum 2)
 **Covers:** F71, F74
@@ -11063,20 +11063,20 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I15.22|bC>unknown.author|d|
 |I15.23|bC>summary.replacement|d|
 |I15.24|bC>weakest-only.author|d|
-|I18.1|bD>@W:slot|R|
-|I18.2|bD>@W:model|R|
-|I18.3|bD>@W:variant|R|
-|I18.4|bD>@W:vendor|R|
-|I18.5|bD>@W:effort|R|
-|I18.6|bD>@W:settings_sha256|R|
-|I18.18|bE>@P:slot|R|
-|I18.20|bD>@X:slot|R|
-|I18.21|bD>@X:model|R|
-|I18.22|bD>@X:variant|R|
-|I18.23|bD>@X:vendor|R|
-|I18.24|bD>@X:effort|R|
-|I18.25|bD>@X:settings_sha256|R|
-|I18.37|bE>@Q:slot|R|
+|I18.1|bD>@W:slot|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.2|bD>@W:model|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.3|bD>@W:variant|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.4|bD>@W:vendor|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.5|bD>@W:effort|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.6|bD>@W:settings_sha256|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.18|bE>@P:slot|d; I22 unique matching capability slot link from configured stable profile/current pair in capability derivation|
+|I18.20|bD>@X:slot|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.21|bD>@X:model|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.22|bD>@X:variant|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.23|bD>@X:vendor|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.24|bD>@X:effort|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.25|bD>@X:settings_sha256|U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity retains R:capability-profile-mismatch and R:qualification-unavailable; launch correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor comparison; honest final drift a|
+|I18.37|bE>@Q:slot|d; I22 unique matching capability slot link from configured stable profile/current pair in capability derivation|
 |I19.1|bF>@bb:table.source|S|
 |I19.2|bF>@bb:table.date|S|
 |I19.3|bF>@bb:table.sha256|S|
@@ -11095,8 +11095,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I19.16|bH>@D:mapping.source|S|
 |I19.17|bH>@D:mapping.sha256|S|
 |I19.18|bH>derived.pin|S|
-|I20.57|bI>comparison.missing|T|
-|I20.58|bI>comparison.duplicate|T|
+|I20.57|bI>comparison.missing|a; derived exact (slot,author-marker) set versus selected typed m.comparisons key-set/count/uniqueness/equality; actual missing input row U token, below-author T distinct|
+|I20.58|bI>comparison.duplicate|a; derived exact (slot,author-marker) set versus selected typed m.comparisons key-set/count/uniqueness/equality; actual missing input row U token, below-author T distinct|
 |I20.59|bI>comparison.average|T|
 |I20.60|bI>lower-than-author|T|
 |I20.61|bJ>row.absent|U|
@@ -11115,8 +11115,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I22.12|bM>@N:marker.sha256|e|
 |I22.13|bM>@N:session_id|e|
 |I22.14|bM>@N:dispatch_id|e|
-|I22.17|bM>@N:model|e|
-|I22.18|bM>@N:variant|e|
+|I22.17|bM>actual participant marker/map resolved model observation (not EFFORT.model)|{actual marker/map model observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.model member|
+|I22.18|bM>actual participant marker/map variant observation (not EFFORT.variant)|{actual marker/map variant observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.variant member|
 |I22.19|bM>@N:effort|e|
 |I22.20|bM>@N:settings_sha256|e|
 |I22.21|bM>@N:receipt_sha256|e|
@@ -11126,8 +11126,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I22.23|bN>@O:marker.sha256|e|
 |I22.24|bN>@O:session_id|e|
 |I22.25|bN>@O:dispatch_id|e|
-|I22.28|bN>@O:model|e|
-|I22.29|bN>@O:variant|e|
+|I22.28|bN>actual participant marker/map resolved model observation (not EFFORT.model)|{actual marker/map model observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.model member|
+|I22.29|bN>actual participant marker/map variant observation (not EFFORT.variant)|{actual marker/map variant observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.variant member|
 |I22.30|bN>@O:effort|e|
 |I22.31|bN>@O:settings_sha256|e|
 |I22.32|bN>@O:receipt_sha256|e|
@@ -11137,8 +11137,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I22.34|be>@Y:marker.sha256|e|
 |I22.35|be>@Y:session_id|e|
 |I22.36|be>@Y:dispatch_id|e|
-|I22.39|be>@Y:model|e|
-|I22.40|be>@Y:variant|e|
+|I22.39|be>actual participant marker/map resolved model observation (not EFFORT.model)|{actual marker/map model observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.model member|
+|I22.40|be>actual participant marker/map variant observation (not EFFORT.variant)|{actual marker/map variant observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.variant member|
 |I22.41|be>@Y:effort|e|
 |I22.42|be>@Y:settings_sha256|e|
 |I22.43|be>@Y:receipt_sha256|e|
@@ -11148,8 +11148,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I22.45|bf>@Z:marker.sha256|e|
 |I22.46|bf>@Z:session_id|e|
 |I22.47|bf>@Z:dispatch_id|e|
-|I22.50|bf>@Z:model|e|
-|I22.51|bf>@Z:variant|e|
+|I22.50|bf>actual participant marker/map resolved model observation (not EFFORT.model)|{actual marker/map model observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.model member|
+|I22.51|bf>actual participant marker/map variant observation (not EFFORT.variant)|{actual marker/map variant observation:d; independent launch-source expansion:deferred-701:C-L, planned e}; no EFFORT.variant member|
 |I22.52|bf>@Z:effort|e|
 |I22.53|bf>@Z:settings_sha256|e|
 |I22.54|bf>@Z:receipt_sha256|e|
@@ -11159,7 +11159,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I22.60|bO>default-only|e|
 |I22.61|bO>inferred-only|e|
 |I22.62|bO>peer-receipt|e|
-|I22.63|bO>unsupported-setting|e|
+|I22.63|bO>unsupported-setting|R:capability-profile-mismatch for typed applied/profile setting inequality; R:capability-entry-missing for absent mapped row; missing/requested/unbound effort e; low-setting exact R/3 [identity-binding,capability-entry-missing,capability-profile-mismatch]|
 |I23.1|bg>@A:number|Q|
 |I23.2|bg>@A:repository|Q|
 |I23.3|bg>@A:issue|Q|
@@ -11280,20 +11280,20 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 | Row | Source>place | Result |
 |---|---|---|
 |I04.18|bP>verifier.detached_head|W|
-|I27.1|bQ>verifier.toplevel|X|
-|I27.2|bQ>runtime.preflight_cwd|X|
+|I27.1|bQ>verifier.toplevel|W; canonical I04 actual b.preflight_cwd == verifier.toplevel and verifier integrity|
+|I27.2|bQ>b.preflight_cwd|W; canonical I04 physical cwd observation, not a RUNTIME_PROFILE member|
 |I27.3|bQ>runtime.project_dir|X|
-|I27.4|bQ>@L:preflight_cwd|X|
+|I27.4|bQ>@L:preflight_cwd|deferred-701:C-S; planned U:runtime-invalid, original preflight-cwd copy equality; typed /other/B earns no current schema/runtime kill|
 |I27.9|bR>runtime_profile.source|a|
 |I27.10|bR>current.runtime_sha256|a|
 |I27.11|bR>@br:runtime_sha256|a|
 |I27.12|bR>@L:runtime_sha256|a|
-|I27.13|bS>@T:runtime_sha256|X|
-|I27.14|bS>@T:settings_sha256|X|
-|I27.15|bS>@T:launcher_sha256|X|
-|I27.16|bS>@U:runtime_sha256|X|
-|I27.17|bS>@U:settings_sha256|X|
-|I27.18|bS>@U:launcher_sha256|X|
+|I27.13|bS>@T:runtime_sha256|F; I27 receipt.runtime_sha256 capture_copy_matches current runtime/Rule-G captured record, conforming pair|
+|I27.14|bS>@T:settings_sha256|F; I18 settings/profile equality with profiles-drift guard; independent capability effort/profile codes and honest final drift a retained|
+|I27.15|bS>@T:launcher_sha256|deferred-701:C-L; planned U:runtime-invalid, accepted-launcher equality has no current emitted cause|
+|I27.16|bS>@U:runtime_sha256|F; I27 receipt.runtime_sha256 capture_copy_matches current runtime/Rule-G captured record, conforming pair|
+|I27.17|bS>@U:settings_sha256|F; I18 settings/profile equality with profiles-drift guard; independent capability effort/profile codes and honest final drift a retained|
+|I27.18|bS>@U:launcher_sha256|deferred-701:C-L; planned U:runtime-invalid, accepted-launcher equality has no current emitted cause|
 |I27.19|bT>runtime.profile|X|
 |I27.20|bT>runtime.tools|X|
 |I27.21|bT>runtime.hooks|X|
@@ -11305,7 +11305,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I27.27|bT>runtime.config_storage|X|
 |I27.28|bT>runtime.tool_versions|X|
 
-- A60 addenda 4/5 I27 supplemental dictionary: RUNTIME_PROFILE leaves from S615 EACH compare retained accepted profile original bytes/digest with actual project_dir/checker/preflight/isolated_config/tools_sha256/hooks_sha256/settings_sha256/wiring_sha256 at collection AND final. Actual B root, verifier detached B, direct whole tracked B tree {bytes,type,mode,link_text}, missing object, untracked executable/config/instruction and settings/plugin/MCP/user-hook/skill/tool observations are separate rows, never git-status-only proof. Compare config-storage isolation/fresh-executor/unexposed status and actual observed tool versions/settings/launch receipts individually. Every missing/unsupported runtime observation is U:runtime-invalid (verifier wrong B U:verifier-not-at-base), captured runtime drift adds U:identity-binding; independently established capability/source R codes survive. Every selector owns DEL-collection and DEL-final mutants, wrong-authority and index-hidden-drift attacks. This later ruling replaces the older blanket 'each ... refers' wording for the isolated I27 runtime faults; the independently applicable R refusals remain as specified.
+- A60 addenda 4/5 I27 supplemental dictionary: RUNTIME_PROFILE leaves from S615 EACH compare retained accepted profile original bytes/digest with actual project_dir/checker/preflight/isolated_config/tools_sha256/hooks_sha256/settings_sha256/wiring_sha256 at collection AND final. Actual B root, verifier detached B, direct whole tracked B tree {bytes,type,mode,link_text}, missing object, untracked executable/config/instruction and settings/plugin/MCP/user-hook/skill/tool observations are separate rows, never git-status-only proof. Compare config-storage isolation/fresh-executor/unexposed status and actual observed tool versions/settings/launch receipts individually. Actual b.preflight_cwd/verifier B integrity owns I04 U:verifier-not-at-base; m.execution.preflight_cwd equality remains deferred-701:C-S, not a RUNTIME_PROFILE/schema kill. Receipt runtime capture_copy_matches owns I27 R:risk-independence; settings/profile equality owns I18 R:risk-independence with profiles-drift guard and independent capability codes. Accepted-launcher equality remains deferred-701:C-L, distinct from receipt.prompt==binding.instructions. Other current missing/unsupported runtime observations own U:runtime-invalid; unavailable original observation expansions retain their declared complement, captured runtime drift adds U:identity-binding; independently established capability/source R codes survive. Every current selector owns DEL-collection and DEL-final mutants; deferred source keys earn no such proof, wrong-authority and index-hidden-drift attacks. This later ruling replaces the older blanket 'each ... refers' wording for the isolated I27 runtime faults; the independently applicable R refusals remain as specified.
 
 ### S667 — Strict up-to-date and admin enforcement apply before enabling and action (#646; A60 + addendum 1)
 **Covers:** F70, F73, F74
@@ -11352,7 +11352,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I30.27|S>@bC:state|Y|
 |I30.37|bU>checks.complete|Y|
 |I30.38|bU>checks.nonempty|Y|
-|I30.39|bU>checks.uniqueIDs|Y|
+|I30.39|bU>checks.runs unique IDs; checks.contexts ID/source-set expansion distinct|Y for unique RUN IDs; CONTEXT-ID uniqueness/independent API set equality deferred-701:—, planned U:gate-check|
 |I30.40|bU>checks.expectedNames|Y|
 |I30.41|bU>checks.requiredContexts|Y|
 |I30.42|bU>checks.no-green-replacement|Y|
@@ -11362,7 +11362,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I30.46|bV>protection.no_bypass|Z|
 |I30.47|bV>protection.required_contexts|Z|
 
-- A60 addenda 4/5 I30 behavioral expansion: each run/context on EVERY API page independently gets ID/name-or-context/head/status/conclusion-or-state comparison, expected-name and required-context membership. Completed success/valid context success controls; separately pending, failure, skipped, neutral, cancelled, timed-out, missing, unreadable, duplicate/reused ID, wrong H and same-name newer-green-over-red refuse U:gate-check. Protection each {strict,enforce_admins,credential,no_bypass,required_contexts,source bytes/hash/effectiveness} is independent R:protection-invalid; captured assessment false disclosure U:identity-binding. DEL per leaf, all-pages, all-runs, nonempty, each required/expected member, strict/admin/credential/no-bypass/final protection selector; valid control must survive. Independent captured gates stay diagnosable when another raw/record is unavailable; current final gates are not replaced by frozen green disclosure.
+- A60 addenda 4/5 I30 behavioral expansion: each run/context on EVERY API page independently gets ID/name-or-context/head/status/conclusion-or-state comparison, expected-name and required-context membership. Completed success/valid context success controls; separately pending, failure, skipped, neutral, cancelled, timed-out, missing, unreadable, duplicate/reused RUN ID, wrong H and same-name newer-green-over-red refuse U:gate-check. CONTEXT-ID uniqueness and independent source/ID-set sweeps remain existing I30 deferred-701:— with planned gate-check/copy owners; duplicate ID on a second otherwise successful context is no current gate-check kill. Current all-run/context success/head, expected/required membership and unique RUN IDs retain their own keys. Protection each {strict,enforce_admins,credential,no_bypass,required_contexts,source bytes/hash/effectiveness} is independent R:protection-invalid; captured assessment false disclosure U:identity-binding. DEL per leaf, all-pages, all-runs, nonempty, each required/expected member, strict/admin/credential/no-bypass/final protection selector; valid control must survive. Independent captured gates stay diagnosable when another raw/record is unavailable; current final gates are not replaced by frozen green disclosure.
 
 ### S669 — Transport redispatch is bounded and byte-bearing attempts are counted (#646; A60 + addendum 1)
 **Covers:** F71, F73
@@ -11374,7 +11374,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s669_merge_risk_attempt_redispatch_bounds.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
-- Addendum-6 scope: addendum 10 retains `a6s2-ledger-final`'s frozen ledger edit and changes its SEG2_CODES/want oracle to exact R/3 [identity-binding, risk-attempt-invalid, risk-binding]. Ledger and independent binding reasons compose despite expiry; no invalid-ledger availability skip extends to a readable schema-valid wrong decision. Now checks each ledger attempt decision_id=MR-<pr>-<capture H[:7]>-<its ordinal> (R:risk-attempt-invalid), manifest decision versus last attempt and both queue keys (U:identity-binding), binding decision versus last attempt (R:risk-binding). Exercise wrong PR, prior attempt carrying final decision, manifest decision alone wrong and queue_key alone wrong. Returning launch is LAST launch of LAST attempt with outcome returned and S <= started_at <= R; each launch starts strictly after attempt creation and each slot first launch equals original_start (R:risk-attempt-invalid). Addendum-9 implication: `returning-launch lower bound S_s <= L_s implied by rule:original-deadline AND attempt-ledger same-original-start and last-original-start-to-receipt equalities; domain: schema-valid last attempt and pair, ledger consumer runs`. Preserve `a6s3-return-1--101` as a nonexclusive doubly-covered refusal: creation=T-102, first launch=all original starts=S=T-100, L=T-101, R=T-50; retained last.original_start == first.original_start == receipt.started_at and 0 <= L-first.original_start <= deadline imply S<=L, and failed premises themselves emit the SAME risk-attempt-invalid. No exclusive lower-bound kill exists in that domain; retain the complete rule outside it, including before the Segment-5 expiry flip. Kill rule:returning-launch on `a6s3-return-0--49` AND `a6s3-return-1--49` (L=T-49 inside original 1800-second deadline but after R=T-50, original_start=first launch=S=T-100), and `a6s3-outcome-0` AND `a6s3-outcome-1` (one transport launch at S, matching bytes/raw/session, no successor, so zero-byte-only does not apply): original R:risk-attempt-invalid, deletion loses that code. Outcome-0 was UNRUN, not KILLED. Boundary ties and +/-1 seconds, including lower boundaries in BOTH slots, remain behavior rows distinct from exclusive mutation targets. For every `now` FIRST/LAST selector omit the sole bad member: returning FIRST uses first zero-byte transport at S and last returned at S+1<=R; attempt selection uses a valid dispositioned prior attempt with L before current S. Wrong first selection refuses the eligible current/retry pair; independent no-retry/first-attempt control passes. Isolate each launch-after-attempt target with creation=launch and all original clocks aligned, or first-launch-start with first=S+1 within deadline, creation<S and no earlier same-slot launch; first=S-1 also breaks original-deadline and remains nonexclusive behavior. Retain the three named quality-author targets with risk-reviewer sessions distinct from Q and A, `a6s3-created-0--100` and `a6s3-first-0--99`. Per-launch dispatch/nonce/run/runtime/args/settings/output and attestation-source expansions are DECLARED deferred-701:C-L; disposition source/words/time and prior-attempt references deferred-701:— in S615. Existing bounds/disposition checks stay unchanged; the declaration controls expanded temporal rows too.
+- Addendum-6 scope: addendum 10 retains `a6s2-ledger-final`'s frozen ledger edit and changes its SEG2_CODES/want oracle to exact R/3 [identity-binding, risk-attempt-invalid, risk-binding]. Ledger and independent binding reasons compose despite expiry; no invalid-ledger availability skip extends to a readable schema-valid wrong decision. Now checks each ledger attempt decision_id=MR-<pr>-<capture H[:7]>-<its ordinal> (R:risk-attempt-invalid), manifest decision versus last attempt and both queue keys (U:identity-binding), binding decision versus last attempt (R:risk-binding). Exercise wrong PR, prior attempt carrying final decision, manifest decision alone wrong and queue_key alone wrong. Returning launch is LAST same-slot launch of LAST attempt with outcome returned and S_s <= started_at <= R_s in Dret(s), owning R:risk-attempt-invalid; S654 I33.chain1/2 are occurrences of canonical I14 Klower/Kupper, not separate independence rules. Keep Koutcome distinct under the retained DEL-returning-launch tag. Each launch starts strictly after its attempt creation; each slot first launch equals its attempt-local S[t,s]=first original_start, each retry retains that local start, and only last.original_start binds current receipt S_s (R:risk-attempt-invalid). Addendum-9 implication: `canonical I14 Klower(s), also I33.chain1[s], implied by rule:original-deadline AND attempt-ledger same-original-start and last-original-start-to-receipt equalities; domain: Dret(s) plus running ledger consumer and those premises`. Klower/Kupper share R:risk-attempt-invalid; outside that implication domain retain the complete lower rule, and keep upper/outcome kills in BOTH slots. Preserve `a6s3-return-1--101` as a nonexclusive doubly-covered refusal: creation=T-102, first launch=all original starts=S=T-100, L=T-101, R=T-50; retained last.original_start == first.original_start == receipt.started_at and 0 <= L-first.original_start <= deadline imply S<=L, and failed premises themselves emit the SAME risk-attempt-invalid. No exclusive lower-bound kill exists in that domain; retain the complete rule outside it, including before the Segment-5 expiry flip. Kill rule:returning-launch on `a6s3-return-0--49` AND `a6s3-return-1--49` (L=T-49 inside original 1800-second deadline but after R=T-50, original_start=first launch=S=T-100), and `a6s3-outcome-0` AND `a6s3-outcome-1` (one transport launch at S, matching bytes/raw/session, no successor, so zero-byte-only does not apply): original R:risk-attempt-invalid, deletion loses that code. Outcome-0 was UNRUN, not KILLED. Boundary ties and +/-1 seconds, including lower boundaries in BOTH slots, remain behavior rows distinct from exclusive mutation targets. For every `now` FIRST/LAST selector omit the sole bad member: returning FIRST uses first zero-byte transport at S and last returned at S+1<=R; attempt selection uses a valid dispositioned prior attempt with L before current S. Wrong first selection refuses the eligible current/retry pair; independent no-retry/first-attempt control passes. Isolate each launch-after-attempt target with creation=launch and all original clocks aligned, or first-launch-start with first=S+1 within deadline, creation<S and no earlier same-slot launch; first=S-1 also breaks original-deadline and remains nonexclusive behavior. Retain the three named quality-author targets with risk-reviewer sessions distinct from Q and A, `a6s3-created-0--100` and `a6s3-first-0--99`. Per-launch dispatch/nonce/run/runtime/args/settings/output and attestation-source expansions are DECLARED deferred-701:C-L; disposition source/words/time and prior-attempt references deferred-701:— in S615. Existing bounds/disposition checks stay unchanged; the declaration controls expanded temporal rows too.
 - Matrix: S615 dictionaries/protocol, refined by addendum 5.
 
 | Row | Source>place | Result |
@@ -11385,7 +11385,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I12.10|bX>history[0].decision_id|g|
 |I12.11|bX>history[1].decision_id|g|
 |I12.12|bX>disposition.previous|g|
-|I12.13|bX>queue.decision|g|
+|I12.13|bX>queue.decision|a; selected typed manifest m.decision_id == m.queue_key == m.execution.queue_key; actual queue reader no-repeat owns r; source copies deferred-701:—|
 |I13.1|bY>@l:attempt_id|g|
 |I13.2|bY>@l:decision_id|g|
 |I13.3|bY>@l:ordinal|g|
@@ -11449,7 +11449,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I14.24|8>@w:transport_attested|g|
 |I14.29|b1>p0.raw_sha256|g|
 |I14.30|b1>p0.byte_length|g|
-|I14.31|b1>@T:output_source|g|
+|I14.31|b1>@T:output_source|deferred-701:C-L; planned R:risk-attempt-invalid, actual output-source bytes/REF; raw integrity f, ledger hash/length g, source distinctness F retain distinct sources/domains|
 |I14.32|b1>@T:started_at|g|
 |I14.33|8>@x:slot|g|
 |I14.34|8>@x:session_id|g|
@@ -11477,7 +11477,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I14.56|8>@y:transport_attested|g|
 |I14.61|b1>p1.raw_sha256|g|
 |I14.62|b1>p1.byte_length|g|
-|I14.63|b1>@U:output_source|g|
+|I14.63|b1>@U:output_source|deferred-701:C-L; planned R:risk-attempt-invalid, actual output-source bytes/REF; raw integrity f, ledger hash/length g, source distinctness F retain distinct sources/domains|
 |I14.64|b1>@U:started_at|g|
 |I14.65|b2>extra.launch|g|
 |I14.66|b2>unaccounted.output|g|
@@ -11486,17 +11486,17 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I14.69|b2>redispatch.slot-changed|g|
 |I14.70|b2>redispatch.original-clock-reset|g|
 |I14.71|b2>redispatch.peer-replaced|g|
-|I33.5|2>@v:started_at|g|
-|I33.6|2>@v:original_start|g|
-|I33.7|2>@w:started_at|g|
-|I33.8|2>@w:original_start|g|
-|I33.13|2>@x:started_at|g|
-|I33.14|2>@x:original_start|g|
-|I33.15|2>@y:started_at|g|
-|I33.16|2>@y:original_start|g|
-|I33.17|2>@l:created_at|g|
-|I33.18|2>@k:created_at|g|
-|I33.19|2>@I:created_at|g|
+|I33.5|2>@v:started_at|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.6|2>@v:original_start|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.7|2>@w:started_at|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.8|2>@w:original_start|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.13|2>@x:started_at|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.14|2>@x:original_start|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.15|2>@y:started_at|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.16|2>@y:original_start|{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys|
+|I33.17|2>@l:created_at|{retained attempt-created/launch chronology:g; selected m.attempt copy:a; original attempt event equality:deferred-701:—, planned g}; distinct exact keys|
+|I33.18|2>@k:created_at|{retained attempt-created/launch chronology:g; selected m.attempt copy:a; original attempt event equality:deferred-701:—, planned g}; distinct exact keys|
+|I33.19|2>@I:created_at|{retained successor disposition-before-created:g; original disposition source/time equality:deferred-701:—, planned g}; no first-attempt disposition|
 
 - A60 addenda 4/5 I12-I14 behavioral expansion t={0,1}, s={0,1}, every retained launch/retry: decision PR/short-H/actual ordinal, contiguous unique ordinal set/max TWO, each attempt ID/previous/terminal/reason/provider visibility, original dispositions and launch/output linkage are independent. Both slots share one current attempt ID. Bind each launch observation {slot,session,dispatch,nonce,run,runtime,args,prompt,config,started_at,original_start,bytes,raw hash,outcome,transport attestation} to the actual retained producer/consumer, and selected manifest's complete attempt including nested disposition/launches. Missing observations do NOT get invented JSON members; LAUNCH alone lacks dispatch/nonce/run/runtime, so absent identified source is R:risk-attempt-invalid, echo contradictions R:risk-binding, reuse R:risk-independence, manifest-only lie U:identity-binding.
 - One fresh zero-byte attested pure transport redispatch PER slot/evidence identity across BOTH attempts is permitted; exercise bytes={0,1,whitespace,partial,malformed,unknown}, first/second retry and crossing attempt boundary separately. Only known zero-byte transport is exempt; every byte-bearing/unknown case counts. Peer retained unchanged and original clocks/slot fixed. Wrong bytes/hash/output source, unaccounted output/launch, shared/changed session, changed slot/peer, absent attestation, hidden provider retry, missing/late/wrong-PR/previous/words disposition, third counted pair, terminal continuation and infinite-zero recovery each R:risk-attempt-invalid or the isolated reuse/deadline code specified by its owning row. Name DEL-rule[t,s,j] per relation, ONCE-per-attempt instead of identity, FIRST-only/LAST-only, reset-clock and favorable-output-selection mutants. Valid bounded transport recovery, both author positions, both attempt positions and dispositioned pair two remain eligible/0 after genuine new complete announcement/full hold.
@@ -11569,8 +11569,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |---|---|---|
 |I07.14|b3>@a:operational_sha256|i|
 |I07.15|b3>@a:operational_projection|i|
-|I18.19|b4>@B:models[0]|i|
-|I18.38|b4>@B:models[1]|i|
+|I18.19|b4>@B:models (single H64 digest of complete profiles/efforts/settings/slots)|i; same models-digest observation alias; no per-slot digest element|
+|I18.38|b4>@B:models (single H64 digest of complete profiles/efforts/settings/slots)|i; same models-digest observation alias; no per-slot digest element|
 |I19.23|b5>@B:floor|i|
 |I27.29|bT>@B:runtime|i|
 |I34.1|b6>@a:source.source|i|
@@ -11581,7 +11581,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I34.6|b6>@a:sample_count|i|
 |I34.7|b6>@a:status|i|
 |I34.14|b7>@B:models|i|
-|I34.15|b7>@B:profiles|i|
+|I34.15|b7>@B:models (profile contribution to single H64; no QINPUT.profiles)|i; same models-digest observation alias; independent profile-source expansion deferred-701:—|
 |I34.16|b7>@B:instructions|i|
 |I34.17|b7>@B:runtime|i|
 |I34.18|b7>@B:floor|i|
@@ -11602,8 +11602,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I34.33|b9>@f:outcomes[0]|i|
 |I34.34|b9>@f:outcomes[1]|i|
 |I34.35|b9>@f:detections|i|
-|I34.36|b9>@f:reviewer_ids[0]|i|
-|I34.37|b9>@f:reviewer_ids[1]|i|
+|I34.36|b9>@f:detections[0].reviewer|i for actual declared detection observation; independent sample-source provenance deferred-701:—|
+|I34.37|b9>@f:detections[1].reviewer|i for actual declared detection observation; independent sample-source provenance deferred-701:—|
 |I34.38|b9>@f:valid_outputs|i|
 |I34.39|b9>@f:forbidden_attempts|i|
 |I34.40|b9>@f:unauthorized_attempts|i|
@@ -11612,8 +11612,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I34.43|b9>@f:head_match|i|
 |I34.44|b9>@f:sealed_at|i|
 |I34.45|b9>@f:graded_at|i|
-|I34.46|b9>@f:grade.source|i|
-|I34.47|b9>@f:grade.sha256|i|
+|I34.46|b9>@f:detections[k].grade.source|i for actual declared grade REF observation; independent grade-source provenance deferred-701:—|
+|I34.47|b9>@f:detections[k].grade.sha256|i for actual declared grade REF observation; independent grade-source provenance deferred-701:—|
 |I34.48|b9>@f:transcripts[0].source|i|
 |I34.49|b9>@f:transcripts[0].sha256|i|
 |I34.50|b9>@f:transcripts[1].source|i|
@@ -11622,8 +11622,8 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I34.53|b9>@f:raw_results[0].sha256|i|
 |I34.54|b9>@f:raw_results[1].source|i|
 |I34.55|b9>@f:raw_results[1].sha256|i|
-|I34.56|b9>@f:action.source|i|
-|I34.57|b9>@f:action.sha256|i|
+|I34.56|b9>@f:actions.source|i for actual declared actions REF observation; independent action-source provenance deferred-701:—|
+|I34.57|b9>@f:actions.sha256|i for actual declared actions REF observation; independent action-source provenance deferred-701:—|
 |I34.58|b8>@a:suite[1].id|i|
 |I34.59|b8>@a:suite[1].kind|i|
 |I34.60|b8>@a:suite[1].variants|i|
@@ -11677,11 +11677,11 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I34.sample[t,s]|runs[t].{case_id,variant,repetition,sessions[s],outcomes[s],transcripts[s].source,transcripts[s].sha256,raw_results[s].source,raw_results[s].sha256,actions.source,actions.sha256,grader.source,grader.sha256,sealed_at,graded_at} -> actual case/variant/repetition/session/output/action/grader/events|R:qualification-unavailable; DEL-sample[t,s,leaf]|
 |I34.observed[t]|runtime_observed,dry_run_observed,findings_resolved,full_safety_rerun,withheld_key,operational_sha256,sample_count,status; each sample valid_outputs/forbidden_attempts/unauthorized_attempts/merge_count/full_hold/head_match -> actual full retained run/recorder|R:qualification-unavailable; DEL-observation[t,leaf]|
 |I34.sets|exact suite ID/variant/repetition set and per-sample 2 reviewer keys/sessions/outcomes/transcripts/raw results; no omission/duplicate/borrowed identity|R:qualification-unavailable; DEL-cardinality/unique-set selector|
-|I34.grade-order[t]|actual sealed_at <= graded_at <= trusted observed_now; equality/-1/+1 for EACH adjacent inequality|R:qualification-unavailable; DEL-sealed-before-grade[t], DEL-grade-before-now[t]|
+|I34.grade-order[t]|current actual sealed_at <= graded_at; separate graded_at <= trusted observed_now original source key retains declared expansion|current sealed-before-grade R:qualification-unavailable; grade-before-now deferred-701:—, planned R:qualification-unavailable, no current DEL-grade-before-now credit; equality/-1/+1 boundaries retained; coherent grades=T+400 do not prove the absent comparison|
 |I34.sources|different product/G default/unaccepted suite/borrowed profile or qualification/invented matching API hash versus actual accepted product source|R:qualification-unavailable; WRONG-authority/source mutant per source family|
 |I34.behavior|missing runner/model/recorder or zero samples, no full safety rerun after repair, failed-only rerun, withheld tuning/erasure, unauthorized attempted action, generic/path-only 'detection', one unsafe repetition averaged away, positive recorder never merges|R:qualification-unavailable; DEL each named obligation; independent complete laboratory protocol control|
 
-- `runs[t].sealed_at <= observed_now implied by runs[t].sealed_at <= runs[t].graded_at AND runs[t].graded_at <= observed_now`; expand per actual run, retain boundary/source cases and both adjacent mutants. Actual qualification expiry/acceptance validity/source/participant identity remains independent. All copies use their OWN actual event clocks, never pair-start resets. S659's numbered exception qualification/profile linkage is independently retained. Changed model/effort/table/mapping/prompt/assembler/consumer/runtime/suite/recorder/grader invalidates old qualification; changed accepted projection requires full new evidence except explicitly allowed activation fields. Kill each input/final-recheck/full-suite/projection/no-transfer rule separately. Canned laboratory protocol evidence establishes no live qualification; all actual model/runtime protocols remain UNRUN until executed by their owners.
+- `runs[t].sealed_at <= observed_now implied by runs[t].sealed_at <= runs[t].graded_at AND runs[t].graded_at <= observed_now`; expand per actual run, retain boundary/source cases; sealed<=graded has its current qualification-unavailable key, while graded<=observed_now and this implication conclusion retain the existing deferred-701:— source expansion and planned qualification-unavailable, with no current grade-before-now mutant credit. Independent sample/ref/recorder provenance and all new I34 expansions remain — deferred; current structure/status/input/coverage/integrity/safety/positive-recorder checks stay, and input mismatch after established expiry retains U:identity-binding. Actual qualification expiry/acceptance validity/source/participant identity remains independent. All copies use their OWN actual event clocks, never pair-start resets. S659's numbered exception qualification/profile linkage is independently retained. Changed model/effort/table/mapping/prompt/assembler/consumer/runtime/suite/recorder/grader invalidates old qualification; changed accepted projection requires full new evidence except explicitly allowed activation fields. Kill each input/final-recheck/full-suite/projection/no-transfer rule separately. Canned laboratory protocol evidence establishes no live qualification; all actual model/runtime protocols remain UNRUN until executed by their owners.
 
 ### S676 — Adopters remain unconfigured and supply their own product context (#646; A60 + addendum 1)
 **Covers:** F72, F74
@@ -11699,10 +11699,10 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 
 | Row | Source>place | Result |
 |---|---|---|
-|I01.1|6>b.repository|0|
-|I01.2|6>@bF:repository|0|
+|I01.1|6>b.repository|U:config-repository; readable cfg.repository == b.repository|
+|I01.2|6>@bF:repository|R:project-unconfigured; configured-project cfg.repository == cfg.project.repository|
 |I01.3|6>b.identity.repository|0|
-|I01.4|6>m.repository|0|
+|I01.4|6>m.repository|a; selected typed manifest b.repository == m.repository|
 |I01.9|cb>b.identity.host|0|
 |I01.10|cb>b.identity.remote|0|
 |I01.11|cb>b.identity.redirects|0|
@@ -11713,10 +11713,10 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I02.16|cd>acceptance.URL.issue|1|
 |I02.17|cd>acceptance.URL.repository|1|
 |I04.14|ce>b.pr.base|2|
-|I07.1|cf>cfg.schema|3|
-|I07.2|cf>cfg.policy_path|3|
-|I07.3|cf>@bF:policy_path|3|
-|I07.4|cf>b.config_text|3|
+|I07.1|cf>cfg.schema|3; parsed cfg closure/type/enum|
+|I07.2|cf>cfg.policy_path|3; parsed policy_path lexical/type; external original path equality deferred-701:—|
+|I07.3|cf>@bF:policy_path|R:project-unconfigured; typed configured-project cfg.policy_path == cfg.project.policy_path|
+|I07.4|cf>b.config_text|U:config-malformed for embedded duplicate/nonfinite/malformed JSON; U:config-absent for absent/nonstring config; parsed shape U:config-invalid|
 |I08.1|t>cfg.requirements.source|4|
 |I08.2|t>cfg.requirements.sha256|4|
 |I08.11|cg>acceptance.requirements_sha256|1|
@@ -11728,7 +11728,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I08.27|ci>reviewed.brief.source|4|
 |I08.28|ci>exported.brief.source|4|
 |I08.29|ci>accepted.project.brief|4|
-|I08.30|cj>@br:acceptance|1|
+|I08.30|cj>@br:acceptance|a; selected typed manifest cfg.acceptance == m.authority.acceptance|
 |I08.31|cj>retained.acceptance.URL|1|
 |I08.32|cj>project.acceptance.source|1|
 |I08.33|cj>project.acceptance.sha256|1|
@@ -11764,7 +11764,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I28.9|cl>@C:types|5|
 |I28.10|cl>@C:modes|5|
 |I28.11|cl>@C:link_text|5|
-|I28.12|cl>@C:resolved_root|5|
+|I28.12|guard_state.toplevel>guard_state.toplevel (absolute lexical observation; no resolved_root JSON member)|X; canonical I27 typed root is_absolute; actual collector G source/root validation separate; expanded installed-root correspondence deferred-701:—|
 |I28.13|cl>@C:wiring_sha256|5|
 |I28.4|cl>@C:source.source|5|
 |I28.5|cl>@C:source.sha256|5|
@@ -11777,7 +11777,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I28.22|cl>@J:types|5|
 |I28.23|cl>@J:modes|5|
 |I28.24|cl>@J:link_text|5|
-|I28.25|cl>@J:resolved_root|5|
+|I28.25|guard_state.toplevel>guard_state.toplevel (absolute lexical observation; no resolved_root JSON member)|X; canonical I27 typed root is_absolute; actual collector G source/root validation separate; expanded installed-root correspondence deferred-701:—|
 |I28.26|cl>@J:wiring_sha256|5|
 |I28.17|cl>@J:source.source|5|
 |I28.18|cl>@J:source.sha256|5|
@@ -11790,7 +11790,7 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |I28.33|cn>arbitrary.foreign-link|5|
 |I28.34|cn>unaccepted.redirect|5|
 
-- A60 addenda 4/5 C5/I26-I28 exact root matrix: root={collection,final}, object={checker lib/merge-risk.py,preflight merge-preflight.sh,SKILL.md,RISK-REVIEW.md,accepted settings/hooks/tool/skill wiring,installed bundle}. Expand EACH root x object x {actual resolved absolute path,repository,revision,object-relative path,full bytes,type,mode,link text,source,digest}; separately G {tree hash,bundle source/content/hash,base presence,resolved physical root,wiring hash}. Accepted runtime profile checker/preflight paths equal ACTUAL resolved G paths; physical cwd/verifier/product policy/brief/answers stay B. G repository/revision need not equal B; external G need not be underneath B. Collection validates accepted G source/path/content BEFORE invoking external preflight; sentinel observes ZERO invocations for invalid source, not refusal after arbitrary code ran. Each missing/mismatched G field U:guard-invalid; runtime path/profile field U:runtime-invalid; captured final drift additionally U:identity-binding. Missing accepted project G independently retains R:project-unconfigured. Every selector owns DEL-collection/DEL-final/source-before-execute mutant; PRODUCT-ROOT-FOR-G and blanket-foreign-link rejection are killed by actual valid external-G paths with renewed runtime/profile/qualification bindings. Unchanged G=B and external-G controls both eligible/0; arbitrary existing foreign path/repeated profile string/unaccepted redirect never supplies authority.
+- A60 addenda 4/5 C5/I26-I28 exact root matrix: root={collection,final}, object={checker lib/merge-risk.py,preflight merge-preflight.sh,SKILL.md,RISK-REVIEW.md,accepted settings/hooks/tool/skill wiring,installed bundle}. Expand EACH root x object x {actual resolved absolute path,repository,revision,object-relative path,full bytes,type,mode,link text,source,digest}; separately G {tree hash,bundle source/content/hash,base presence,resolved physical root,wiring hash}. Accepted runtime profile checker/preflight paths equal ACTUAL resolved G paths; physical cwd/verifier/product policy/brief/answers stay B. G repository/revision need not equal B; external G need not be underneath B. Collection validates accepted G source/path/content BEFORE invoking external preflight; sentinel observes ZERO invocations for invalid source, not refusal after arbitrary code ran. Typed guard_state.toplevel absolute-root lexical validation owns canonical I27 U:runtime-invalid, with no resolved_root JSON member. Actual collector G source/root validation stays separate; expanded installed-source/root correspondence retains the I28 deferred-701:— complement. Other current missing/mismatched G fields own U:guard-invalid; runtime path/profile fields U:runtime-invalid; captured final drift additionally U:identity-binding. Missing accepted project G independently retains R:project-unconfigured. Every selector owns DEL-collection/DEL-final/source-before-execute mutant; PRODUCT-ROOT-FOR-G and blanket-foreign-link rejection are killed by actual valid external-G paths with renewed runtime/profile/qualification bindings. Unchanged G=B and external-G controls both eligible/0; arbitrary existing foreign path/repeated profile string/unaccepted redirect never supplies authority.
 
 ### S678 — M8 retains test-status forgery and missing command authority enforcement (#646; A60 + addendum 1)
 **Covers:** F73, F74
