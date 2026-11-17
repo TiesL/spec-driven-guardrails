@@ -1394,14 +1394,25 @@ def independence_checks(b,cfg,r,cap,record,drifted):
     receipts=[]; sessions=[]; dispatches=[]; nonces=[]; slots=[]; vendors=[]; raws=[]; outputs=[]
     profiles={x['slot']:x for x in cfg['reviewer_profiles']}
     for p in pair:
+        typed=typed_pair(p)
+        env=p.get('envelope') if isinstance(p,dict) else None
+        rc=p.get('receipt') if isinstance(p,dict) else None
+        reviewer=env.get('reviewer') if isinstance(env,dict) else None
+        if typed:
+            r.need(rc['available'] is True, 'risk-unavailable','referred')  # rule:slot-availability
+        # Freshness needs its supplied operands, not approval-schema literals.
+        if (isinstance(reviewer,dict) and isinstance(rc,dict)
+                and type(reviewer.get('fresh')) is bool
+                and 'inherited_session' in reviewer
+                and (reviewer['inherited_session'] is None or conforms(reviewer['inherited_session'],TEXT))
+                and type(rc.get('no_inheritance')) is bool):
+            fresh=(rc['no_inheritance'] is True and reviewer['fresh'] is True and reviewer['inherited_session'] is None)
+            r.need(fresh, 'risk-independence','referred')  # rule:no-inheritance
         if not typed_pair(p): continue
-        env=p['envelope']; rc=p['receipt']; reviewer=env['reviewer']; binding=env['binding']
-        r.need(rc['available'] is True, 'risk-unavailable','referred')  # rule:slot-availability
+        binding=env['binding']
         started=ts(rc['started_at']); received=ts(rc['received_at']); sealed=ts(rc['sealed_at']); compared=ts(rc['compared_at'])
         # The profile is selected by stable slot plus resolved identity.
         prof=profiles.get(reviewer['slot'],{})
-        fresh=(rc['no_inheritance'] is True and reviewer['fresh'] is True and reviewer['inherited_session'] is None)
-        r.need(fresh, 'risk-independence','referred')  # rule:no-inheritance
         roles=(reviewer['session_id'] not in b.get('author_sessions',[]) + b.get('quality_sessions',[])
                and reviewer['session_id']!=b.get('executor_session'))
         r.need(roles, 'risk-independence','referred')  # rule:role-separation

@@ -10909,3 +10909,199 @@ Doubt: Natural recursion failure stages and thresholds depend on this interprete
 Doubt: D4/D5 scratch feasibility and ownership establish no production green or segment completion.
 Doubt: Offline sources establish no live authenticity, isolation, qualification, C6 completeness, enablement or merge authority.
 Doubt: Adoption/status/session-context paths are absent; ordinary Codex adoption (adopt.sh --runtime codex), then fresh-session observation, remains orchestrator-owned.
+
+### A60 addendum 24 — retained freshness comparison availability, #646
+
+**Authority and scope.** Maintainer-approved combined Architect + Developer session,
+ledger 200, panel-646-d1 bounded cycle, PR #696; recovery from 56b8244 (D3 WIP
+on 47f7055). This is a regression repair under retained S658, addendum 17 P7/P9
+and panel condition 7. It changes no requirement, closed schema, oracle, carrier,
+#701 relation, eligibility rule or refusal. D4/D5 remain outside this session.
+
+**Exact cause.** At 12c337b, `independence_checks` already skipped a member failing
+full PAIR conformance. REVIEWER requires literal `fresh=true` and
+`inherited_session=null`, so both retained violating specimens fail that gate.
+D1 nevertheless emitted `risk-independence` through its aggregate requirements
+that two conforming sessions/raws/slots remain. D2 replaced full-PAIR availability
+with `typed_pair` (complete envelope + receipt conformance), independently retained
+raw semantics and stopped manufacturing aggregate inequalities from unavailable
+members. The latter correction exposed the missing direct freshness comparison:
+`typed_pair` still rejects the two literal violations before `no-inheritance`.
+Thus D2 introduced a retained diagnostic regression; the literal schema is not
+wrong, and restoring D1's missing-member aggregate refusal would undo the P7/P9
+availability rule rather than fix its actual missing comparison.
+
+**Ruling.** Validation for eligibility and availability for a diagnostic comparison
+are separate decisions. The existing no-inheritance conjunction needs only its
+three supplied operands: receipt `no_inheritance` as a bool, reviewer `fresh` as a
+bool, and an explicitly present `inherited_session` that is null or typed nonempty
+session text. These are observation types, not new accepted REVIEWER values.
+Evaluate that conjunction when those operands are available even if the member
+fails literal-schema conformance. Missing/untyped operands do not manufacture a
+failed conjunction. Full envelope/receipt conformance still gates the remaining
+existing member comparisons and capability derivation. Preserve the current
+exact-two gate, independent valid-peer handling, all raw validation, every schema
+refusal and reason order. In particular the two rows retain
+`manifest-schema`, `capability-identity-missing`, `risk-result-invalid` and regain
+`risk-independence`, in that order; they remain referred/3. Do not derive a
+capability or make a failed raw/schema result eligible.
+
+**Developer change, exactly.** In `lib/merge-risk.py:independence_checks` only,
+obtain the nested member/envelope/reviewer/receipt dictionaries safely; retain
+full `typed_pair` validation; keep slot-availability before freshness for complete
+members; move the single tagged `no-inheritance` assertion to its three typed
+operands before the existing `typed_pair` continue. Then perform all other
+existing independence operations unchanged. Keep the original tagged assertions
+and owning mutation anchors unique. Do not change `typed_pair`, `pair_checks`,
+RawValidation, capability selection, aggregate missing-operand behavior, schemas,
+rendering or any unrelated function. The existing evaluator Module and public
+CLI Interface/Seam retain their Depth, Leverage and Locality; no new Adapter,
+external Seam or shared abstraction is needed. No scenario or fixture edit is
+necessary: retain every selector, input, array, count and mutation definition.
+
+**Architect check matrix, before production edit.** Exact archived snapshots are
+12c337b and 56b8244; current production is byte-identical to 47f7055. Both are
+extracted to `/tmp` without checkout/index/branch mutation or network. Commands
+are `python3 -I test/fixtures/merge-risk-646.py <suite>` and
+`bash test/run.sh merge_risk`, executed in each snapshot. Full logs, hashes,
+commands and completion statuses are retained under `.handoff/combined646-add24/`.
+
+| Suite | D1 12c337b | Current 56b8244 before repair | Difference |
+|---|---|---|---|
+| S606 | 85 rows / 19 mutants PASS | 110 rows / 19 mutants PASS | 25 frozen D3 rows added; retained outputs identical |
+| S654 | 365 rows / 335 mutants PASS | 382 rows / 335 mutants PASS | 17 frozen D3 rows added; retained outputs identical |
+| S658 | 89 rows / 36 mutants PASS | 92/94 rows pass; two fail; mutation phase not run | five frozen D3 rows added; exactly forked-session/history-carried lose risk-independence |
+| S669 | 37 rows / 5 mutants PASS | 42 rows / 5 mutants PASS | five frozen D3 rows added; retained outputs identical |
+| Full 53-case campaign | 50 pass / 3 history-unavailable failures | 49 pass / 4 failures | exactly S658 newly fails; three identical Git-history dependencies |
+| Exact frozen D1 row replay | 576/576 PASS | 574/576 PASS | exactly two differences in full stdout/exit/stderr and assertion status |
+| Scratch planned S658 baseline | n/a | 94/94 PASS | unchanged fixture/oracles, no mutation credit |
+
+The full archive failures common to both snapshots are S626 and S659
+`structure_assert` and S627's four pinned-file comparisons, each requiring
+`git show 51178851...:<path>` in the archive. All report the missing repository;
+the archive deliberately has no `.git`. This is an identical experiment
+limitation, not a production defect or claimed green case. An independent
+unmodified S627 run in this checkout passes. The Developer runs the final full
+campaign in the checkout, where those reads are available.
+
+Every per-case result follows; HISTORY means that shared unavailable historical
+Git read. S658 FAIL is the only changed case status.
+
+| Retained case | D1 | Current before repair |
+|---|---|---|
+| `s608_merge_risk_marker_not_a_yes` | PASS | PASS |
+| `s607_merge_risk_unanimity_five_zero` | PASS | PASS |
+| `s609_merge_risk_conditional_record_manifest` | PASS | PASS |
+| `s610_merge_risk_voter_below_floor` | PASS | PASS |
+| `s612_merge_risk_caps_inclusive` | PASS | PASS |
+| `s605_merge_risk_hard_gates_first` | PASS | PASS |
+| `s611_merge_risk_evidence_check_verdicts` | PASS | PASS |
+| `s614_merge_risk_config_read_from_main_tip` | PASS | PASS |
+| `s616_merge_risk_completion_comment_revert` | PASS | PASS |
+| `s617_merge_risk_hold_300_seconds` | PASS | PASS |
+| `s613_merge_risk_each_disqualifier_alone` | PASS | PASS |
+| `s606_merge_risk_votes_expire_on_head_change` | PASS | PASS |
+| `s620_merge_risk_maintainer_approval_overrides` | PASS | PASS |
+| `s621_merge_risk_one_executor_one_command` | PASS | PASS |
+| `s619_merge_risk_new_record_after_hold` | PASS | PASS |
+| `s622_merge_risk_crash_duplicate_wake` | PASS | PASS |
+| `s624_merge_risk_live_exercises` | PASS | PASS |
+| `s618_merge_risk_hold_or_risk_label_stops` | PASS | PASS |
+| `s615_merge_risk_records_complete_immutable` | PASS | PASS |
+| `s626_merge_risk_skill_own_file` | HISTORY | HISTORY |
+| `s628_merge_risk_guard_closure_reserved` | PASS | PASS |
+| `s623_merge_risk_revocation_no_revive` | PASS | PASS |
+| `s627_merge_risk_core_edit_pointer_headroom` | HISTORY | HISTORY |
+| `s651_merge_risk_verdict_cross_fields` | PASS | PASS |
+| `s625_merge_risk_live_narrow_start` | PASS | PASS |
+| `s652_merge_risk_return_capture_bound` | PASS | PASS |
+| `s653_merge_risk_numeric_unicode_display` | PASS | PASS |
+| `s656_merge_risk_evidence_partition` | PASS | PASS |
+| `s657_merge_risk_reviewer_isolation` | PASS | PASS |
+| `s650_merge_risk_verdict_closed_schema` | PASS | PASS |
+| `s655_merge_risk_complete_evidence_export` | PASS | PASS |
+| `s660_merge_risk_executor_text_isolation` | PASS | PASS |
+| `s661_merge_risk_canonical_command` | PASS | PASS |
+| `s658_merge_risk_fresh_sealed_pair` | PASS | FAIL |
+| `s663_merge_risk_normalized_tree_collisions` | PASS | PASS |
+| `s664_merge_risk_gitlinks_modes` | PASS | PASS |
+| `s665_merge_risk_attributes_eol` | PASS | PASS |
+| `s666_merge_risk_executor_runtime_pin` | PASS | PASS |
+| `s667_merge_risk_strict_protection` | PASS | PASS |
+| `s659_merge_risk_floor_vendor_fail_closed` | HISTORY | HISTORY |
+| `s668_merge_risk_all_checks_on_head` | PASS | PASS |
+| `s670_merge_risk_adversarial_mechanisms` | PASS | PASS |
+| `s671_merge_risk_sequential_activation` | PASS | PASS |
+| `s672_merge_risk_benign_staged_controls` | PASS | PASS |
+| `s673_merge_risk_shared_runner_interface` | PASS | PASS |
+| `s674_merge_risk_qualification_safety_metrics` | PASS | PASS |
+| `s669_merge_risk_attempt_redispatch_bounds` | PASS | PASS |
+| `s675_merge_risk_qualification_identity_enable` | PASS | PASS |
+| `s676_merge_risk_adopted_project_neutrality` | PASS | PASS |
+| `s678_merge_risk_m8_results_forgery_disposition` | PASS | PASS |
+| `s662_merge_risk_hard_stop_mapping` | PASS | PASS |
+| `s677_merge_risk_external_guard_revision` | PASS | PASS |
+| `s654_merge_risk_binding_time_expiry` | PASS | PASS |
+
+**Complete exact-difference list.** Replay uses the exact D1 fixture bytes on
+both production versions, not a rewritten expectation. Of S606's 85, S654's 365,
+S658's 89 and S669's 37 rows, only these two observations differ:
+
+| Row | D1 exact ordered reasons | Current exact ordered reasons | Outcome |
+|---|---|---|---|
+| S658 forked-session | manifest-schema, capability-identity-missing, risk-result-invalid, risk-independence | manifest-schema, capability-identity-missing, risk-result-invalid | referred/3 both; empty stderr |
+| S658 history-carried | manifest-schema, capability-identity-missing, risk-result-invalid, risk-independence | manifest-schema, capability-identity-missing, risk-result-invalid | referred/3 both; empty stderr |
+
+The planned-source public CLI probe restores those exact D1 outputs. Independent
+valid-final-control remains eligible/0 with no reasons; resumed-session remains
+referred/3 with only risk-independence. Four uncounted untyped-operand probes
+remain refused without a derivative independence reason. These probes are
+scratch diagnostics, not new scenario rows or counted assertions. Evidence:
+`retained-matrix.json`, `retained-observations.json`, `summary.json`,
+`freshness-probe.json`, `planned-S658-baseline.log` and their runnable scripts.
+No other retained difference or distinct production defect was found.
+
+**Developer completion checks.** Rerun unchanged S606/S654/S658/S669, all four D2
+suites S650-S653 (218 rows / 28 legacy mutants), all 47 Q4 + five Q7 assertions,
+the D2 29-mutant and D3 35-mutant owning campaigns from new production bytes,
+and the full 53-case offline checkout campaign. Preserve A23's exact killing and
+surviving subsets: D2 22 owners / seven masked diagnostics, D3 30 owners / five
+masked diagnostics. Regenerate every affected scratch source, bind its digest
+to current production, and earn zero credit from masked results. Reconcile new
+observations against the immutable prior campaign evidence, not old source
+hashes. Verify all 576 frozen D1 rows against repaired production, unchanged QA
+arrays/fixture/core pins/skill bytes, append-only architecture, ordinary checks
+and stamp-check. Write SEGMENT D3 DONE only on completion. No D4/D5 work follows.
+
+Doubt: Offline synthetic receipts and comparisons establish no live authenticity, isolation, qualification, enablement or C6 completeness.
+Doubt: Missing .guardrails/source and .agents paths prevent adoption/live-loading verification; rerun ordinary Codex adoption (adopt.sh --runtime codex) through its owner and observe a fresh session; no installation repair is authorized here.
+
+**Execution clarification, same A24 bounded repair.** The repaired S658 baseline
+passes all 94 unchanged rows, then its legacy mutation phase reaches a stale
+source operand: `raw-identity` searches for the pre-D2 `need(sha(data)==` form,
+but D2 split that expression across metadata/hash/length conjuncts. The stopped
+current-head baseline had prevented this mutation phase from running. This is a
+harness anchor mismatch, not a new production defect or oracle conflict.
+The Developer must adapt only that existing mutation replacement to delete the
+actual `sha(data)==pair['raw_sha256']` equality. Its existing tag, raw-rewritten
+selector, independent control, row/input/oracle and 36-entry registry count stay
+unchanged; no metadata/length conjunct or production refusal is removed. This
+single necessary fixture anchor edit supersedes the earlier no-fixture-edit
+expectation, without any scenario-file change. Retain the initial full checkout
+log (52 pass / S658 mutation-anchor failure), rerun S658 and the full campaign,
+and verify all fixture bytes other than this exact replacement are unchanged.
+
+**Legacy recipe scope clarification.** The first attempted anchor adaptation
+removed only hash equality; raw-rewritten survives it because its replacement
+text changes both SHA and byte length. Retain that actual non-credit observation
+in after-S658-retry.log and legacy-hash-only-masked.py. The original pre-D2
+recipe was `need(True or sha(data)==...)`, which bypassed the entire combined
+raw-identity predicate, including length. Its faithful current-source adapter
+must likewise insert `True or` at the start of that same need expression (now
+starting with the SHA type conjunct), without touching any other guard. This is
+the unchanged legacy composite mutant semantics, not a new claimed single-guard
+kill; the hash-only attempt earns zero credit. All production guard bytes,
+retained row bytes/oracles/selectors, independent controls and counts remain
+unchanged. This exact legacy composite source operand is the sole permitted
+fixture difference and supersedes the preceding hash-only recipe. No scenario
+edit, requirement change or distinct production defect is involved.
