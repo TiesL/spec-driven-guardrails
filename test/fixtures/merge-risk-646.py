@@ -5649,7 +5649,8 @@ for slot in range(2):
             else:
                 p=b['risk_pair'][slot]
                 key={'raw-b64-type':'raw_b64','raw-sha-type':'raw_sha256','length-type':'byte_length','overflow-type':'overflow'}[kind]
-                p[key]='false' if kind=='overflow-type' else '7' if kind=='length-type' else 7
+                p[key]=('false' if kind=='overflow-type' else
+                        float(len(base64.b64decode(p['raw_b64']))) if kind=='length-type' else 7)
                 p['envelope']['binding']['repository']='laboratory/wrong'
         codes=(('identity-binding','capability-identity-missing','risk-result-invalid','risk-referral')
                if kind in ('null','integer','list','missing-envelope') else
