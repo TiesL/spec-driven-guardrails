@@ -2,6 +2,7 @@
 
 No model or network is called. Synthetic receipts exercise validation only.
 Run: python3 -I test/fixtures/merge-risk-646.py <S number> [--baseline]
+D4 ownership: python3 -I test/fixtures/merge-risk-646.py --d4-owning EVIDENCE_DIRECTORY
 D3 ownership: python3 -I test/fixtures/merge-risk-646.py --d3-owning EVIDENCE_DIRECTORY
 D2 ownership: python3 -I test/fixtures/merge-risk-646.py --d2-owning EVIDENCE_DIRECTORY
 The independently specified control must pass before mutation credit is given.
@@ -2385,6 +2386,7 @@ for field in dict.fromkeys(documented_reviewer_fields(ROOT)+['slot']):
 
 def run_row(root,entry,observe=False):
     name,edit,want,code,command=entry[:5]
+    if command=='d4-probe': return d4_assert(root,name,observe)
     if command=='structure': return structure_assert(root,sys.argv[1].lstrip('S'))
     if command=='collector-inert': return export_probe(root,inert=True)
     if command=='shipped-inert': return shipped_inert_probe(root)
@@ -6056,7 +6058,1213 @@ def d3_owning_campaign(destination):
     return 0
 
 
+
+# D4: literal QA arrays; no evaluator-derived expected values.
+D4_CODES = {'a17-json-config-malformed': ('config-malformed', 'evidence-schema'),
+ 'a17-json-config-deep1100': ('config-malformed', 'evidence-schema'),
+ 'a17-json-brief-malformed': ('project-unconfigured', 'risk-referral'),
+ 'a17-json-brief-deep1100': ('project-unconfigured', 'risk-referral'),
+ 'a17-json-qualification-malformed': ('qualification-unavailable', 'risk-referral'),
+ 'a17-json-qualification-deep1100': ('qualification-unavailable', 'risk-referral'),
+ 'a17-adapter-gh-deep': (),
+ 'a17-adapter-collect-config-deep': ('verifier-crash',),
+ 'a17-adapter-queue-config-deep': ('verifier-crash',),
+ 'a17-adapter-acceptance-deep': ('acceptance-unverified',),
+ 'a17-adapter-acceptance-nonobject': ('acceptance-unverified',),
+ 'a17-json-manifest-selected-malformed': ('record-selection', 'risk-referral'),
+ 'a17-json-manifest-selected-deep1100': ('record-selection', 'risk-referral'),
+ 'a17-json-manifest-history-malformed': ('risk-referral',),
+ 'a17-json-manifest-history-deep1100': ('risk-referral',),
+ 'a17-json-manifest-reader-malformed': ('manifest-schema',),
+ 'a17-json-manifest-reader-deep1100': ('manifest-schema',),
+ 'a17-number-manifest-score': ('manifest-schema', 'risk-referral'),
+ 'a17-json-decision-malformed': ('capability-table-invalid', 'risk-referral'),
+ 'a17-json-decision-deep1100': ('capability-table-invalid', 'risk-referral'),
+ 'a17-json-mapping-malformed': ('identity-binding',
+                                'capability-table-invalid',
+                                'capability-identity-missing',
+                                'risk-referral'),
+ 'a17-json-mapping-deep1100': ('identity-binding',
+                               'capability-table-invalid',
+                               'capability-identity-missing',
+                               'risk-referral'),
+ 'a17-json-revocation-malformed': ('identity-binding', 'capability-exception-invalid', 'risk-referral'),
+ 'a17-json-revocation-deep1100': ('identity-binding', 'capability-exception-invalid', 'risk-referral'),
+ 'a17-json-exception-malformed': ('identity-binding', 'capability-exception-invalid', 'risk-referral'),
+ 'a17-json-exception-deep1100': ('identity-binding', 'capability-exception-invalid', 'risk-referral'),
+ 'a17-number-exception-score': ('identity-binding', 'capability-exception-invalid', 'risk-referral')}
+
+
+def d4_request(root,consumer,variant=None):
+    bad='{' if variant=='malformed' else '['*1100+'0'+']'*1100
+    b=control(root); d2_peer(b,1,'refer'); c=json.loads(b['config_text']); command='evaluate'
+    if consumer in ('revocation','exception'): exc(departure='preference-only')(b)
+    if consumer=='brief':
+        retain_ref(b,c['project']['brief'],bad); b['current']['brief_sha256']=c['project']['brief']['sha256']; requalify_lab(b,c)
+    elif consumer=='decision':
+        retain_ref(b,c['capability']['decision'],bad); b['accepted']['qualification']['inputs']['floor']=sha(canonical_fixture(c['capability'])); requalify_lab(b,c)
+    elif consumer=='qualification':
+        retain_ref(b,c['qualification'],bad); b['accepted']['qualification']['source']=copy.deepcopy(c['qualification'])
+        b['current']['qualification_sha256']=c['qualification']['sha256']
+    if consumer in ('brief','decision','qualification'):
+        b['config_text']=raw(c).decode(); b['current']['policy_sha256']=sha(b['config_text'])
+        for p in b['risk_pair']:
+            d=json.loads(base64.b64decode(p['raw_b64']))
+            for k in ('policy_sha256','qualification_sha256'):
+                p['envelope']['binding'][k]=b['current'][k];d['binding'][k]=b['current'][k]
+            seal(p,d)
+    prepared(b)
+    if consumer=='config': b['config_text']=bad; b['schema']='wrong'
+    elif consumer.startswith('manifest-'):
+        body='temporary, panel decision\n<!-- merge-risk-manifest v2 -->\n```json\n'+bad+'\n```\n'
+        if consumer=='manifest-history':
+            item=copy.deepcopy(b['issue_comments'][0]); item['url']+='1'; item['body']=body; b['issue_comments'].append(item)
+        elif consumer=='manifest-selected': b['issue_comments'][0]['body']=body
+        else: b=copy.deepcopy(b['issue_comments'][0]);b['body']=body;command='record'
+    elif consumer=='mapping':
+        b['_frozen']=True
+        pin_lab(b,c,mapping=bad); b['accepted']['qualification']['inputs']['floor']=sha(canonical_fixture(c['capability'])); requalify_lab(b,c)
+        b['config_text']=raw(c).decode();b['current']['policy_sha256']=sha(b['config_text']);b['current']['qualification_sha256']=c['qualification']['sha256'];b.pop('_frozen',None)
+    elif consumer in ('revocation','exception'):
+        if consumer=='exception': b['capability']['ledger'][0]['body']='Maintainer exception\n<!-- merge-risk-capability-exception v1 -->\n```json\n'+bad+'\n```\n'
+        else: b['capability']['ledger'].append(ledger_comment('Maintainer revocation\n<!-- merge-risk-capability-revocation v1 -->\n```json\n'+bad+'\n```\n'))
+    return b,command
+
+
+def d4_number(root,consumer):
+    b=control(root); d2_peer(b,1,'refer')
+    if consumer=='exception-score': exc(departure='preference-only')(b)
+    prepared(b)
+    if consumer=='manifest-score':
+        m=json.loads(b['issue_comments'][0]['body'].split('```json\n')[1].split('\n```')[0])
+        m['capability']['comparisons'][0]['score']=10**400
+        b['issue_comments'][0]['body']=record_body(m)
+    else:
+        item=b['capability']['ledger'][0]
+        e=json.loads(item['body'].split('```json\n')[1].split('\n```')[0])
+        e['reviewer_score']=10**400; item['body']=exception_body(e)
+    return b,'evaluate'
+
+
+def d4_transport(m,base,config_text,acceptance):
+    root=ROOT
+    m.physical_top=lambda p:root
+    def gh(args,raw=False):
+        a=' '.join(args)
+        if args[:2]==['repo','view']: return {'nameWithOwner':REPO}
+        if a.endswith('branches/main'): return {'commit':{'sha':B}}
+        if '/pulls/700' in a and '/compare/' not in a: return {'head':{'sha':H},'base':{'ref':'main'},'labels':[],'state':'open','title':base['pr']['title'],'body':base['pr']['body']}
+        if args[:2]==['pr','view']:return {'closingIssuesReferences':[{'number':701}]}
+        if '/compare/' in a:return {'merge_base_commit':{'sha':B},'files':[{'filename':x['path'],'previous_filename':x['previous_path'],'additions':x['additions'],'deletions':x['deletions']} for x in base['files']]}
+        if '/issues/comments/' in a: return {'body':'<!-- merge-risk-acceptance v2 -->\n```json\n'+acceptance+'\n```','user':{'login':'laboratory'}}
+        if '/issues/' in a:return {'state':'open','labels':[]}
+        return None
+    m.gh=gh
+    def git(root,*args):
+        if args[0]=='show' and args[1].endswith('policy/merge-autonomy.json'):return config_text.encode()
+        if args[0]=='show':return b'| quality-review-before-merge | yes |\n| process-multi-agent-roles | yes |\n'
+        if args[0]=='remote':return ('https://github.com/'+REPO+'.git').encode()
+        if args[0]=='log':return b'2025-01-01T00:00:00Z'
+        raise AssertionError(args)
+    m.git=git;m.pages=lambda *a:[];m.object_changes=lambda *a:(base['files'],base['diff_text'].encode(),b'');m.inert_corpus=lambda *a:(base['artifacts'],base['trees']);m.verifier_state=lambda *a:dict(base['verifier'],head='0'*40)
+    m.source_body=lambda *a:None;m.server_now=lambda *a:base['now']
+    m.process=lambda *a,**k: (_ for _ in ()).throw(AssertionError('unexpected subprocess'))
+
+
+def d4_adapter(root,name,normal=False):
+    import contextlib
+    import io
+    stdout,stderr=io.StringIO(),io.StringIO()
+    with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):
+        got=d4_adapter_call(root,name,normal)
+    # Empty streams are part of every normal/refusal oracle, including gh None.
+    if stdout.getvalue(): got['unexpected_stdout']=stdout.getvalue()
+    if stderr.getvalue(): got['unexpected_stderr']=stderr.getvalue()
+    return got
+
+
+def d4_adapter_call(root,name,normal=False):
+    # Load actual source, replacing every transport before collecting anything.
+    import types
+    m=types.ModuleType('d4_probe'); m.__file__=str(root/'lib/merge-risk.py')
+    exec(compile((root/'lib/merge-risk.py').read_text(),m.__file__,'exec'),m.__dict__)
+    base=prepared(control(root)); bad='['*1100+'0'+']'*1100
+    if name=='a17-adapter-gh-deep':
+        m.process=lambda *a,**k:subprocess.CompletedProcess([],0,b'{}' if normal else bad.encode(),b'')
+        return {'value':m.gh(['repo','view'])}
+    d4_transport(m,base,bad if '-config-deep' in name and not normal else base['config_text'],
+                 '{}' if normal else bad if name.endswith('acceptance-deep') else '7' if name.endswith('acceptance-nonobject') else '{}')
+    queue='queue-config' in name
+    if normal:
+        value=m.collect_queue() if queue else m.collect('final',700,str(ROOT))
+        check(isinstance(value,dict),name+': normal collector dictionary')
+        return {'normal_dictionary':True}
+    text,rc=m.cli(['collect-queue'] if queue else ['collect','--phase','final','700',str(ROOT)])
+    return {'stdout':text,'exit':rc}
+
+
+def d4_assert(root,name,observe=False):
+    if name.startswith('a17-adapter-'):
+        try: got=d4_adapter(root,name)
+        except (RecursionError,TypeError,ValueError) as error: got={"exception":type(error).__name__}
+        if observe: return got
+        want={'value':None} if name=='a17-adapter-gh-deep' else {
+            'stdout':'merge-risk: unresolved pr=- head=- base=- diff=- config=-\nreason: '+D4_CODES[name][0]+'\n','exit':4}
+        check(got==want,name+': exact adapter output '+repr(got))
+        check(d4_adapter(root,name,True)==({'value':{}} if name=='a17-adapter-gh-deep' else {'normal_dictionary':True}),name+': independent normal control')
+        return got
+    request,command=(d4_number(root,name[len('a17-number-'):]) if name.startswith('a17-number-') else
+                     d4_request(root,*name[len('a17-json-'):].rsplit('-',1)))
+    p=invoke(root,request,command)
+    if observe: return {'stdout':p.stdout,'stderr':p.stderr,'exit':p.returncode}
+    codes=tuple(l[8:] for l in p.stdout.splitlines() if l.startswith('reason: '))
+    reader=command=='record'
+    check(codes==D4_CODES[name],name+': ordered codes '+repr(codes))
+    expected=4 if reader or name.startswith('a17-json-config-') else 3
+    check(p.returncode==expected,name+': exit '+str(p.returncode))
+    if reader:
+        check(p.stdout=='record: invalid\nreason: manifest-schema\n',name+': exact reader output '+repr(p.stdout))
+    else:
+        header='merge-risk: '+('unresolved' if expected==4 else 'referred')+' pr=700 head='+H+' base='+B+' diff='+sha(request['diff_text'])+' config='+sha(request['config_text'])
+        check(p.stdout.splitlines()[0]==header,name+': header identity')
+        check(sum(l.startswith('merge-risk: ') for l in p.stdout.splitlines())==1,name+': single header')
+    check(not p.stderr and 'SENTINEL' not in p.stdout,name+': no leak/stderr')
+    return p
+
+
+for name in D4_CODES:
+    scenario=614 if name.startswith('a17-adapter-') or any(name.startswith('a17-json-'+x+'-') for x in ('config','brief','qualification')) else 615 if name.startswith(('a17-json-manifest-','a17-number-manifest-')) else 659
+    row(scenario,name,command='d4-probe')
+
+
+
+# A23 exact D4 ownership recipes: each delta applies to fresh production bytes.
+D4_MUTATIONS = [('q5-config',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    "    except (): r.add('unresolved','config-malformed'); return None\n"
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  ['a17-json-config-malformed', 'a17-json-config-deep1100'],
+  []),
+ ('q5-manifest',
+  [('    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,ValueError,UnicodeError,RecursionError): return None,'manifest-malformed'\n"
+    '\n',
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '\n')],
+  ['a17-json-manifest-history-malformed',
+   'a17-json-manifest-selected-malformed',
+   'a17-json-manifest-reader-deep1100',
+   'a17-json-manifest-history-deep1100',
+   'a17-json-manifest-selected-deep1100',
+   'a17-json-manifest-reader-malformed'],
+  []),
+ ('q5-retained',
+  [('    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    '\n',
+    '    try: return strict_json(body)\n    except (): return None\n\n')],
+  ['a17-json-qualification-deep1100',
+   'a17-json-brief-malformed',
+   'a17-json-brief-deep1100',
+   'a17-json-qualification-malformed',
+   'a17-json-decision-malformed',
+   'a17-json-decision-deep1100'],
+  []),
+ ('q5-mapping',
+  [('    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n',
+    '    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n')],
+  ['a17-json-mapping-deep1100', 'a17-json-mapping-malformed'],
+  []),
+ ('q5-revocation',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  ['a17-json-revocation-malformed', 'a17-json-revocation-deep1100'],
+  []),
+ ('q5-exception',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n',
+    '            try: data=strict_json(raw)\n'
+    '            except (): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n')],
+  ['a17-json-exception-malformed', 'a17-json-exception-deep1100'],
+  []),
+ ('q5-number',
+  [("                  'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),\n"
+    "                  'number':lambda:finite_number(v)}[s]()\n"
+    '            if not ok: types.append(s)\n',
+    "                  'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),\n"
+    "                  'number':lambda:type(v) in (int,float) and math.isfinite(v)}[s]()\n"
+    '            if not ok: types.append(s)\n')],
+  ['a17-number-manifest-score', 'a17-number-exception-score'],
+  []),
+ ('q5-site-brief',
+  [('#!/usr/bin/env python3\n',
+    'def audit_retained_unchecked(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (): return None\n'
+    'def audit_parse_unchecked(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '#!/usr/bin/env python3\n'),
+   ("                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=retained_json(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n',
+    "                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=audit_retained_unchecked(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n')],
+  ['a17-json-brief-malformed', 'a17-json-brief-deep1100'],
+  []),
+ ('q5-site-qualification',
+  [('#!/usr/bin/env python3\n',
+    'def audit_retained_unchecked(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (): return None\n'
+    'def audit_parse_unchecked(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '#!/usr/bin/env python3\n'),
+   ("          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=retained_json(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n",
+    "          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=audit_retained_unchecked(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n")],
+  ['a17-json-qualification-deep1100', 'a17-json-qualification-malformed'],
+  []),
+ ('q5-site-decision',
+  [('#!/usr/bin/env python3\n',
+    'def audit_retained_unchecked(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (): return None\n'
+    'def audit_parse_unchecked(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '#!/usr/bin/env python3\n'),
+   ('    rows=parse_table(text) if text is not None else None\n'
+    "    decision=retained_json(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n',
+    '    rows=parse_table(text) if text is not None else None\n'
+    "    decision=audit_retained_unchecked(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n')],
+  ['a17-json-decision-malformed', 'a17-json-decision-deep1100'],
+  []),
+ ('q5-site-record',
+  [('#!/usr/bin/env python3\n',
+    'def audit_retained_unchecked(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (): return None\n'
+    'def audit_parse_unchecked(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '#!/usr/bin/env python3\n'),
+   ("    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n',
+    "    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*audit_parse_unchecked(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n')],
+  ['a17-json-manifest-history-malformed',
+   'a17-json-manifest-selected-malformed',
+   'a17-json-manifest-history-deep1100',
+   'a17-json-manifest-selected-deep1100'],
+  []),
+ ('q5-site-reader',
+  [('#!/usr/bin/env python3\n',
+    'def audit_retained_unchecked(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (): return None\n'
+    'def audit_parse_unchecked(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (): return None,'manifest-malformed'\n"
+    '#!/usr/bin/env python3\n'),
+   ('def read_record(b):\n'
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n",
+    'def read_record(b):\n'
+    "    r=Result(); m,e=audit_parse_unchecked(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n")],
+  ['a17-json-manifest-reader-deep1100', 'a17-json-manifest-reader-malformed'],
+  []),
+ ('q5-config-omit-Invalid',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    "    except (ValueError,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); return "
+    'None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  [],
+  ['a17-json-config-malformed', 'a17-json-config-deep1100']),
+ ('q5-config-omit-ValueError',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    "    except (Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); return None\n"
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  ['a17-json-config-malformed'],
+  ['a17-json-config-deep1100']),
+ ('q5-config-omit-UnicodeError',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,RecursionError): r.add('unresolved','config-malformed'); return None\n"
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  [],
+  ['a17-json-config-malformed', 'a17-json-config-deep1100']),
+ ('q5-config-omit-RecursionError',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError): r.add('unresolved','config-malformed'); return None\n"
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  ['a17-json-config-deep1100'],
+  ['a17-json-config-malformed']),
+ ('q5-record-omit-Invalid',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (ValueError,UnicodeError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n',
+    "    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*audit_site_helper(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n')],
+  [],
+  ['a17-json-manifest-history-malformed',
+   'a17-json-manifest-selected-malformed',
+   'a17-json-manifest-history-deep1100',
+   'a17-json-manifest-selected-deep1100']),
+ ('q5-record-omit-ValueError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,UnicodeError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n',
+    "    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*audit_site_helper(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n')],
+  ['a17-json-manifest-history-malformed', 'a17-json-manifest-selected-malformed'],
+  ['a17-json-manifest-history-deep1100', 'a17-json-manifest-selected-deep1100']),
+ ('q5-record-omit-UnicodeError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,ValueError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n',
+    "    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*audit_site_helper(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n')],
+  [],
+  ['a17-json-manifest-history-malformed',
+   'a17-json-manifest-selected-malformed',
+   'a17-json-manifest-history-deep1100',
+   'a17-json-manifest-selected-deep1100']),
+ ('q5-record-omit-RecursionError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,ValueError,UnicodeError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n',
+    "    if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None\n"
+    "    records=[(c,*audit_site_helper(c.get('body'))) for c in cs if isinstance(c,dict)]\n"
+    '    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]\n')],
+  ['a17-json-manifest-history-deep1100', 'a17-json-manifest-selected-deep1100'],
+  ['a17-json-manifest-history-malformed', 'a17-json-manifest-selected-malformed']),
+ ('q5-reader-omit-Invalid',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (ValueError,UnicodeError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def read_record(b):\n'
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n",
+    'def read_record(b):\n'
+    "    r=Result(); m,e=audit_site_helper(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n")],
+  [],
+  ['a17-json-manifest-reader-deep1100', 'a17-json-manifest-reader-malformed']),
+ ('q5-reader-omit-ValueError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,UnicodeError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def read_record(b):\n'
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n",
+    'def read_record(b):\n'
+    "    r=Result(); m,e=audit_site_helper(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n")],
+  ['a17-json-manifest-reader-malformed'],
+  ['a17-json-manifest-reader-deep1100']),
+ ('q5-reader-omit-UnicodeError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,ValueError,RecursionError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def read_record(b):\n'
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n",
+    'def read_record(b):\n'
+    "    r=Result(); m,e=audit_site_helper(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n")],
+  [],
+  ['a17-json-manifest-reader-deep1100', 'a17-json-manifest-reader-malformed']),
+ ('q5-reader-omit-RecursionError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(body):\n'
+    "    if not isinstance(body,str): return None,'manifest-malformed'\n"
+    "    if '<!-- merge-risk-manifest v1 -->' in body: return None,'historical-v1'\n"
+    "    marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\\n```json\\n(.*?)\\n```[ "
+    "\\t]*(?:\\n|$)',body,re.M|re.S))\n"
+    "    if len(marks)!=1: return None,'manifest-malformed'\n"
+    '    try: return strict_json(marks[0].group(1)),None\n'
+    "    except (Invalid,ValueError,UnicodeError): return None,'manifest-malformed'\n"
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def read_record(b):\n'
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n",
+    'def read_record(b):\n'
+    "    r=Result(); m,e=audit_site_helper(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n")],
+  ['a17-json-manifest-reader-deep1100'],
+  ['a17-json-manifest-reader-malformed']),
+ ('q5-brief-omit-Invalid',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=retained_json(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n',
+    "                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=audit_site_helper(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n')],
+  [],
+  ['a17-json-brief-malformed', 'a17-json-brief-deep1100']),
+ ('q5-brief-omit-ValueError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (Invalid,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=retained_json(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n',
+    "                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=audit_site_helper(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n')],
+  ['a17-json-brief-malformed'],
+  ['a17-json-brief-deep1100']),
+ ('q5-brief-omit-UnicodeError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=retained_json(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n',
+    "                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=audit_site_helper(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n')],
+  [],
+  ['a17-json-brief-malformed', 'a17-json-brief-deep1100']),
+ ('q5-brief-omit-RecursionError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,UnicodeError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=retained_json(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n',
+    "                and cfg['unicode_version']==unicodedata.unidata_version)\n"
+    "    brief=audit_site_helper(b,project['brief'],repo) if project else None\n"
+    '    configured=configured and conforms(brief,BRIEF)\n')],
+  ['a17-json-brief-deep1100'],
+  ['a17-json-brief-malformed']),
+ ('q5-qualification-omit-Invalid',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=retained_json(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n",
+    "          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=audit_site_helper(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n")],
+  [],
+  ['a17-json-qualification-deep1100', 'a17-json-qualification-malformed']),
+ ('q5-qualification-omit-ValueError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (Invalid,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=retained_json(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n",
+    "          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=audit_site_helper(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n")],
+  ['a17-json-qualification-malformed'],
+  ['a17-json-qualification-deep1100']),
+ ('q5-qualification-omit-UnicodeError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=retained_json(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n",
+    "          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=audit_site_helper(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n")],
+  [],
+  ['a17-json-qualification-deep1100', 'a17-json-qualification-malformed']),
+ ('q5-qualification-omit-RecursionError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,UnicodeError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ("          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=retained_json(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n",
+    "          and accepted_ref(q['m8_disposition'],repo))\n"
+    "    q_body=audit_site_helper(b,cfg['qualification'],repo)\n"
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n")],
+  ['a17-json-qualification-deep1100'],
+  ['a17-json-qualification-malformed']),
+ ('q5-decision-omit-Invalid',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('    rows=parse_table(text) if text is not None else None\n'
+    "    decision=retained_json(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n',
+    '    rows=parse_table(text) if text is not None else None\n'
+    "    decision=audit_site_helper(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n')],
+  [],
+  ['a17-json-decision-malformed', 'a17-json-decision-deep1100']),
+ ('q5-decision-omit-ValueError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (Invalid,UnicodeError,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('    rows=parse_table(text) if text is not None else None\n'
+    "    decision=retained_json(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n',
+    '    rows=parse_table(text) if text is not None else None\n'
+    "    decision=audit_site_helper(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n')],
+  ['a17-json-decision-malformed'],
+  ['a17-json-decision-deep1100']),
+ ('q5-decision-omit-UnicodeError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,RecursionError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('    rows=parse_table(text) if text is not None else None\n'
+    "    decision=retained_json(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n',
+    '    rows=parse_table(text) if text is not None else None\n'
+    "    decision=audit_site_helper(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n')],
+  [],
+  ['a17-json-decision-malformed', 'a17-json-decision-deep1100']),
+ ('q5-decision-omit-RecursionError',
+  [('#!/usr/bin/env python3\n',
+    'def audit_site_helper(b,reference,repository):\n'
+    '    body=retained_body(b,reference,repository)\n'
+    '    if body is None: return None\n'
+    '    try: return strict_json(body)\n'
+    '    except (ValueError,Invalid,UnicodeError): return None\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('    rows=parse_table(text) if text is not None else None\n'
+    "    decision=retained_json(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n',
+    '    rows=parse_table(text) if text is not None else None\n'
+    "    decision=audit_site_helper(b,pin['decision'],repo)\n"
+    '    # A date alone never pins bytes: the protected decision names all three.\n')],
+  ['a17-json-decision-deep1100'],
+  ['a17-json-decision-malformed']),
+ ('q5-mapping-omit-Invalid',
+  [('    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n',
+    '    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n')],
+  [],
+  ['a17-json-mapping-deep1100', 'a17-json-mapping-malformed']),
+ ('q5-mapping-omit-ValueError',
+  [('    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n',
+    '    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n')],
+  ['a17-json-mapping-malformed'],
+  ['a17-json-mapping-deep1100']),
+ ('q5-mapping-omit-UnicodeError',
+  [('    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n',
+    '    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n')],
+  [],
+  ['a17-json-mapping-deep1100', 'a17-json-mapping-malformed']),
+ ('q5-mapping-omit-RecursionError',
+  [('    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n',
+    '    try: mapping=strict_json(mapping_text) if mapping_text is not None else None\n'
+    '    except (ValueError,Invalid,UnicodeError): mapping=None\n'
+    '    if not conforms(mapping,MAPPING): mapping=None\n')],
+  ['a17-json-mapping-deep1100'],
+  ['a17-json-mapping-malformed']),
+ ('q5-revocation-omit-Invalid',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  [],
+  ['a17-json-revocation-malformed', 'a17-json-revocation-deep1100']),
+ ('q5-revocation-omit-ValueError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  ['a17-json-revocation-malformed'],
+  ['a17-json-revocation-deep1100']),
+ ('q5-revocation-omit-UnicodeError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  [],
+  ['a17-json-revocation-malformed', 'a17-json-revocation-deep1100']),
+ ('q5-revocation-omit-RecursionError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  ['a17-json-revocation-deep1100'],
+  ['a17-json-revocation-malformed']),
+ ('q5-exception-omit-Invalid',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n',
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n')],
+  [],
+  ['a17-json-exception-malformed', 'a17-json-exception-deep1100']),
+ ('q5-exception-omit-ValueError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n',
+    '            try: data=strict_json(raw)\n'
+    '            except (Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n')],
+  ['a17-json-exception-malformed'],
+  ['a17-json-exception-deep1100']),
+ ('q5-exception-omit-UnicodeError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n',
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n')],
+  [],
+  ['a17-json-exception-malformed', 'a17-json-exception-deep1100']),
+ ('q5-exception-omit-RecursionError',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n',
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n')],
+  ['a17-json-exception-deep1100'],
+  ['a17-json-exception-malformed']),
+ ('q5-number-site-manifest',
+  [('#!/usr/bin/env python3\n',
+    'def audit_shape_unchecked(value, schema):\n'
+    '    """Return closure and type errors separately, without input text."""\n'
+    '    closure, types = [], []\n'
+    '    def visit(v, s):\n'
+    '        if isinstance(s, dict):\n'
+    "            if not isinstance(v, dict): types.append('object'); return\n"
+    "            if set(v) != set(s): closure.append('keys')\n"
+    '            for k in s:\n'
+    '                if k in v: visit(v[k],s[k])\n'
+    '        elif isinstance(s,list):\n'
+    "            if not isinstance(v,list): types.append('array'); return\n"
+    '            for x in v: visit(x,s[0])\n'
+    '        elif isinstance(s,tuple):\n'
+    "            if len(s)==2 and s[0]=='nullable':\n"
+    '                if v is not None: visit(v,s[1])\n'
+    "            elif len(s)==2 and s[0]=='int-literal':\n"
+    "                if not is_int(v) or v!=s[1]: types.append('literal')\n"
+    "            elif type(v) is not str or v not in s: types.append('enum')\n"
+    '        else:\n'
+    "            ok = {'text': lambda: isinstance(v,str) and bool(v.strip()),\n"
+    "                  'string': lambda: isinstance(v,str), 'positive':lambda: is_int(v) and v>0,\n"
+    "                  'nonnegative':lambda: is_int(v) and v>=0, 'bool':lambda:type(v) is bool,\n"
+    "                  'true':lambda:v is True, 'null':lambda:v is None,\n"
+    "                  'sha40':lambda:isinstance(v,str) and bool(SHA40.fullmatch(v)),\n"
+    "                  'sha256':lambda:isinstance(v,str) and bool(SHA256.fullmatch(v)),\n"
+    "                  'repository':lambda:isinstance(v,str) and bool(REPOSITORY.fullmatch(v)),\n"
+    "                  'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),\n"
+    "                  'number':lambda:type(v) in (int,float) and math.isfinite(v)}[s]()\n"
+    '            if not ok: types.append(s)\n'
+    '    visit(value,schema)\n'
+    '    return closure,types\n'
+    '\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def conforms(value,schema):\n'
+    '    closure,types=shape(value,schema)\n'
+    '    return not closure and not types\n',
+    'def conforms(value,schema):\n'
+    '    closure,types=audit_shape_unchecked(value,schema) if schema is MANIFEST else shape(value,schema)\n'
+    '    return not closure and not types\n')],
+  ['a17-number-manifest-score'],
+  []),
+ ('q5-number-site-exception',
+  [('#!/usr/bin/env python3\n',
+    'def audit_shape_unchecked(value, schema):\n'
+    '    """Return closure and type errors separately, without input text."""\n'
+    '    closure, types = [], []\n'
+    '    def visit(v, s):\n'
+    '        if isinstance(s, dict):\n'
+    "            if not isinstance(v, dict): types.append('object'); return\n"
+    "            if set(v) != set(s): closure.append('keys')\n"
+    '            for k in s:\n'
+    '                if k in v: visit(v[k],s[k])\n'
+    '        elif isinstance(s,list):\n'
+    "            if not isinstance(v,list): types.append('array'); return\n"
+    '            for x in v: visit(x,s[0])\n'
+    '        elif isinstance(s,tuple):\n'
+    "            if len(s)==2 and s[0]=='nullable':\n"
+    '                if v is not None: visit(v,s[1])\n'
+    "            elif len(s)==2 and s[0]=='int-literal':\n"
+    "                if not is_int(v) or v!=s[1]: types.append('literal')\n"
+    "            elif type(v) is not str or v not in s: types.append('enum')\n"
+    '        else:\n'
+    "            ok = {'text': lambda: isinstance(v,str) and bool(v.strip()),\n"
+    "                  'string': lambda: isinstance(v,str), 'positive':lambda: is_int(v) and v>0,\n"
+    "                  'nonnegative':lambda: is_int(v) and v>=0, 'bool':lambda:type(v) is bool,\n"
+    "                  'true':lambda:v is True, 'null':lambda:v is None,\n"
+    "                  'sha40':lambda:isinstance(v,str) and bool(SHA40.fullmatch(v)),\n"
+    "                  'sha256':lambda:isinstance(v,str) and bool(SHA256.fullmatch(v)),\n"
+    "                  'repository':lambda:isinstance(v,str) and bool(REPOSITORY.fullmatch(v)),\n"
+    "                  'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),\n"
+    "                  'number':lambda:type(v) in (int,float) and math.isfinite(v)}[s]()\n"
+    '            if not ok: types.append(s)\n'
+    '    visit(value,schema)\n'
+    '    return closure,types\n'
+    '\n'
+    '\n'
+    '#!/usr/bin/env python3\n'),
+   ('def conforms(value,schema):\n'
+    '    closure,types=shape(value,schema)\n'
+    '    return not closure and not types\n',
+    'def conforms(value,schema):\n'
+    '    closure,types=audit_shape_unchecked(value,schema) if schema is EXCEPTION else shape(value,schema)\n'
+    '    return not closure and not types\n')],
+  ['a17-number-exception-score'],
+  []),
+ ('q5-typed-refusal-brief',
+  [('    configured=configured and conforms(brief,BRIEF)\n'
+    "    r.need(configured, 'project-unconfigured','referred')  # rule:project-configured\n"
+    "    accepted=b.get('accepted') or {}\n",
+    '    configured=configured and conforms(brief,BRIEF)\n'
+    "    r.need(True, 'project-unTrue','referred')  # rule:project-True\n"
+    "    accepted=b.get('accepted') or {}\n")],
+  ['a17-json-brief-malformed', 'a17-json-brief-deep1100'],
+  []),
+ ('q5-typed-refusal-qualification',
+  [("    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n"
+    "    r.need(q_ok, 'qualification-unavailable','referred')  # rule:qualification\n"
+    "    qualification_samples(b,cfg,r,q,cap['pin'],expired)\n",
+    "    q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}\n"
+    "    r.need(True, 'qualification-unavailable','referred')  # rule:qualification\n"
+    "    qualification_samples(b,cfg,r,q,cap['pin'],expired)\n")],
+  ['a17-json-qualification-deep1100', 'a17-json-qualification-malformed'],
+  []),
+ ('q5-typed-refusal-decision',
+  [('    # A date alone never pins bytes: the protected decision names all three.\n'
+    "    selected=conforms(decision,DECISION) and decision['table']==pin['table'] and "
+    "decision['mapping']==pin['mapping']  # rule:capability-decision\n"
+    "    mapping_text=source_text(b,pin['mapping']['source'])\n",
+    '    # A date alone never pins bytes: the protected decision names all three.\n'
+    '    selected=True  # rule:capability-decision\n'
+    "    mapping_text=source_text(b,pin['mapping']['source'])\n")],
+  ['a17-json-decision-malformed', 'a17-json-decision-deep1100'],
+  []),
+ ('q5-revocation-drop-unavailable',
+  [('            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n",
+    '            try: data=strict_json(raw)\n'
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    "            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])\n")],
+  ['a17-json-revocation-malformed', 'a17-json-revocation-deep1100'],
+  []),
+ ('q5-exception-invalid-candidate',
+  [('            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if not conforms(data,EXCEPTION): continue\n'
+    "            exceptions.setdefault(data['number'],[]).append((comment,data,len(found)))\n",
+    '            except (ValueError,Invalid,UnicodeError,RecursionError): continue\n'
+    '            if False: continue\n'
+    "            exceptions.setdefault(data['number'],[]).append((comment,data,len(found)))\n")],
+  [],
+  ['a17-json-exception-malformed', 'a17-json-exception-deep1100']),
+ ('q5-reader-manifest-refusal',
+  [("    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(e is None and not manifest_errors(m), 'manifest-schema')\n"
+    "    r.need(b.get('updated_at')==b.get('created_at'), 'record-edited')\n",
+    "    r=Result(); m,e=parse_manifest(b.get('body'))\n"
+    "    r.need(True, 'manifest-schema')\n"
+    "    r.need(b.get('updated_at')==b.get('created_at'), 'record-edited')\n")],
+  ['a17-json-manifest-reader-deep1100', 'a17-json-manifest-reader-malformed'],
+  []),
+ ('q5-selected-selection-refusal',
+  [("    found=[(c,m) for c,m,e in records if c.get('url')==selected and not e]\n"
+    "    r.need(len(found)==1, 'record-selection')  # rule:record-selection\n"
+    '    if len(found)!=1: return None\n',
+    "    found=[(c,m) for c,m,e in records if c.get('url')==selected and not e]\n"
+    "    r.need(True, 'record-selection')  # rule:record-selection\n"
+    '    if len(found)!=1: return None\n')],
+  ['a17-json-manifest-selected-malformed', 'a17-json-manifest-selected-deep1100'],
+  []),
+ ('q5-config-own-refusal',
+  [('    try: cfg=strict_json(text)\n'
+    "    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); "
+    'return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n",
+    '    try: cfg=strict_json(text)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    "    if config_errors(cfg): r.add('unresolved','config-invalid'); return None\n")],
+  ['a17-json-config-malformed', 'a17-json-config-deep1100'],
+  []),
+ ('q5a-gh',
+  [('    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    '\n',
+    '    try: return strict_json(p.stdout)\n    except (ValueError,Invalid,UnicodeError): return None\n\n')],
+  ['a17-adapter-gh-deep'],
+  []),
+ ('q5a-ultimate-fixed-output',
+  [("        return ('merge-risk: unresolved pr=- head=- base=- diff=- config=-\\nreason: "
+    "'+str(error)+'\\n',4)\n"
+    '    except Exception:\n'
+    "        return ('merge-risk: unresolved pr=- head=- base=- diff=- config=-\\nreason: "
+    "verifier-crash\\n',4)\n"
+    '\n',
+    "        return ('merge-risk: unresolved pr=- head=- base=- diff=- config=-\\nreason: "
+    "'+str(error)+'\\n',4)\n"
+    '\n'
+    '\n')],
+  ['a17-adapter-collect-config-deep', 'a17-adapter-queue-config-deep'],
+  []),
+ ('q5a-acceptance-recursion',
+  [('                try: acceptance_value=strict_json(manifest.group(1))\n'
+    '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n",
+    '                try: acceptance_value=strict_json(manifest.group(1))\n'
+    "                except (Invalid,ValueError,UnicodeError): raise Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n")],
+  ['a17-adapter-acceptance-deep'],
+  []),
+ ('q5a-acceptance-object',
+  [('                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n"
+    "                b['acceptance'].update(acceptance_value)\n",
+    '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(True,'acceptance-unverified')\n"
+    "                b['acceptance'].update(acceptance_value)\n")],
+  ['a17-adapter-acceptance-nonobject'],
+  []),
+ ('q5a-gh-omit-Invalid',
+  [('    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    '\n',
+    '    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,UnicodeError,RecursionError): return None\n'
+    '\n')],
+  [],
+  ['a17-adapter-gh-deep']),
+ ('q5a-gh-omit-ValueError',
+  [('    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    '\n',
+    '    try: return strict_json(p.stdout)\n'
+    '    except (Invalid,UnicodeError,RecursionError): return None\n'
+    '\n')],
+  [],
+  ['a17-adapter-gh-deep']),
+ ('q5a-gh-omit-UnicodeError',
+  [('    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,Invalid,UnicodeError,RecursionError): return None\n'
+    '\n',
+    '    try: return strict_json(p.stdout)\n'
+    '    except (ValueError,Invalid,RecursionError): return None\n'
+    '\n')],
+  [],
+  ['a17-adapter-gh-deep']),
+ ('q5a-acceptance-omit-Invalid',
+  [('                try: acceptance_value=strict_json(manifest.group(1))\n'
+    '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n",
+    '                try: acceptance_value=strict_json(manifest.group(1))\n'
+    '                except (ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n")],
+  [],
+  ['a17-adapter-acceptance-deep', 'a17-adapter-acceptance-nonobject']),
+ ('q5a-acceptance-omit-ValueError',
+  [('                try: acceptance_value=strict_json(manifest.group(1))\n'
+    '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n",
+    '                try: acceptance_value=strict_json(manifest.group(1))\n'
+    "                except (Invalid,UnicodeError,RecursionError): raise Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n")],
+  [],
+  ['a17-adapter-acceptance-deep', 'a17-adapter-acceptance-nonobject']),
+ ('q5a-acceptance-omit-UnicodeError',
+  [('                try: acceptance_value=strict_json(manifest.group(1))\n'
+    '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
+    "Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n",
+    '                try: acceptance_value=strict_json(manifest.group(1))\n'
+    "                except (Invalid,ValueError,RecursionError): raise Invalid('acceptance-unverified')\n"
+    "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n")],
+  [],
+  ['a17-adapter-acceptance-deep', 'a17-adapter-acceptance-nonobject'])]
+
+
+def d4_owning_campaign(destination):
+    source=(ROOT/'lib/merge-risk.py').read_text()
+    dest=Path(destination); dest.mkdir(parents=True,exist_ok=True)
+    entries={e[0]:e for rr in ROWS.values() for e in rr}
+    controls=('valid-final-control','one-refer')
+    baseline={}
+    for n in D4_CODES:
+        d4_assert(ROOT,n); baseline[n]=d4_assert(ROOT,n,True)
+    for n in controls: run_row(ROOT,entries[n])
+    report={'source_sha256':sha(source),'baseline':baseline,'mutants':[]}
+    with tempfile.TemporaryDirectory(prefix='mr646-d4-owning-') as tmp:
+        for label,edits,killing,surviving in D4_MUTATIONS:
+            mutated=source
+            for old,new in edits:
+                check(mutated.count(old)==1,label+': unique fresh source anchor')
+                mutated=mutated.replace(old,new)
+            root=Path(tmp)/label; (root/'lib').mkdir(parents=True)
+            (root/'lib/merge-risk.py').write_text(mutated)
+            (dest/(label+'.py')).write_text(mutated)
+            for lib in ('markdown.sh','model-record.sh'): shutil.copy(ROOT/'lib'/lib,root/'lib'/lib)
+            result={'mutant':label,'source_sha256':sha(mutated),'credit_allowed':bool(killing),'rows':[],'controls':{}}
+            if label.startswith('q5a-'):
+                for n in killing+surviving:
+                    want={'value':{}} if n=='a17-adapter-gh-deep' else {'normal_dictionary':True}
+                    got=d4_adapter(root,n,True); check(got==want,label+': independent normal control '+n)
+                    result['controls'][n]={'status':'PASS',**got}
+            else:
+                for n in controls:
+                    run_row(root,entries[n]); result['controls'][n]={'status':'PASS'}
+            for n in killing+surviving:
+                try: got=d4_assert(root,n,True)
+                except (RecursionError,TypeError,ValueError) as error: got={'exception':type(error).__name__}
+                state='SURVIVES' if got==baseline[n] else 'KILLED'
+                check(state==('KILLED' if n in killing else 'SURVIVES'),label+': exact A23 ownership '+n+' '+state)
+                result['rows'].append(dict(name=n,state=state,observed=got))
+            report['mutants'].append(result)
+            (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+            print(label,'KILLED='+str(len(killing)),'SURVIVES='+str(len(surviving)),
+                  'canonical owner' if killing else 'MASKED / NON-CREDIT',flush=True)
+    report['complete']=True
+    (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+    print('D4 OWNING CAMPAIGN PASS: 68 mutants; 43 canonical owners, 25 masked non-credit',flush=True)
+    return 0
+
+
 def main():
+    if sys.argv[1]=='--d4-owning':
+        check(len(sys.argv)==3,'usage: --d4-owning EVIDENCE_DIRECTORY')
+        return d4_owning_campaign(sys.argv[2])
     if sys.argv[1]=='--d3-owning':
         check(len(sys.argv)==3,'usage: --d3-owning EVIDENCE_DIRECTORY')
         return d3_owning_campaign(sys.argv[2])

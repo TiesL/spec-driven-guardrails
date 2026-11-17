@@ -136,6 +136,12 @@ CONFIG = {'schema': ('int-literal',2), 'acceptance_issue':'positive', 'repositor
 CONFIG_KEYS = tuple(CONFIG)
 
 
+def finite_number(value):
+    if type(value) not in (int,float): return False
+    try: return math.isfinite(value)
+    except OverflowError: return False
+
+
 def shape(value, schema):
     """Return closure and type errors separately, without input text."""
     closure, types = [], []
@@ -163,7 +169,7 @@ def shape(value, schema):
                   'sha256':lambda:isinstance(v,str) and bool(SHA256.fullmatch(v)),
                   'repository':lambda:isinstance(v,str) and bool(REPOSITORY.fullmatch(v)),
                   'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),
-                  'number':lambda:type(v) in (int,float) and math.isfinite(v)}[s]()
+                  'number':lambda:finite_number(v)}[s]()
             if not ok: types.append(s)
     visit(value,schema)
     return closure,types
@@ -217,7 +223,7 @@ def load_config(b,r):
     text=b.get('config_text')
     if not isinstance(text,str): r.add('unresolved','config-absent'); return None
     try: cfg=strict_json(text)
-    except (ValueError,Invalid,UnicodeError): r.add('unresolved','config-malformed'); return None
+    except (ValueError,Invalid,UnicodeError,RecursionError): r.add('unresolved','config-malformed'); return None
     if config_errors(cfg): r.add('unresolved','config-invalid'); return None
     if cfg['repository']!=b.get('repository'): r.add('unresolved','config-repository'); return None
     if not cfg['enabled']: r.add('referred','autonomy-disabled')
@@ -479,7 +485,7 @@ def parse_manifest(body):
     marks=list(re.finditer(r'^'+re.escape(MANIFEST_MARK)+r'\n```json\n(.*?)\n```[ \t]*(?:\n|$)',body,re.M|re.S))
     if len(marks)!=1: return None,'manifest-malformed'
     try: return strict_json(marks[0].group(1)),None
-    except (Invalid,ValueError,UnicodeError): return None,'manifest-malformed'
+    except (Invalid,ValueError,UnicodeError,RecursionError): return None,'manifest-malformed'
 
 
 def manifest_errors(m): return [] if conforms(m,MANIFEST) else ['manifest-schema']
@@ -880,7 +886,7 @@ def retained_json(b,reference,repository):
     body=retained_body(b,reference,repository)
     if body is None: return None
     try: return strict_json(body)
-    except (ValueError,Invalid,UnicodeError): return None
+    except (ValueError,Invalid,UnicodeError,RecursionError): return None
 
 
 # --- A60 addendum 2 P2-P4: score-table lookup --------------------------------
@@ -1015,7 +1021,7 @@ def capability_evaluate(b,cfg,final=True):
     mapping_text=source_text(b,pin['mapping']['source'])
     mapping_digest=mapping_text is not None and sha(mapping_text)==pin['mapping']['sha256']  # rule:capability-mapping-digest
     try: mapping=strict_json(mapping_text) if mapping_text is not None else None
-    except (ValueError,Invalid,UnicodeError): mapping=None
+    except (ValueError,Invalid,UnicodeError,RecursionError): mapping=None
     if not conforms(mapping,MAPPING): mapping=None
     if not (table_source and mapping_source and digest_ok and rows is not None and selected and mapping_digest and mapping is not None):
         add('capability-table-invalid')
@@ -1087,13 +1093,13 @@ def capability_evaluate(b,cfg,final=True):
     for comment in evidence['ledger']:
         for raw in ledger_blocks(comment['body'],'revocation'):
             try: data=strict_json(raw)
-            except (ValueError,Invalid,UnicodeError): ledger_ok=False; continue
+            except (ValueError,Invalid,UnicodeError,RecursionError): ledger_ok=False; continue
             if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])
             else: ledger_ok=False
         found=ledger_blocks(comment['body'],'exception')
         for raw in found:
             try: data=strict_json(raw)
-            except (ValueError,Invalid,UnicodeError): continue
+            except (ValueError,Invalid,UnicodeError,RecursionError): continue
             if not conforms(data,EXCEPTION): continue
             exceptions.setdefault(data['number'],[]).append((comment,data,len(found)))
             if data['supersedes'] is not None: ended.add(data['supersedes'])
@@ -1659,7 +1665,7 @@ def gh(args,raw=False):
     if p.returncode: return None
     if raw: return p.stdout
     try: return strict_json(p.stdout)
-    except (ValueError,Invalid,UnicodeError): return None
+    except (ValueError,Invalid,UnicodeError,RecursionError): return None
 
 
 def pages(endpoint,key=None):
@@ -1939,8 +1945,10 @@ def collect(phase,n,script_dir):
             # Human words remain human; absent structured revision identities cannot be guessed.
             manifest=re.search(r'<!-- merge-risk-acceptance v2 -->\n```json\n(.*?)\n```',acc.get('body',''),re.S)
             if manifest:
-                try: b['acceptance'].update(strict_json(manifest.group(1)))
-                except (Invalid,ValueError): pass
+                try: acceptance_value=strict_json(manifest.group(1))
+                except (Invalid,ValueError,UnicodeError,RecursionError): raise Invalid('acceptance-unverified')
+                need(isinstance(acceptance_value,dict),'acceptance-unverified')
+                b['acceptance'].update(acceptance_value)
     b['config_commit_date']=git(root,'log','-1','--format=%cI',B,'--',cfg['policy_path']).decode().strip()
     try: b['config_commit_date']=fmt(datetime.fromisoformat(b['config_commit_date'].replace('Z','+00:00')).astimezone(timezone.utc))
     except ValueError: b['config_commit_date']=None
