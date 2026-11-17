@@ -9338,12 +9338,69 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 |C4.reuse[pair]|EACH required session-pair equality + actual title/body drift, summaries empty/incomplete|referred/3; identity-binding and risk-independence once each|
 |C4.ledger[t]|wrong actual decision MR-999-deadbee-99 OR same-PR wrong ordinal MR-700-1a2b3c4-99; matching manifest attempt copied without repairing decision relation; plus expiry|referred/3; identity-binding and risk-attempt-invalid once each|
 |C4.all|typed raw referral + known session reuse + contradictory complete ledger + expiry|referred/3; identity-binding plus risk-referral/risk-independence/risk-attempt-invalid in stable inventory/check order, no omitted cause|
-|C4.raw-unavailable[s]|malformed raw s, other raw valid refer, actual quality reuse, complete bad ledger + expiry|referred/3; identity-binding, risk-result-invalid and every independently established referral; no semantic outcome inferred from malformed raw|
+|C4.raw-unavailable[s]|malformed raw s, other raw valid refer, actual quality reuse, complete bad ledger + expiry|referred/3; identity-binding, risk-result-invalid and every independently established referral; no semantic outcome inferred from malformed raw; addenda 17/18 Q1-Q4/Q7 explicitly extend this row: cardinality/member availability, both raw-slot/peer orders, natural-depth/local-fault handling, each independently typed consumer and exact ordered deduplicated composition; use each owning literal a17-* array below, never a subset oracle|
 |C4.record-unavailable|no selected record + independently valid refer/reuse/bad ledger|referred/3; record-selection plus applicable independent referrals; no fabricated record-copy code|
 |C4.table-unavailable|capture complete/valid; final table bytes changed, score-preserving and changing separately|exactly identity-binding then capability-table-invalid; no dependency-generated entry/effort/binding code|
 |C4.clock-unavailable|missing/failed/zone-less final now + independent valid referral|referred/3; now-unreadable and independent referral; no clock-derived deadline/age/ordering code|
 
 - Diagnostic mutants: remove EACH applicable code, duplicate it, reorder identity/capability, choose U over R or H over U, render two outer results, suppress other-slot/source/quality/ledger checks because one dependency is unavailable, or manufacture derivative missing-score/echo/time causes. Each has a named exact-code/order assertion and unchanged eligible companion; FIRST-only/short-circuit mutants exercise every slot/author/attempt source separately. New accepted sources with copies updated require fresh qualified reviews/new immutable record/full hold; no source change or failed check resurrects old authority.
+
+
+- A60 addenda 17/18 bounded C4 clarification, panel-646-d1: An unavailable dependency suppresses only its dependent comparisons; independently typed envelope/receipt checks and valid peer semantics survive every local raw failure, with exact ordered deduplicated reasons and existing precedence/exits; no raw parse/reparse exception may replace accumulated causes with verifier-crash.
+- Package ownership/counts: Q1=24, Q2=90, Q3=30, Q4=47, Q5=22 (ten real consumer uses x two forms + two numeric rows), Q5A=5, Q6=116, Q7=5, Q8=5; total **344** independently named finite assertions. All 344 literal a17-* selectors below are newly specified; zero counted reuse aliases. Q8 occurrence pointers and existing eligible/refusal companions are uncounted, not additions to this package. This does not change any historical suite total, existing S-ID/Covers or now/deferred-701 relation; no C6 key/count/completeness claim. Existing controls/assertions remain intact.
+- Common exact-output contract for every a17-* evaluator row: one first/only outer header `merge-risk: <verdict> pr=700 head=<H> base=<B> diff=<D> config=<C>`, substituted from the independent specimen's literal accepted H/B and SHA256 of supplied original diff/config bytes, with no implementation-derived expected values. Verdict/exit is the row's exact result: referred/3, unresolved/4, held/1 or eligible/0. Emit exactly the row's literal ordered reason array as `reason: <code>` once per (code,detail), empty detail; no extra or derivative reason is permitted. Independently valid control is eligible/0 [] unless a reader/queue/adapter row explicitly states its own exact header. Legal existing fixed notes retain their existing grammar; they cannot introduce candidate text or another result. No SENTINEL in stdout OR stderr; no traceback, candidate rationale/path/error text, live network/model/merge or external effects. Reader/queue/adapter/wrapper headers are separately frozen at their owners. No subset/set-membership oracle.
+- Owning mutation discipline for Q1-Q8/Q5A: run exact public CLI falsifiers and independent controls before implementation at c378194; record actual reds and already-green preservation separately, then green plus the owning single-rule mutation for EACH slot/consumer/code/site. Never claim a whole-loop deletion or masked same-code failure as its kill. Two real collection/replay Adapters only; fault probes use scratch instrumentation and still cross their named public seam. QA specifies text only, Developer writes/runs tests; ONE Developer pass, matching published QA artifact/comparison, fresh Review/lenses and final fresh Claude Reviewer remain required. Any remaining/new medium/high, failed owning falsifier or need for a new carrier/deferred relation/requirement/security decision returns to panel; no extra cycle or silent deferral.
+
+- A60 addenda 17/18, Q4: "Malformed or deep raw does not suppress independently available consumers."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-cross-0-empty-object-quality`|referred / 3|`[gate-quality,risk-result-invalid]`|
+|`a17-cross-0-depth1100-quality`|referred / 3|`[gate-quality,risk-result-invalid]`|
+|`a17-cross-1-empty-object-quality`|referred / 3|`[gate-quality,risk-result-invalid]`|
+|`a17-cross-1-depth1100-quality`|referred / 3|`[gate-quality,risk-result-invalid]`|
+|`a17-only-quality`|unresolved / 4|`[gate-quality]`|
+|`a17-cross-0-empty-object-hard-stop`|referred / 3|`[hard-stop,risk-result-invalid]`|
+|`a17-cross-0-depth1100-hard-stop`|referred / 3|`[hard-stop,risk-result-invalid]`|
+|`a17-cross-1-empty-object-hard-stop`|referred / 3|`[hard-stop,risk-result-invalid]`|
+|`a17-cross-1-depth1100-hard-stop`|referred / 3|`[hard-stop,risk-result-invalid]`|
+|`a17-only-hard-stop`|referred / 3|`[hard-stop]`|
+|`a17-cross-0-empty-object-identity`|referred / 3|`[identity-binding,risk-result-invalid]`|
+|`a17-cross-0-depth1100-identity`|referred / 3|`[identity-binding,risk-result-invalid]`|
+|`a17-cross-1-empty-object-identity`|referred / 3|`[identity-binding,risk-result-invalid]`|
+|`a17-cross-1-depth1100-identity`|referred / 3|`[identity-binding,risk-result-invalid]`|
+|`a17-only-identity`|unresolved / 4|`[identity-binding]`|
+|`a17-cross-0-empty-object-hold`|referred / 3|`[hold-window,risk-result-invalid]`|
+|`a17-cross-0-depth1100-hold`|referred / 3|`[hold-window,risk-result-invalid]`|
+|`a17-cross-1-empty-object-hold`|referred / 3|`[hold-window,risk-result-invalid]`|
+|`a17-cross-1-depth1100-hold`|referred / 3|`[hold-window,risk-result-invalid]`|
+|`a17-only-hold`|held / 1|`[hold-window]`|
+
+- Q4 quality sets approved=false with the correct head marker; hard-stop uses the retained adopt.sh hard-stop construction with coherent inventory/corpus; identity freezes a valid record then changes only the honest final narrative, preserving its canonical trailer; hold uses now within a valid announced hold with all pair events before T and no expiry. Isolated controls are counted once under a17-only-<consumer>, not aliases of cross rows. Raw faults are {} or the 2201-byte Q3 raw, other peer approve. Owning mutants: suppress each quality/source/identity/hold consumer on raw failure or expiry; raw-only guards cannot erase independently available causes. Keep unchanged table/clock-unavailable rows and the exact table-drift control.
+
+- A60 addenda 17/18, Q7: "Cause composition is ordered, deduplicated, one-result and precedence preserving."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-output-both-invalid`|referred / 3|`[risk-result-invalid]`|
+|`a17-output-both-referral`|referred / 3|`[risk-referral]`|
+|`a17-output-quality-invalid`|referred / 3|`[gate-quality,risk-result-invalid]`|
+|`a17-output-identity-hold-invalid`|referred / 3|`[identity-binding,hold-window,risk-result-invalid]`|
+|`a17-output-multiple`|referred / 3|`[gate-quality,hard-stop,identity-binding,hold-window,risk-result-invalid,risk-referral,risk-binding]`|
+
+- Q7 both-invalid uses distinct raw bytes b'{}' and b'{ }', honest distinct hashes/output sources/ledger, so it tests reason dedupe without duplicate-raw masking; both-referral uses independently valid refer results. quality-invalid adds only approved=false; identity-hold-invalid combines honest frozen narrative expiry, a valid active hold and one invalid raw. multiple combines these with the coherent adopt.sh hard stop, a valid refer peer and typed wrong-repository envelope in the invalid slot. Preserve exact first-occurrence arrays, once each, one outer result; identity precedes capability where applicable. Owning mutants: change Result R>U>H precedence, dedupe or order, restore two-valid-only semantics, erase accumulated causes via outer fallback. Independent Q4 identity-only unresolved/4 [identity-binding], hold-only held/1 [hold-window], canonical eligible/0 [] and the unchanged exact identity/capability table-drift control remain required. No same-code mutant kill by deleting an entire consumer loop.
+
+- A60 addenda 17/18, Q8: "Final selection requires exactly one validated trailer naming both active_record_url and selected comment."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-selection-absent`|unresolved / 4|`[record-selection]`|
+|`a17-selection-malformed`|referred / 3|`[narrative-invalid]`|
+|`a17-selection-duplicate`|referred / 3|`[narrative-invalid]`|
+|`a17-selection-mismatch`|unresolved / 4|`[record-selection]`|
+|`a17-selection-matching`|eligible / 0|`[]`|
+
+- Q8 final-only inputs build current/frozen narrative consistently with independent fixture_narrative; absent removes the trailer, malformed uses one non-comment URL, duplicate deliberately builds exactly two trailers, mismatch uses a different valid comment URL in the SAME issue without changing active_record_url/selected comment, matching uses exactly one canonical trailer. Do not accidentally append a second canonical trailer to the malformed specimen; do not repair trailers in prepared/announcement/narrate or re-seal after freeze. Retain independent a6s2-trailer-control (S606) and a6s2-url-control (S615), both eligible/0 [], as uncounted companions (no counted-selector alias). Keep a6s2-narrative-source-body as the existing source-body drift witness, preserving its trailer. Q8 owning mutants are exact per selector: absent = omit D1's new final-only required-single-trailer guard anchored at consistency_checks:533-535; malformed = remove narrative URL grammar refusal at narrative:481; duplicate = remove narrative cardinality validation at narrative:477; mismatch = remove trailer equality at consistency_checks:535; matching = invert only trailer equality at 534 to incorrectly refuse matching, the positive preservation witness, not a negative missing-final-selection kill. Each applicable independent eligible/0 [] trailer control survives; matching also retains the independent uncounted no-trailer prepare/class narrative control. No nonexistent current final guard or later-comparison ownership of malformed/duplicate is claimed. Existing wrong repository/issue/pull-comment URLs and CRLF grammar refusals remain; prepare/class narrative digest behavior stays unchanged.
 
 ### S607 — Unanimity: 5-0 only, any dissent, abstention or missing vote refers (#646; A58 D5; AC2)
 **Covers:** F71
@@ -9429,6 +9486,34 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Test seam: object-backed scratch checkout and fake gh capture. Kill B-source, each schema/acceptance binding, whole-tree/mode/kind comparison, active-answer and actual-cwd checks singly; unchanged exact source control passes.
 - Case file: `test/cases/s614_merge_risk_config_read_from_main_tip.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
+
+
+- A60 addenda 17/18, Q5: "Every retained JSON consumer owns malformed/deep evidence locally; valid peers and independent causes survive."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-json-config-malformed`|unresolved / 4|`[config-malformed,evidence-schema]`|
+|`a17-json-config-deep1100`|unresolved / 4|`[config-malformed,evidence-schema]`|
+|`a17-json-brief-malformed`|referred / 3|`[project-unconfigured,risk-referral]`|
+|`a17-json-brief-deep1100`|referred / 3|`[project-unconfigured,risk-referral]`|
+|`a17-json-qualification-malformed`|referred / 3|`[qualification-unavailable,risk-referral]`|
+|`a17-json-qualification-deep1100`|referred / 3|`[qualification-unavailable,risk-referral]`|
+
+- Q5 malformed is truncated JSON; deep1100 is the bounded 2201-byte nested array, retained as original source bytes at the named consumer. Each owning use has its independent valid isolated companion (uncounted); evaluator inputs add a valid raw refer peer, except config instead sets the outer evidence schema invalid, with cfg-dependent checks unavailable. Do not insert cfg defaults or replace accumulated codes with verifier-crash. Owning mutants remove only the selected consumer's local malformed/deep normalization or its own typed refusal; site-target shared parse_manifest/retained_json handling to that use, retaining the other consumers and independent peer/evidence-schema causes. A masking second emitter or deletion of a whole evaluator/consumer loop earns no credit. An eligible canonical companion must survive each applicable mutant; reader valid companions retain their own successful headers. Known parse failure and natural recursion failure are distinct from injected Q3 evidence.
+
+- Q5 brief/qualification sources retain original bodies and recomputed laboratory reference digests; prepare all config, operational qualification, current authority and record identities coherently before capture, isolating the owning body parse refusal. qualification keeps the typed accepted qualification and its independent sample evidence valid; only the retained body is unreadable. The config malformed/deep rows use the existing Result created at evaluate:1553 BEFORE load_config, and preserve config-malformed and independent evidence-schema in that Result; exact U/4 arrays above forbid candidate text and verifier-crash. Config owns load_config:219-220 local malformed/deep normalization, including D4 recursion handling, with the independent evidence-schema cause at 1554 retained. Brief/qualification own their respective activation_checks:1271/1281 uses of retained_json:864-865 normalization, or their own typed refusals at 1273/1283; the other retained consumer and E/P controls remain valid.
+
+- A60 addenda 17/18, Q5A: "Pre-Result JSON faults remain fixed-output and noneligible without fabricating causes."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-adapter-gh-deep`|None / no CLI result|`[]`|
+|`a17-adapter-collect-config-deep`|unresolved / 4|`[verifier-crash]`|
+|`a17-adapter-queue-config-deep`|unresolved / 4|`[verifier-crash]`|
+|`a17-adapter-acceptance-deep`|unresolved / 4|`[acceptance-unverified]`|
+|`a17-adapter-acceptance-nonobject`|unresolved / 4|`[acceptance-unverified]`|
+
+- Q5A uses only the existing offline fake-process collector/CLI harness, never live gh/git/network or side effects. gh-deep feeds the actual gh JSON decoder and asserts its required normalized None result, no stdout header/reasons, no stderr; HEAD raises RecursionError. The caller remains responsible for its fixed refusal. collect-config-deep and queue-config-deep reach their pre-Result config decoder with known malformed nesting and retain the ultimate CLI fixed-output fallback: exactly merge-risk: unresolved pr=- head=- base=- diff=- config=-, then reason: verifier-crash, exit 4. acceptance-deep and acceptance-nonobject (JSON integer 7) reach collect:1909-1910 before Result creation and are D4 known-failure/type-normalization targets: HEAD raises RecursionError for deep input and attempts dictionary update then raises TypeError for integer 7. The required normalized output is that same unresolved hyphen-identity header, then reason: acceptance-unverified, exit 4; invalid/nonobject input must not become a dictionary update or approval. These probes assert no nonexistent accumulated evaluator Result. Owning mutants omit D4's added local recursive-decode handling at gh:1629, omit D4 acceptance known-failure/type normalization at collect:1909-1910 or allow invalid/nonobject acceptance to authorize. cli:1962-1963 is the existing collect/queue-config fixed-fallback owner: remove only that ultimate fixed-output catch, or substitute successful/default config for invalid bytes at collect:1802 / collect_queue:1928. No local collector config handler exists to delete. Each narrow mutant must preserve its independent normal dictionary/collection control; never invent an eligible collection Result or credit a whole-loop deletion, masked emitter or candidate-text leak. Retain the existing unreadable-outer-bundle fallback regression and independent normal fake-process controls; no gh-unavailable token.
 
 ### S615 — Immutable v2 records bind both risk results and independent quality (#646; A60 + addendum 1)
 **Covers:** F73
@@ -10269,7 +10354,26 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 | C1 | PART | Capture B/H and Rule G classification | A/all-copies classification without independent capture referent | C-S / #701 |
 | C2 / Ixx.SCH | PART | Type/enum/omission of fields read by a now relation, including all seven outcome values | Remaining whole-object/schema expansions | — / #701 |
 
-- C3 is I33; C4 availability and C5 external-root behavior are `now`. A comparison skips only its unavailable referent after the owning refusal: unreadable closing list/issue, invalid ledger, refused capability derivation or absent slot/e0, unreadable record/now time. Skipped means unavailable, never pass. Unknown slot with no capability refusal remains R:risk-binding; identity-binding never gates consumers. Full expansion to individually named keys and printed declarations is deferred to #701, not asserted red; `None` yields no deferred key. The declaration table remains visible in #646 and is not a claim that its expanded complement was computed. Existing checks remain asserted even when their addendum-4 expansions are deferred.
+- C3 is I33; C4 availability and C5 external-root behavior are `now`. A comparison skips only its unavailable referent after the owning refusal: unreadable closing list/issue, invalid ledger, refused capability derivation or absent slot/e0, unreadable record/now time. Skipped means unavailable, never pass. Unknown slot with no capability refusal remains R:risk-binding; identity-binding never gates consumers. Full expansion to individually named keys and printed declarations is deferred to #701, not asserted red; `None` yields no deferred key. The declaration table remains visible in #646 and is not a claim that its expanded complement was computed. Existing checks remain asserted even when their addendum-4 expansions are deferred. An unavailable dependency suppresses only its dependent comparisons; independently typed envelope/receipt checks and valid peer semantics survive every local raw failure, with exact ordered deduplicated reasons and existing precedence/exits; no raw parse/reparse exception may replace accumulated causes with verifier-crash.
+
+
+- A60 addenda 17/18, Q5: "Every retained JSON consumer owns malformed/deep evidence locally; valid peers and independent causes survive."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-json-manifest-selected-malformed`|referred / 3|`[record-selection,risk-referral]`|
+|`a17-json-manifest-selected-deep1100`|referred / 3|`[record-selection,risk-referral]`|
+|`a17-json-manifest-history-malformed`|referred / 3|`[risk-referral]`|
+|`a17-json-manifest-history-deep1100`|referred / 3|`[risk-referral]`|
+|`a17-json-manifest-reader-malformed`|record: invalid / 4|`[manifest-schema]`|
+|`a17-json-manifest-reader-deep1100`|record: invalid / 4|`[manifest-schema]`|
+|`a17-number-manifest-score`|referred / 3|`[manifest-schema,risk-referral]`|
+
+- Q5 malformed is truncated JSON; deep1100 is the bounded 2201-byte nested array, retained as original source bytes at the named consumer. Each owning use has its independent valid isolated companion (uncounted); evaluator inputs add a valid raw refer peer, except config instead sets the outer evidence schema invalid, with cfg-dependent checks unavailable. Do not insert cfg defaults or replace accumulated codes with verifier-crash. Owning mutants remove only the selected consumer's local malformed/deep normalization or its own typed refusal; site-target shared parse_manifest/retained_json handling to that use, retaining the other consumers and independent peer/evidence-schema causes. A masking second emitter or deletion of a whole evaluator/consumer loop earns no credit. An eligible canonical companion must survive each applicable mutant; reader valid companions retain their own successful headers. Known parse failure and natural recursion failure are distinct from injected Q3 evidence.
+
+- Q5 selected malformed/deep manifest replaces only the selected block after canonical freeze: no schema-valid selection remains, so record-selection precedes valid raw risk-referral; no invented historical-record cause. history adds a separate malformed/deep historical candidate while retaining the valid selected peer/record; ignore that candidate and keep risk-referral. reader uses the existing record CLI on a correctly labelled, immutable comment: exact stdout record: invalid then reason: manifest-schema, exit 4. Numeric manifest-score uses 10**400 at MANIFEST capability.comparisons[0].score, retaining all other manifest fields, valid refer peer, and actual body bytes; schema conversion fails locally as manifest-schema, not an uncaught OverflowError. Owning numeric mutant omits D4 safe finite-number conversion at shape:164 for manifest schema, restoring math.isfinite huge-integer overflow; valid ordinary numeric E/P controls still pass. Selected/history manifest owns the site-targeted parse_manifest:466-467 normalization called by record_checks:601; selected keeps record-selection at 607, history is ignored while the valid selected record and refer peer survive. Reader owns the same parse normalization through read_record:1495, or manifest-schema refusal at 1496; its independently labelled immutable normal record remains record: ok / 0, without hostile output. Do not delete the scanning loop or invent a historical-record refusal.
+
+- A60 addenda 17/18, Q8: "Final selection requires exactly one validated trailer naming both active_record_url and selected comment." S606 owns exactly the five a17-selection-{absent,malformed,duplicate,mismatch,matching} assertions and their complete literal arrays; these are occurrence pointers, not five more assertions. Retain independent a6s2-url-control here and a6s2-trailer-control in S606 as eligible/0 [] companions, with no new alias or changed oracle. Q8 owners are the same five exact S606 owners: absent = new final-only required-single-trailer guard (consistency_checks:533-535); malformed = narrative URL grammar (narrative:481); duplicate = narrative cardinality (narrative:477); mismatch = trailer equality (consistency_checks:535); matching = positive preservation via equality inversion at 534, retaining an independent uncounted no-trailer prepare/class narrative control. Canonical-trailer fixture rules and both independent retained eligible companions remain the same; malformed/duplicate do not own the later selection comparison.
 
 ### S616 — Completion confirms the actual merge and exact human-path revert (#646; A60 + addendum 1)
 **Covers:** F73
@@ -10496,6 +10600,59 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 
 - A60 addenda 4/5 I24.SCH expands the complete literal VERDICT dictionary in S615 at BOTH s positions; every key/type/enum/category and nested finding/reference is a separate named oracle, including two reference positions per finding and every coverage row. Strict raw-byte rows expand independently: original hash, byte length, output-source bytes/reference, immutable sink, cap at 65535/65536/65537 BYTES, overflow flag, malformed base64/UTF-8, empty/whitespace/truncated/trailing-second-object/wrapper and duplicate JSON key at EACH object depth. Current raw byte/hash/length/wire/shape faults are R:risk-result-invalid; actual output-source bytes/REF provenance remains deferred-701:C-L with planned R:risk-result-invalid, not a current sink/source kill. Artifact-manifest ID duplication owns I25 R:corpus-invalid; external uniqueness retains its S2 complement. Original legal complete raw approval is eligible/0. Recompute only permitted wrappers, never normalize/sanitize raw bytes. Each parsing/bound/hash/length/sink/closure/type/enum rule retains its own selector mutant with eligible control; when two checks logically imply a summary, name the exact retained premises under S615, do not remove both. Published-only field control remains independent of production schemas; S662 and its finite mapping stay byte-identical.
 
+
+- A60 addenda 17/18, Q1: "Cardinality and each retained member have separate availability."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-card-absent`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required]`|
+|`a17-card-null`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required]`|
+|`a17-card-object`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required]`|
+|`a17-card-empty`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required]`|
+|`a17-card-one-approve`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required]`|
+|`a17-card-one-refer`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required,risk-referral]`|
+|`a17-card-one-reject`|referred / 3|`[identity-binding,capability-identity-missing,risk-pair-required,risk-referral]`|
+|`a17-card-extra-typed`|referred / 3|`[identity-binding,risk-pair-required,risk-binding,risk-attempt-invalid]`|
+
+- Q1 cardinality inputs: absent removes risk_pair, null/object replace it, empty is [], one-* retains only slot 0 with that valid outcome. Retain the original schema-valid selected announcement and its actual capture; identity-binding and capability-identity-missing are the unavoidable record/slot companions. Do not fabricate a second slot or derivative risk-independence. extra-typed applies existing third_slot after freeze: preserve its unknown-slot binding and attempt causes, with the frozen pair-copy identity cause. No three-member eligible control. Owning mutants: restore count early-return/two-valid-only semantic gate, skip retained semantic member, and exact-two approval removal; the independent canonical two-approve control remains eligible/0 [].
+
+- A60 addenda 17/18, Q2: "Each raw failure leaves each valid peer outcome independently observable."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-raw-0-empty-object-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-empty-object-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-empty-object-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-unknown-key-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-unknown-key-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-unknown-key-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-type-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-wrong-type-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-type-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-duplicate-key-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-duplicate-key-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-duplicate-key-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-nonfinite-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-nonfinite-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-nonfinite-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-empty-object-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-empty-object-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-empty-object-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-unknown-key-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-unknown-key-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-unknown-key-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-type-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-wrong-type-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-type-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-duplicate-key-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-duplicate-key-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-duplicate-key-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-nonfinite-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-nonfinite-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-nonfinite-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+
+- Q2 construction/oracle: alter only the named raw input/metadata; keep envelope and receipt typed and valid, original-byte SHA/length and launch/ledger linkage honest for deliberately supplied bytes/metadata before capture. empty=b'', whitespace=b' \n', empty-object=b'{}', truncated is a truncated valid object, trailing-object appends a second object; bad-base64 is invalid encoding, bad-utf8 contains 0xff, wrong-hash and wrong-length change only their named identity metadata, over-cap is 65537 bytes, overflow sets overflow=true; unknown-key/wrong-type/duplicate-key/nonfinite are their closed-schema/JSON faults. The valid peer uses approve, valid_refer with uncertainty/coverage, or confirmed finding plus valid artifact reference for reject. No inferred semantics from invalid raw. Retain 65535/65536-byte approvals, 65537 refusal and all existing cross-field/reference negatives. Owning mutants: restore two-valid-only semantic gate, skip raw slot 0 or 1, omit each local raw validation/exception boundary; peer referral must disappear on its owning mutant while the independent two-approve control remains eligible/0 [].
+
 ### S651 — Contradictory and uncertain returns never become approvals (#646; A60 + addendum 1)
 **Covers:** F71
 - Given: valid unconditional approvals; separately approve with finding of any severity including low, uncertainty, unknown/concern coverage, or conditional structured state; finding whose category lacks concern, concern without finding, unknown without uncertainty, duplicate finding ID, reject without confirmed finding, refer without concern/uncertainty. Finding references with wrong artifact/digest/absent or reversed/out-of-range lines; inventory reference controls for binary/empty/deleted files.
@@ -10556,6 +10713,85 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 
 - Concern/finding equivalence is expanded in BOTH directions, not one shared tautological expected-set calculation. No keyword/majority/conditional/severity filtering supplies clearance; reinstate each as a mutant and benign quoted-threat control kills it. Original/manifest finding evidence identity and reference source rules are not replaced by a syntactic validity result.
 
+
+- A60 addenda 17/18, Q1: "Cardinality and each retained member have separate availability."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-member-0-null`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-0-integer`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-0-list`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-0-missing-envelope`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-0-raw-b64-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-0-raw-sha-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-0-length-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-0-overflow-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-1-null`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-1-integer`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-1-list`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-1-missing-envelope`|referred / 3|`[identity-binding,capability-identity-missing,risk-result-invalid,risk-referral]`|
+|`a17-member-1-raw-b64-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-1-raw-sha-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-1-length-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+|`a17-member-1-overflow-type`|referred / 3|`[identity-binding,risk-result-invalid,risk-referral,risk-binding]`|
+
+- Q1 member inputs replace only the selected member with null, integer 7, [], or remove its envelope; the surviving peer is valid refer. For the four raw-metadata types use integer 7 for raw_b64/raw_sha256/byte_length and string "false" for overflow, retaining independently typed receipt and wrong-repository envelope. Preserve the original schema-valid selected record, so identity-binding remains. Metadata without its required type is unavailable to dependent ledger/equality comparisons; do not infer a missing session, raw equality or invented ledger mismatch. Owning mutants: skip either raw slot, retain whole-PAIR filtering of independently typed envelope/receipt/capability consumers, restore raw-gates-envelope, and suppress valid-peer semantics; use the independent canonical eligible control and isolated typed binding refusal.
+
+- A60 addenda 17/18, Q2: "Each raw failure leaves each valid peer outcome independently observable."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-raw-0-empty-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-empty-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-empty-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-whitespace-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-whitespace-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-whitespace-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-truncated-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-truncated-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-truncated-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-trailing-object-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-trailing-object-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-trailing-object-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-bad-base64-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-bad-base64-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-bad-base64-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-bad-utf8-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-bad-utf8-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-bad-utf8-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-hash-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-wrong-hash-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-hash-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-length-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-wrong-length-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-wrong-length-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-empty-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-empty-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-empty-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-whitespace-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-whitespace-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-whitespace-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-truncated-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-truncated-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-truncated-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-trailing-object-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-trailing-object-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-trailing-object-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-bad-base64-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-bad-base64-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-bad-base64-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-bad-utf8-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-bad-utf8-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-bad-utf8-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-hash-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-wrong-hash-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-hash-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-length-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-wrong-length-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-wrong-length-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+
+- Q2 construction/oracle: alter only the named raw input/metadata; keep envelope and receipt typed and valid, original-byte SHA/length and launch/ledger linkage honest for deliberately supplied bytes/metadata before capture. empty=b'', whitespace=b' \n', empty-object=b'{}', truncated is a truncated valid object, trailing-object appends a second object; bad-base64 is invalid encoding, bad-utf8 contains 0xff, wrong-hash and wrong-length change only their named identity metadata, over-cap is 65537 bytes, overflow sets overflow=true; unknown-key/wrong-type/duplicate-key/nonfinite are their closed-schema/JSON faults. The valid peer uses approve, valid_refer with uncertainty/coverage, or confirmed finding plus valid artifact reference for reject. No inferred semantics from invalid raw. Retain 65535/65536-byte approvals, 65537 refusal and all existing cross-field/reference negatives. Owning mutants: restore two-valid-only semantic gate, skip raw slot 0 or 1, omit each local raw validation/exception boundary; peer referral must disappear on its owning mutant while the independent two-approve control remains eligible/0 [].
+
 ### S652 — Capture bounds apply before parsing and never accept a prefix (#646; A60 + addendum 1)
 **Covers:** F71
 - Given: valid UTF-8 JSON approvals padded with legal outside-string formatting whitespace to 65,535 and 65,536 bytes; 65,537 bytes, huge streaming output, multibyte UTF-8 crossing the cap, truncated object, valid approval prefix followed by garbage/another object/Markdown wrapper, zero bytes and empty JSON.
@@ -10566,6 +10802,26 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Case file: `test/cases/s652_merge_risk_return_capture_bound.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+
+- A60 addenda 17/18, Q2: "Each raw failure leaves each valid peer outcome independently observable."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-raw-0-over-cap-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-over-cap-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-over-cap-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-overflow-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-0-overflow-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-0-overflow-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-over-cap-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-over-cap-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-over-cap-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-overflow-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-raw-1-overflow-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-raw-1-overflow-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+
+- Q2 construction/oracle: alter only the named raw input/metadata; keep envelope and receipt typed and valid, original-byte SHA/length and launch/ledger linkage honest for deliberately supplied bytes/metadata before capture. empty=b'', whitespace=b' \n', empty-object=b'{}', truncated is a truncated valid object, trailing-object appends a second object; bad-base64 is invalid encoding, bad-utf8 contains 0xff, wrong-hash and wrong-length change only their named identity metadata, over-cap is 65537 bytes, overflow sets overflow=true; unknown-key/wrong-type/duplicate-key/nonfinite are their closed-schema/JSON faults. The valid peer uses approve, valid_refer with uncertainty/coverage, or confirmed finding plus valid artifact reference for reject. No inferred semantics from invalid raw. Retain 65535/65536-byte approvals, 65537 refusal and all existing cross-field/reference negatives. Owning mutants: restore two-valid-only semantic gate, skip raw slot 0 or 1, omit each local raw validation/exception boundary; peer referral must disappear on its owning mutant while the independent two-approve control remains eligible/0 [].
+
 ### S653 — Finite recursive values and safe Unicode/display are mandatory (#646; A60 + addendum 1)
 **Covers:** F71, F73
 - Given: NaN, Infinity, -Infinity, 1e999, booleans in integer fields, huge wrong-typed numbers and recursively nested invalid values; invalid UTF-8; literal/escaped lone surrogates, Cc/Cf controls and bidi overrides/isolates in every decoded key/string position. Valid JSON outside-string whitespace and ordinary Unicode text controls; benign strings containing HTML/Markdown/link-looking text.
@@ -10575,6 +10831,44 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Test seam: raw-byte CLI/renderer replay and captured executor output; kill finite recursion, strict UTF-8, decoded-string/key checks, literal escaping and original-hash rules singly. Developer owns inert encoded payload fixtures; no model safety claim from string tests.
 - Case file: `test/cases/s653_merge_risk_numeric_unicode_display.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+
+- A60 addenda 17/18, Q3: "Bounded nested raw and decoder/recursive-validator failures stay local in both slots."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-depth-0-100-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-0-100-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-100-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-300-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-0-300-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-300-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-700-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-0-700-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-700-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-1100-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-0-1100-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-0-1100-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-100-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-1-100-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-100-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-300-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-1-300-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-300-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-700-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-1-700-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-700-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-1100-approve`|referred / 3|`[risk-result-invalid]`|
+|`a17-depth-1-1100-refer`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-depth-1-1100-reject`|referred / 3|`[risk-result-invalid,risk-referral]`|
+|`a17-fault-0-decoder`|referred / 3|`[risk-result-invalid]`|
+|`a17-fault-0-finite`|referred / 3|`[risk-result-invalid]`|
+|`a17-fault-0-strings`|referred / 3|`[risk-result-invalid]`|
+|`a17-fault-1-decoder`|referred / 3|`[risk-result-invalid]`|
+|`a17-fault-1-finite`|referred / 3|`[risk-result-invalid]`|
+|`a17-fault-1-strings`|referred / 3|`[risk-result-invalid]`|
+
+- Q3 natural bytes are b'['*n+b'0'+b']'*n, lengths 201/601/1401/2201, under RETURN_CAP; capture original hash/length/ledger honestly. All are invalid verdicts independently of recursion threshold. Six scratch-only fault probes inject RecursionError at ONLY the selected slot's decoder, finite traversal or safe_strings stage within valid_verdict on otherwise eligible raw, then cross the public evaluate CLI; never inject into outer-bundle parsing or both slots. Log the actual natural failure stage; injected probes earn local-catch credit, not natural-input red history. Owning mutants: omit the selected decoder/recursive-validator catch or retained reparse catch, skip either raw slot, restore two-valid-only peer semantics. Preserve schema/cap/Unicode controls and independent eligible/0 []; no portable numerical recursion limit.
 
 ### S654 — Envelope identities and trusted deadlines cannot be self-attested (#646; A60 + addendum 1)
 **Covers:** F70, F71, F73
@@ -10797,6 +11091,31 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Addendum-5 temporal implication expansion, one exact line per s and every applicable t/j/event: `P_s <= now implied by P_s <= PC AND PC < T AND T <= now`; `P_s < T implied by P_s <= PC AND PC < T`; `PC <= now implied by PC < T AND T <= now`. `x <= now and x < T implied by x <= next <= ... <= P_s <= PC < T <= now`, x={S_s,L_s.started_at,R_s,Z_s}; list each intervening adjacent chain rule in the expanded line. `same-slot seal <= comparison implied by I33.chain4[s]`; every other nonadjacent same-chain bound names its intervening chain premises. Keep independent CROSS-slot seal rules. Definitions min/max provide mathematical bounds, no extra observed-field mutant.
 - `R_s-S_s >= 0 mathematically implied by Klower(s) AND Kupper(s)` uses canonical I14 returning constituents R:risk-attempt-invalid in Dret(s); the distinct K33 receipt-deadline predicate retains R:risk-deadline on invalid negative elapsed, so cross-code implication never suppresses it; `now-A >= 0 implied by A <= PC AND PC < T AND T <= now`; `now-T >= 0 implied by T <= now`. `now-A < M implied by max(now,E) < A+M`; `E < A+M implied by max(now,E) < A+M`. The stronger survival rule retains its OWN mutant. For prerequisite x, `x <= now implied by x < T AND T <= now`; only when the retained chain actually reaches x. Earlier unordered old-event-to-now and original disposition source/time equalities stay distinct in their existing deferred-701:— complements; retained successor.disposition.created_at < successor.created_at remains the current independent attempt-invalid key. Prior-attempt first/original clocks use local S[t,s], never current S_s. Missing/untrusted clocks/event sources, actual-copy binding and inclusive deadlines keep separate mutants and refusals.
 - Exact full-hold controls: for 1800-second receipt controls set both completions strictly BEFORE a later T, then wait h; changing to 1801 mutates only the deadline dimension. For age boundaries use M large enough to distinguish pair chronology and a complete held/ready window as specified; at 86400 the oracle is risk-expired regardless of a superficially complete hold. Time advancing by itself never emits identity-binding. An invalid timeline gets a NEW complete announcement/full hold, never max(T,PC), backdating, in-place timestamp repair or subtraction of pre-pair elapsed time. Kill each such repair mutant using the same frozen timeline.
+
+
+- A60 addenda 17/18, Q4: "Malformed or deep raw does not suppress independently available consumers."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-cross-0-empty-object-binding`|referred / 3|`[risk-result-invalid,risk-binding]`|
+|`a17-cross-0-depth1100-binding`|referred / 3|`[risk-result-invalid,risk-binding]`|
+|`a17-cross-1-empty-object-binding`|referred / 3|`[risk-result-invalid,risk-binding]`|
+|`a17-cross-1-depth1100-binding`|referred / 3|`[risk-result-invalid,risk-binding]`|
+|`a17-only-binding`|referred / 3|`[risk-binding]`|
+|`a17-cross-0-empty-object-deadline`|referred / 3|`[risk-result-invalid,risk-deadline]`|
+|`a17-cross-0-depth1100-deadline`|referred / 3|`[risk-result-invalid,risk-deadline]`|
+|`a17-cross-1-empty-object-deadline`|referred / 3|`[risk-result-invalid,risk-deadline]`|
+|`a17-cross-1-depth1100-deadline`|referred / 3|`[risk-result-invalid,risk-deadline]`|
+|`a17-only-deadline`|referred / 3|`[risk-deadline]`|
+|`a17-cross-0-empty-object-age`|referred / 3|`[risk-expired,risk-result-invalid]`|
+|`a17-cross-0-depth1100-age`|referred / 3|`[risk-expired,risk-result-invalid]`|
+|`a17-cross-1-empty-object-age`|referred / 3|`[risk-expired,risk-result-invalid]`|
+|`a17-cross-1-depth1100-age`|referred / 3|`[risk-expired,risk-result-invalid]`|
+|`a17-only-age`|referred / 3|`[risk-expired]`|
+|`a17-raw-equality-0`|referred / 3|`[risk-binding]`|
+|`a17-raw-equality-1`|referred / 3|`[risk-binding]`|
+
+- Q4 binding changes the typed wrong-repository envelope, including in the invalid slot itself; raw is otherwise invalid, so no raw-equality inference. Isolated binding keeps valid raw matching that wrong-repository envelope. deadline sets elapsed deadline_seconds+1, with original start/launch before receipt, receive<=seal<=compare<T and honest effort-receipt/ledger copies, all within age. age uses consistently old starts/launches, timely returns, valid sealing and T/hold, giving only risk-expired; its first occurrence precedes pair validation in full-hold-age. For cross/only inputs build honest capture/record copies before freeze. a17-raw-equality-0/1 changes only a raw binding leaf against the fixed typed valid envelope and independent referents, with original-byte/ledger hashes and a matching captured pair copy: [risk-binding] alone. Owning mutants: raw-gates-envelope, suppress repository/deadline/age checks on local raw failure, remove raw equality only; independent canonical eligible/0 [] survives each. No derivative peer/capability/ledger failures or re-sealing after final expiry.
 
 ### S655 — Complete B/H source is exported as inert identified evidence (#646; A60 + addendum 1)
 **Covers:** F71, F72
@@ -11026,6 +11345,19 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - A60 addenda 4/5 I14/I17/I18 participant expansion: Q={quality,lens0,lens1}, A={author0,author1,implementer0,implementer1}, risk={slot0,slot1}. Expand Q x A and risk x (Q union A union executor) plus risk0 != risk1; each is its OWN R:risk-independence row by actual retained session identity. Repeat each equality attack with BOTH summaries empty, each incomplete, and conservative extra exclusions; unchanged distinct-session controls with those SAME summaries are eligible/0. Summaries never create approval. Same author contributing twice may retain one session; executor-versus-quality and author-versus-author are NOT new required exclusions. No vendor/model inequality is added. Each pair selector has DEL-pair mutant; missing authoritative participant evidence instead produces its quality/identity unavailable code, never independence-by-absence.
 - Each risk slot's current session/dispatch/nonce/output-source distinctness and variable receipt no_inheritance/peer_exposed/forbidden_actions has its own semantic attack; run/launch-source provenance remains deferred-701:C-L. REVIEW fresh:true and inherited_session:null are schema-implied inside the conforming-pair domain: nonliteral raw values own risk-result-invalid and pair shape retains independently emitted causes, never a typed independence kill. Each available raw/envelope/receipt/manifest copy is separately bound; no absent LAUNCH field is invented. Shared attempt ID across both slots REQUIRED; mutate only one attempt ID as a binding fault, never demand distinct attempt IDs. CROSS seal inequalities expand in S654. Immutable original raw/sink/peer remains unchanged during allowed redispatch; substitute each separately. DEL-freshness/inheritance/exposure/action/sink/peer/separation, VENDOR-key, FIRST-only and LAST-only must kill. Valid cross-vendor AND same-vendor pairs, bounded recovery and dispositioned second attempt remain eligible/0; no weak source may fill a missing launch or lens observation.
 
+
+- A60 addenda 17/18, Q4: "Malformed or deep raw does not suppress independently available consumers."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-cross-0-empty-object-session`|referred / 3|`[risk-result-invalid,risk-independence]`|
+|`a17-cross-0-depth1100-session`|referred / 3|`[risk-result-invalid,risk-independence]`|
+|`a17-cross-1-empty-object-session`|referred / 3|`[risk-result-invalid,risk-independence]`|
+|`a17-cross-1-depth1100-session`|referred / 3|`[risk-result-invalid,risk-independence]`|
+|`a17-only-session`|referred / 3|`[risk-independence]`|
+
+- Q4 session sets no_inheritance=false on the selected independently typed receipt; rebuild honest receipt-effort/launch/record capture before freeze, preserve distinct IDs and all chronology, other peer approve. Owning mutant suppresses this receipt consumer when its raw is malformed/deep; each slot owns its own assertion. Separate eligible/0 [] same-vendor and cross-vendor controls survive; no new launch-source/carrier relation.
+
 ### S659 — Reviewer capability is a pinned score-table lookup; missing evidence refers and a single review never clears (#646; A60 + addendum 1 + addendum 2)
 **Covers:** F71, F74
 - Amended by A60 addendum 2: this text replaces the earlier unresolved-floor and mandatory cross-vendor oracles; the decided rule is PRD F71 and the issue's AC2/M2 (ledger 65/66/95). The numbers are an independently specified laboratory table, not the maintainer's data.
@@ -11204,6 +11536,25 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Every table/date/source/digest/selecting-decision/mapping row has wrong destination, all-agree-wrong-authority, missing original bytes, duplicate/ambiguous key, final drift (score-changing AND score-preserving) and genuinely renewed accepted-source control. Wrong authority variants={H table,newer unaccepted table,G default,mutable handoff,similar alias,external index,supplied score,effort-label monotonicity}; each refers capability-table-invalid or owning identity/entry/effort code and records zero external calls. Marker requested/default/inferred basis never substitutes for observed applied receipt/session/dispatch/settings hash. Each accepted PROFILE leaf, actual resolved reviewer/receipt identity and capability slot leaf has its own comparison and DEL selector. Qualification input models is the digest of the FULL accepted profile list, not a single representative model.
 - I23 exception fields expand per claimed number AND per affected (slot,author): exact protected source bytes/number/issuer/words/provenance/repository/issue/PR/H/profile_sha256/qualification_sha256/marker hashes/effort hashes/row.model/row.effort/scores/table.source/date/hash/departure/reason/correlation/scope/valid_until/supersedes and linked revocation records. Original comment URL/login/created_at/updated_at/body each bind actual immutable ledger. Each absent/mismatched/ambiguous/revoked/superseded/self-granted/out-of-scope/late-source case R:capability-exception-invalid; missing-data waiver still emits its actual identity/effort/entry refusal. Per-comparison exception/outcome, env exception numbers and recomputed final floor refer to the same exact decision. Two claimed numbers/decisions with duplicate identity do not collapse. Keep applicable pre-use valid single-comparison exception eligible; other slot/author stays subject to its own lookup. Boundary validity/source times use equality/either side against actual first use and actual declared validity, with no assumption that a spelling authenticates the issuer. Every leaf/lifecycle/scope/no-missing-data/no-average/strict-gain rule has DEL selector; identical source-copy summaries use S615's acyclic basis, never a whole-exception exemption.
 
+
+- A60 addenda 17/18, Q5: "Every retained JSON consumer owns malformed/deep evidence locally; valid peers and independent causes survive."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-json-decision-malformed`|referred / 3|`[capability-table-invalid,risk-referral]`|
+|`a17-json-decision-deep1100`|referred / 3|`[capability-table-invalid,risk-referral]`|
+|`a17-json-mapping-malformed`|referred / 3|`[identity-binding,capability-table-invalid,capability-identity-missing,risk-referral]`|
+|`a17-json-mapping-deep1100`|referred / 3|`[identity-binding,capability-table-invalid,capability-identity-missing,risk-referral]`|
+|`a17-json-revocation-malformed`|referred / 3|`[identity-binding,capability-exception-invalid,risk-referral]`|
+|`a17-json-revocation-deep1100`|referred / 3|`[identity-binding,capability-exception-invalid,risk-referral]`|
+|`a17-json-exception-malformed`|referred / 3|`[identity-binding,capability-exception-invalid,risk-referral]`|
+|`a17-json-exception-deep1100`|referred / 3|`[identity-binding,capability-exception-invalid,risk-referral]`|
+|`a17-number-exception-score`|referred / 3|`[identity-binding,capability-exception-invalid,risk-referral]`|
+
+- Q5 malformed is truncated JSON; deep1100 is the bounded 2201-byte nested array, retained as original source bytes at the named consumer. Each owning use has its independent valid isolated companion (uncounted); evaluator inputs add a valid raw refer peer, except config instead sets the outer evidence schema invalid, with cfg-dependent checks unavailable. Do not insert cfg defaults or replace accumulated codes with verifier-crash. Owning mutants remove only the selected consumer's local malformed/deep normalization or its own typed refusal; site-target shared parse_manifest/retained_json handling to that use, retaining the other consumers and independent peer/evidence-schema causes. A masking second emitter or deletion of a whole evaluator/consumer loop earns no credit. An eligible canonical companion must survive each applicable mutant; reader valid companions retain their own successful headers. Known parse failure and natural recursion failure are distinct from injected Q3 evidence.
+
+- Q5 decision retains a malformed/deep accepted decision body with recomputed reference digest and all honest config/qualification/capability floor/record capture copies; the still-readable table/mapping/marker/effort rows remain complete, so only capability-table-invalid precedes raw referral. mapping retains the original schema-valid frozen announcement, then changes only the mapping to malformed/deep bytes and its honest protected pin/decision/current source references; missing row derivation is unavailable, capability-table-invalid and capability-identity-missing survive along with frozen identity-binding. Keep independently accepted qualification/brief/runtime and source evidence consistent; no manufactured capability-entry/profile/effort refusal. For revocation/exception use a claimed, otherwise valid preference-only numbered exception on an already qualifying pair: corrupt only the relevant ledger block; valid other entries remain readable, but the claim cannot satisfy capability-exception-invalid, and frozen disclosed exception/outcome produces identity-binding. Numeric exception-score substitutes 10**400 at EXCEPTION reviewer_score in that same claimed exception; no schema overflow escapes or fills a missing-data claim. Owning mutants omit only mapping-local normalization at 999-1000, revocation-local normalization at 1071-1072 (or ledger_ok=False), exception-local normalization at 1077-1078 (or invalid-candidate refusal at 1079/1092), or D4 safe finite-number conversion at shape:164 for exception schema; independent no-claim eligible/0 [] and valid applicable-exception control survive. Decision owns retained_json:864-865 normalization for its use at 994, or its own decision requirement at 996/1002; preserve the ordinary table/mapping. No whole-loop deletion or masked same-code emitter earns credit. No new exception trust/lifecycle relation.
+
 ### S660 — Candidate-influenced prose never reaches the credentialed model (#646; A60 + addendum 1)
 **Covers:** F71, F73
 - Given: hostile instructions separately in PR title/body/comments, source/diff/filenames, CI text, findings, reviewer rationale/coverage/uncertainties, quoted approvals and raw gh/preflight stdout/stderr, including error/exception paths and nested valid JSON. Executor already exposed to such data is a separate variant.
@@ -11213,6 +11564,135 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Test seam: collector/consumer/rendering output capture plus actual executor transcript/action seam; kill each stream suppression and fresh-context requirement separately. Never feed malicious text to a production credentialed session; lab recorder substitutes all outward effects.
 - Case file: `test/cases/s660_merge_risk_executor_text_isolation.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+
+- A60 addenda 17/18, Q6: "Every frozen fixed reason traverses the closed wrapper; unknown protocol remains refused."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-wrapper-code-acceptance-unverified`|unresolved / 4|`[acceptance-unverified]`|
+|`a17-wrapper-code-artifact-identity`|unresolved / 4|`[artifact-identity]`|
+|`a17-wrapper-code-autonomy-disabled`|unresolved / 4|`[autonomy-disabled]`|
+|`a17-wrapper-code-base-not-main`|unresolved / 4|`[base-not-main]`|
+|`a17-wrapper-code-base-unreadable`|unresolved / 4|`[base-unreadable]`|
+|`a17-wrapper-code-behind-base`|unresolved / 4|`[behind-base]`|
+|`a17-wrapper-code-cap-files`|unresolved / 4|`[cap-files]`|
+|`a17-wrapper-code-cap-lines`|unresolved / 4|`[cap-lines]`|
+|`a17-wrapper-code-capability-below-author`|unresolved / 4|`[capability-below-author]`|
+|`a17-wrapper-code-capability-effort-no-gain`|unresolved / 4|`[capability-effort-no-gain]`|
+|`a17-wrapper-code-capability-effort-unavailable`|unresolved / 4|`[capability-effort-unavailable]`|
+|`a17-wrapper-code-capability-entry-missing`|unresolved / 4|`[capability-entry-missing]`|
+|`a17-wrapper-code-capability-exception-invalid`|unresolved / 4|`[capability-exception-invalid]`|
+|`a17-wrapper-code-capability-identity-missing`|unresolved / 4|`[capability-identity-missing]`|
+|`a17-wrapper-code-capability-profile-mismatch`|unresolved / 4|`[capability-profile-mismatch]`|
+|`a17-wrapper-code-capability-table-invalid`|unresolved / 4|`[capability-table-invalid]`|
+|`a17-wrapper-code-changes-requested`|unresolved / 4|`[changes-requested]`|
+|`a17-wrapper-code-classification-unresolved`|unresolved / 4|`[classification-unresolved]`|
+|`a17-wrapper-code-closing-issues`|unresolved / 4|`[closing-issues]`|
+|`a17-wrapper-code-completion-invalid`|unresolved / 4|`[completion-invalid]`|
+|`a17-wrapper-code-config-absent`|unresolved / 4|`[config-absent]`|
+|`a17-wrapper-code-config-date-unreadable`|unresolved / 4|`[config-date-unreadable]`|
+|`a17-wrapper-code-config-invalid`|unresolved / 4|`[config-invalid]`|
+|`a17-wrapper-code-config-malformed`|unresolved / 4|`[config-malformed]`|
+|`a17-wrapper-code-config-repository`|unresolved / 4|`[config-repository]`|
+|`a17-wrapper-code-control-closed`|unresolved / 4|`[control-closed]`|
+|`a17-wrapper-code-control-unreadable`|unresolved / 4|`[control-unreadable]`|
+|`a17-wrapper-code-corpus-invalid`|unresolved / 4|`[corpus-invalid]`|
+|`a17-wrapper-code-duplicate-json-key`|unresolved / 4|`[duplicate-json-key]`|
+|`a17-wrapper-code-evidence-incomplete`|unresolved / 4|`[evidence-incomplete]`|
+|`a17-wrapper-code-evidence-schema`|unresolved / 4|`[evidence-schema]`|
+|`a17-wrapper-code-executor-invalid`|unresolved / 4|`[executor-invalid]`|
+|`a17-wrapper-code-finding-provenance`|unresolved / 4|`[finding-provenance]`|
+|`a17-wrapper-code-gate-check`|unresolved / 4|`[gate-check]`|
+|`a17-wrapper-code-gate-escape-hatch`|unresolved / 4|`[gate-escape-hatch]`|
+|`a17-wrapper-code-gate-preflight`|unresolved / 4|`[gate-preflight]`|
+|`a17-wrapper-code-gate-preflight-stream`|unresolved / 4|`[gate-preflight-stream]`|
+|`a17-wrapper-code-gate-preflight-warning`|unresolved / 4|`[gate-preflight-warning]`|
+|`a17-wrapper-code-gate-quality`|unresolved / 4|`[gate-quality]`|
+|`a17-wrapper-code-gate-review-marker`|unresolved / 4|`[gate-review-marker]`|
+|`a17-wrapper-code-git-identity`|unresolved / 4|`[git-identity]`|
+|`a17-wrapper-code-git-unreadable`|unresolved / 4|`[git-unreadable]`|
+|`a17-wrapper-code-gitlink`|unresolved / 4|`[gitlink]`|
+|`a17-wrapper-code-guard-invalid`|unresolved / 4|`[guard-invalid]`|
+|`a17-wrapper-code-hard-stop`|unresolved / 4|`[hard-stop]`|
+|`a17-wrapper-code-hold-release-missing`|unresolved / 4|`[hold-release-missing]`|
+|`a17-wrapper-code-hold-release-stale`|unresolved / 4|`[hold-release-stale]`|
+|`a17-wrapper-code-hold-release-target`|unresolved / 4|`[hold-release-target]`|
+|`a17-wrapper-code-hold-release-words`|unresolved / 4|`[hold-release-words]`|
+|`a17-wrapper-code-hold-window`|unresolved / 4|`[hold-window]`|
+|`a17-wrapper-code-identity-binding`|unresolved / 4|`[identity-binding]`|
+|`a17-wrapper-code-instruction-load-invalid`|unresolved / 4|`[instruction-load-invalid]`|
+|`a17-wrapper-code-issue-unreadable`|unresolved / 4|`[issue-unreadable]`|
+|`a17-wrapper-code-label-hold`|unresolved / 4|`[label-hold]`|
+|`a17-wrapper-code-label-off`|unresolved / 4|`[label-off]`|
+|`a17-wrapper-code-label-off-control`|unresolved / 4|`[label-off-control]`|
+|`a17-wrapper-code-labels-unreadable`|unresolved / 4|`[labels-unreadable]`|
+|`a17-wrapper-code-lfs-unavailable`|unresolved / 4|`[lfs-unavailable]`|
+|`a17-wrapper-code-manifest-schema`|unresolved / 4|`[manifest-schema]`|
+|`a17-wrapper-code-narrative-invalid`|unresolved / 4|`[narrative-invalid]`|
+|`a17-wrapper-code-nonfinite-json`|unresolved / 4|`[nonfinite-json]`|
+|`a17-wrapper-code-now-unreadable`|unresolved / 4|`[now-unreadable]`|
+|`a17-wrapper-code-off-since-config`|unresolved / 4|`[off-since-config]`|
+|`a17-wrapper-code-open-findings`|unresolved / 4|`[open-findings]`|
+|`a17-wrapper-code-path-unsafe`|unresolved / 4|`[path-unsafe]`|
+|`a17-wrapper-code-phase-invalid`|unresolved / 4|`[phase-invalid]`|
+|`a17-wrapper-code-pr-not-open`|unresolved / 4|`[pr-not-open]`|
+|`a17-wrapper-code-pr-unreadable`|unresolved / 4|`[pr-unreadable]`|
+|`a17-wrapper-code-project-unconfigured`|unresolved / 4|`[project-unconfigured]`|
+|`a17-wrapper-code-protection-invalid`|unresolved / 4|`[protection-invalid]`|
+|`a17-wrapper-code-qualification-unavailable`|unresolved / 4|`[qualification-unavailable]`|
+|`a17-wrapper-code-queue-edited`|unresolved / 4|`[queue-edited]`|
+|`a17-wrapper-code-queue-key-repeated`|unresolved / 4|`[queue-key-repeated]`|
+|`a17-wrapper-code-queue-outcome-unknown`|unresolved / 4|`[queue-outcome-unknown]`|
+|`a17-wrapper-code-queue-unreadable`|unresolved / 4|`[queue-unreadable]`|
+|`a17-wrapper-code-raw-identity`|unresolved / 4|`[raw-identity]`|
+|`a17-wrapper-code-read-only`|unresolved / 4|`[read-only]`|
+|`a17-wrapper-code-record-duplicate`|unresolved / 4|`[record-duplicate]`|
+|`a17-wrapper-code-record-edited`|unresolved / 4|`[record-edited]`|
+|`a17-wrapper-code-record-id`|unresolved / 4|`[record-id]`|
+|`a17-wrapper-code-record-label`|unresolved / 4|`[record-label]`|
+|`a17-wrapper-code-record-selection`|unresolved / 4|`[record-selection]`|
+|`a17-wrapper-code-record-time`|unresolved / 4|`[record-time]`|
+|`a17-wrapper-code-records-unreadable`|unresolved / 4|`[records-unreadable]`|
+|`a17-wrapper-code-release-head`|unresolved / 4|`[release-head]`|
+|`a17-wrapper-code-remote-identity`|unresolved / 4|`[remote-identity]`|
+|`a17-wrapper-code-repository-identity`|unresolved / 4|`[repository-identity]`|
+|`a17-wrapper-code-reserved-authority`|unresolved / 4|`[reserved-authority]`|
+|`a17-wrapper-code-reviews-unreadable`|unresolved / 4|`[reviews-unreadable]`|
+|`a17-wrapper-code-risk-attempt-invalid`|unresolved / 4|`[risk-attempt-invalid]`|
+|`a17-wrapper-code-risk-binding`|unresolved / 4|`[risk-binding]`|
+|`a17-wrapper-code-risk-deadline`|unresolved / 4|`[risk-deadline]`|
+|`a17-wrapper-code-risk-expired`|unresolved / 4|`[risk-expired]`|
+|`a17-wrapper-code-risk-independence`|unresolved / 4|`[risk-independence]`|
+|`a17-wrapper-code-risk-pair-required`|unresolved / 4|`[risk-pair-required]`|
+|`a17-wrapper-code-risk-referral`|unresolved / 4|`[risk-referral]`|
+|`a17-wrapper-code-risk-result-invalid`|unresolved / 4|`[risk-result-invalid]`|
+|`a17-wrapper-code-risk-unavailable`|unresolved / 4|`[risk-unavailable]`|
+|`a17-wrapper-code-runtime-invalid`|unresolved / 4|`[runtime-invalid]`|
+|`a17-wrapper-code-self-delegation`|unresolved / 4|`[self-delegation]`|
+|`a17-wrapper-code-timeline-unreadable`|unresolved / 4|`[timeline-unreadable]`|
+|`a17-wrapper-code-tree-collision`|unresolved / 4|`[tree-collision]`|
+|`a17-wrapper-code-unsafe-json-string`|unresolved / 4|`[unsafe-json-string]`|
+|`a17-wrapper-code-verifier-crash`|unresolved / 4|`[verifier-crash]`|
+|`a17-wrapper-code-verifier-not-at-base`|unresolved / 4|`[verifier-not-at-base]`|
+|`a17-wrapper-code-void-after-announcement`|unresolved / 4|`[void-after-announcement]`|
+|`a17-wrapper-code-working-kind`|unresolved / 4|`[working-kind]`|
+
+- A60 addenda 17/18, Q6: "Every frozen fixed reason traverses the closed wrapper; unknown protocol remains refused."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-wrapper-acceptance-referral`|referred / 3|`[acceptance-unverified,risk-referral]`|
+|`a17-wrapper-unknown-reason`|unresolved / 4|`[collector-output-invalid]`|
+|`a17-wrapper-hostile-stdout`|unresolved / 4|`[collector-output-invalid]`|
+|`a17-wrapper-hostile-stderr`|unresolved / 4|`[acceptance-unverified]`|
+|`a17-wrapper-header-exit-mismatch`|unresolved / 4|`[collector-output-invalid]`|
+|`a17-wrapper-eligible-reason`|unresolved / 4|`[collector-output-invalid]`|
+|`a17-wrapper-malformed-note`|unresolved / 4|`[collector-output-invalid]`|
+|`a17-wrapper-bad-exit`|unresolved / 4|`[verifier-crash]`|
+|`a17-wrapper-nonfinal-eligible`|unresolved / 4|`[collector-output-invalid]`|
+
+- Q6 totals exactly 107 literal fixed-refusal round trips plus 9 protocol assertions = 116. Expected reason arrays above are frozen literals, independently reconciled against the actual evaluator producer dictionary at c7f2224; execution must not derive expected codes from evaluator or wrapper under test. Every code row supplies exactly the legal unresolved hyphen-identity header, its literal reason line and child exit 4, and expects byte-for-byte identical stdout/exit through the scratch wrapper. acceptance-referral instead supplies/retains the referred hyphen-identity header, acceptance-unverified then risk-referral and exit 3. hostile-stderr supplies that legal acceptance-only U/4 result with SENTINEL on stderr: legal stdout survives byte-exact and stderr is empty. unknown-reason uses an unknown token (including rejected diff/inventory specimens within the SAME assertion); hostile-stdout appends SENTINEL; header-exit-mismatch supplies referred header/exit 4; eligible-reason supplies a fully identified final eligible header plus a reason/exit 0; malformed-note has an unknown or ill-formed note; bad-exit is child exit 2; nonfinal-eligible supplies a fully identified eligible/0 result in prepare/class. Every refused protocol result has exactly merge-risk: unresolved pr=- head=- base=- diff=- config=-, then its one listed reason, exit 4. No hostile stderr/text is forwarded. Owning mutants: remove EACH fixed code separately from the SCRATCH wrapper and execute that wrapper (never hard-coded ROOT); allow unknown reason/hostile stream; remove header/exit/phase/note/eligible-reason checks or stderr suppression. Each owning assertion must fail with independent legal control still passing. Preserve all existing queue/export/header/note grammars; successful export reason: preparation-only remains a separate retained legacy exception outside the 107 refusal dictionary and the 116 counted assertions. Neither diff nor inventory has a positive reason selector.
 
 ### S661 — The merge is literal from B with head-match and separate identity proof (#646; A60 + addendum 1)
 **Covers:** F73
@@ -11502,6 +11982,19 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 
 - A60 addenda 4/5 I12-I14 behavioral expansion t={0,1}, s={0,1}, every retained launch/retry: decision PR/short-H/actual ordinal, contiguous unique ordinal set/max TWO, each attempt ID/previous/terminal/reason/provider visibility, original dispositions and launch/output linkage are independent. Both slots share one current attempt ID. Bind each launch observation {slot,session,dispatch,nonce,run,runtime,args,prompt,config,started_at,original_start,bytes,raw hash,outcome,transport attestation} to the actual retained producer/consumer, and selected manifest's complete attempt including nested disposition/launches. Missing observations do NOT get invented JSON members; LAUNCH alone lacks dispatch/nonce/run/runtime, so absent identified source is R:risk-attempt-invalid, echo contradictions R:risk-binding, reuse R:risk-independence, manifest-only lie U:identity-binding.
 - One fresh zero-byte attested pure transport redispatch PER slot/evidence identity across BOTH attempts is permitted; exercise bytes={0,1,whitespace,partial,malformed,unknown}, first/second retry and crossing attempt boundary separately. Only known zero-byte transport is exempt; every byte-bearing/unknown case counts. Peer retained unchanged and original clocks/slot fixed. Wrong bytes/hash/output source, unaccounted output/launch, shared/changed session, changed slot/peer, absent attestation, hidden provider retry, missing/late/wrong-PR/previous/words disposition, third counted pair, terminal continuation and infinite-zero recovery each R:risk-attempt-invalid or the isolated reuse/deadline code specified by its owning row. Name DEL-rule[t,s,j] per relation, ONCE-per-attempt instead of identity, FIRST-only/LAST-only, reset-clock and favorable-output-selection mutants. Valid bounded transport recovery, both author positions, both attempt positions and dispositioned pair two remain eligible/0 after genuine new complete announcement/full hold.
+
+
+- A60 addenda 17/18, Q4: "Malformed or deep raw does not suppress independently available consumers."
+
+| Named assertion | Outer result / exit | Complete ordered reason array |
+|---|---|---|
+|`a17-cross-0-empty-object-ledger`|referred / 3|`[risk-result-invalid,risk-attempt-invalid]`|
+|`a17-cross-0-depth1100-ledger`|referred / 3|`[risk-result-invalid,risk-attempt-invalid]`|
+|`a17-cross-1-empty-object-ledger`|referred / 3|`[risk-result-invalid,risk-attempt-invalid]`|
+|`a17-cross-1-depth1100-ledger`|referred / 3|`[risk-result-invalid,risk-attempt-invalid]`|
+|`a17-only-ledger`|referred / 3|`[risk-attempt-invalid]`|
+
+- Q4 ledger sets provider_retries_visible=false with a complete otherwise valid typed attempts ledger; all launch/receipt/session/raw/hash/byte/start and record references remain honest before capture. This isolates risk-attempt-invalid rather than a consistency contradiction. Owning mutant suppresses the provider-retries ledger consumer after local raw failure; each slot must kill it independently while canonical eligible/0 [] survives. Existing returning-launch/deadline/transport/ordinal/disposition rows remain unchanged.
 
 ### S670 — Qualification plants substantive harms outside mechanical stops (#646; A60 + addendum 1)
 **Covers:** F71, F72, F74
