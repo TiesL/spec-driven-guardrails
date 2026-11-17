@@ -234,11 +234,13 @@ def load_config(b,r):
 
 
 def valid_verdict(pair, artifacts):
+    need(isinstance(pair,dict), 'risk-result-invalid')  # rule:raw-member-object
     need(isinstance(pair.get('raw_b64'),str) and len(pair['raw_b64'])<=4*((RETURN_CAP+3)//3), 'risk-result-invalid')
     data=base64.b64decode(pair['raw_b64'],validate=True)
     within_cap=len(data)<=RETURN_CAP and pair.get('overflow') is False
     need(within_cap, 'risk-result-invalid')  # rule:return-cap
-    need(sha(data)==pair.get('raw_sha256') and len(data)==pair.get('byte_length'),'risk-result-invalid')  # rule:raw-identity
+    need(conforms(pair.get('raw_sha256'),'sha256') and sha(data)==pair['raw_sha256']
+         and conforms(pair.get('byte_length'),'nonnegative') and len(data)==pair['byte_length'],'risk-result-invalid')  # rule:raw-identity
     d=strict_json(data,verdict=True)
     closure,types=shape(d,VERDICT)
     need(not closure, 'risk-result-invalid')  # rule:verdict-closed
@@ -296,18 +298,31 @@ def gate_checks(b,cfg,r):
         except Invalid as e: r.add('unresolved',str(e))
 
 
+# Private validation results are reused by the pair and envelope consumers.
+# A raw failure removes only that slot's decoded semantics.
+RawValidation = namedtuple('RawValidation', 'member verdict')
+
+
+def typed_pair(p):
+    return (isinstance(p,dict) and conforms(p.get('envelope'),PAIR['envelope'])
+            and conforms(p.get('receipt'),PAIR_RECEIPT))
+
+
 def pair_checks(b,cfg,r):
     pair=b.get('risk_pair')
-    if not isinstance(pair,list) or len(pair)!=2: r.add('referred','risk-pair-required'); return
+    exact=isinstance(pair,list) and len(pair)==2
+    r.need(exact, 'risk-pair-required','referred')  # rule:raw-pair-count
     results=[]
-    for p in pair:
-        try: results.append(valid_verdict(p,b.get('artifacts',[])))
-        except (Invalid,ValueError,UnicodeError,KeyError,TypeError,RecursionError): r.add('referred','risk-result-invalid')
-    if len(results)==2:
-        both=all(d['outcome']=='approve' for d in results)
-        try:
-            need(both, 'risk-referral')  # rule:pair-approvals
-        except Invalid as e: r.add('referred',str(e))
+    for p in pair if isinstance(pair,list) else []:
+        if not typed_pair(p) or set(p)!=set(PAIR): r.add('referred','risk-result-invalid')
+        try: d=valid_verdict(p,b.get('artifacts',[]))
+        except (Invalid,ValueError,UnicodeError,KeyError,TypeError,RecursionError):
+            r.add('referred','risk-result-invalid'); d=None
+        results.append(RawValidation(p,d))
+    # Validation reasons precede the semantics of every available peer.
+    both=all(x.verdict is None or x.verdict['outcome']=='approve' for x in results)
+    r.need(both, 'risk-referral','referred')  # rule:pair-approvals
+    return results
 
 
 # Object inventories are checked before any materialization of candidate paths.
@@ -563,7 +578,7 @@ def consistency_checks(b,cfg,r,sel,cap,capture):
                 same_start=started==original
                 r.need(same_start, 'risk-attempt-invalid','referred')  # rule:first-launch-start
         for p in b.get('risk_pair') or []:
-            if not conforms(p,PAIR): continue
+            if not typed_pair(p): continue
             slot=p['envelope']['reviewer']['slot']; receipt=p['receipt']
             launches=[x for x in attempts[-1]['launches'] if x['slot']==slot]
             if launches:
@@ -746,17 +761,17 @@ def capture_copy_matches(value,final,record):
     return value==final or (record is not None and record!=final and value==record)
 
 
-def envelope_checks(b,cfg,r,cap,record,drifted,capture):
+def envelope_checks(b,cfg,r,cap,record,drifted,capture,validated):
     now=ts(b.get('now')); pair=b.get('risk_pair')
     if not isinstance(pair,list): return
-    for p in pair:
-        if not conforms(p,PAIR): r.add('referred','risk-result-invalid'); continue
+    for item in validated:
+        p=item.member; d=item.verdict
+        if not typed_pair(p): continue
         env=p['envelope']; rc=p['receipt']; original=ts(rc['started_at']); received=ts(rc['received_at'])
-        try: d=valid_verdict(p,b.get('artifacts',[]))
-        except (Invalid,ValueError,KeyError,UnicodeError,TypeError): continue
         expected=env['binding']; current=b.get('current') or {}; pr=b.get('pr') or {}
-        raw_equal=d['binding']==expected and d['reviewer']==env['reviewer']
-        r.need(raw_equal, 'risk-binding','referred')  # rule:risk-binding
+        if d is not None:
+            raw_equal=d['binding']==expected and d['reviewer']==env['reviewer']
+            r.need(raw_equal, 'risk-binding','referred')  # rule:risk-binding
         repository_ok=expected['repository']==cfg['repository']
         r.need(repository_ok, 'risk-binding','referred')  # rule:envelope-repository
         pr_ok=expected['pr']==b.get('pr_number')
@@ -803,7 +818,7 @@ def envelope_checks(b,cfg,r,cap,record,drifted,capture):
         held=env['capability']; pin=cfg['capability'] or {'table':{'sha256':None},'mapping':{'sha256':None}}
         derived=mine
         if cap['e0'] is not None:
-            floor_copies=[p['envelope']['reviewer']['floor_evidence_sha256'] for p in pair if conforms(p,PAIR)]
+            floor_copies=[p['envelope']['reviewer']['floor_evidence_sha256'] for p in pair if typed_pair(p)]
             floor_ok=env['reviewer']['floor_evidence_sha256']==cap['e0'] or ('floor' in drifted and len(floor_copies)==2 and len(set(floor_copies))==1)
             r.need(floor_ok, 'risk-binding','referred')  # rule:envelope-floor
         table_ok=capture_copy_matches(held['table_sha256'],pin['table']['sha256'],m['capability']['table']['sha256'] if m and m['capability'] else None)
@@ -823,7 +838,8 @@ def envelope_checks(b,cfg,r,cap,record,drifted,capture):
         exception_values=sorted({x['exception'] for x in copies if x['exception'] is not None}) if copies else None
         exception_ok=capture_copy_matches(sorted(held['exceptions']),sorted(derived['exceptions']),exception_values)
         r.need(exception_ok, 'risk-binding','referred')  # rule:envelope-exception
-    starts=[ts(p.get('receipt',{}).get('started_at')) for p in pair]
+    starts=[ts(p['receipt']['started_at']) for p in pair
+            if isinstance(p,dict) and conforms(p.get('receipt'),PAIR_RECEIPT)]
     if len(starts)==2 and all(starts) and now:
         age=(now-min(starts)).total_seconds()
         r.need(0<=age<cfg['max_age_seconds'], 'risk-expired','referred')  # rule:risk-expired
@@ -1020,7 +1036,7 @@ def capability_evaluate(b,cfg,final=True):
     inputs=qualification.get('inputs') if isinstance(qualification,dict) else None
     qualified=isinstance(inputs,dict) and inputs.get('models')==sha(canonical(profiles))
     if len(profiles)!=2 or not qualified: add('capability-profile-mismatch')  # rule:capability-qualified-profile
-    pair=[p for p in (b.get('risk_pair') or []) if conforms(p,PAIR)] if final and isinstance(b.get('risk_pair'),list) else []
+    pair=[p for p in (b.get('risk_pair') or []) if typed_pair(p)] if final and isinstance(b.get('risk_pair'),list) else []
     slots=out['slots']
     for profile in profiles:
         if not final:
@@ -1378,7 +1394,7 @@ def independence_checks(b,cfg,r,cap,record,drifted):
     receipts=[]; sessions=[]; dispatches=[]; nonces=[]; slots=[]; vendors=[]; raws=[]; outputs=[]
     profiles={x['slot']:x for x in cfg['reviewer_profiles']}
     for p in pair:
-        if not conforms(p,PAIR): continue
+        if not typed_pair(p): continue
         env=p['envelope']; rc=p['receipt']; reviewer=env['reviewer']; binding=env['binding']
         r.need(rc['available'] is True, 'risk-unavailable','referred')  # rule:slot-availability
         started=ts(rc['started_at']); received=ts(rc['received_at']); sealed=ts(rc['sealed_at']); compared=ts(rc['compared_at'])
@@ -1408,20 +1424,21 @@ def independence_checks(b,cfg,r,cap,record,drifted):
         receipts.append(rc); sessions.append(reviewer['session_id']); dispatches.append(reviewer['dispatch_id'])
         nonces.append(binding['nonce']); vendors.append(reviewer['vendor'])
         slots.append(reviewer['slot'])  # rule:slot-identity
-        raws.append(p['raw_sha256']); outputs.append(rc['output_source'])
-    identities=len(sessions)==2 and len(set(sessions))==2 and len(set(dispatches))==2 and len(set(nonces))==2
+        if conforms(p.get('raw_sha256'),'sha256'): raws.append(p['raw_sha256'])
+        outputs.append(rc['output_source'])
+    identities=len(sessions)!=2 or (len(set(sessions))==2 and len(set(dispatches))==2 and len(set(nonces))==2)
     r.need(identities, 'risk-independence','referred')  # rule:unique-ids
-    results=len(raws)==2 and len(set(raws))==2 and outputs[0]!=outputs[1]
+    results=(len(raws)!=2 or len(set(raws))==2) and (len(outputs)!=2 or outputs[0]!=outputs[1])
     r.need(results, 'risk-independence','referred')  # rule:unique-results
     # Vendor composition is no independence criterion; two stable slots are.
-    unique=len(slots)==2 and len(set(slots))==2 and set(slots)==set(profiles)
+    unique=len(slots)!=2 or (len(set(slots))==2 and set(slots)==set(profiles))
     r.need(unique, 'risk-independence','referred')  # rule:pair-unique
     sealed=all(ts(x['sealed_at'])<=ts(y['compared_at']) for x in receipts for y in receipts)
     r.need(sealed, 'risk-independence','referred')  # rule:peer-sealed
 
 
 def attempt_checks(b,cfg,r):
-    attempts=b.get('attempts'); pair=b.get('risk_pair') or []; valid=isinstance(attempts,list) and bool(attempts)
+    attempts=b.get('attempts'); pair=b.get('risk_pair'); pair=pair if isinstance(pair,list) else []; valid=isinstance(attempts,list) and bool(attempts)
     valid=valid and all(conforms(x,ATTEMPT) for x in attempts)
     slot_ids=[x['slot'] for x in cfg['reviewer_profiles']]; vendor_of={x['slot']:x['vendor'] for x in cfg['reviewer_profiles']}
     if valid:
@@ -1460,13 +1477,16 @@ def attempt_checks(b,cfg,r):
                     valid=valid and launch['bytes'] is not None and timely
             if i==len(attempts)-1:
                 for p in pair:
-                    env=p.get('envelope',{}); reviewer=env.get('reviewer',{}); binding=env.get('binding',{})
+                    if not (isinstance(p,dict) and conforms(p.get('envelope'),PAIR['envelope'])): continue
+                    env=p['envelope']; reviewer=env['reviewer']; binding=env['binding']
                     launches=[x for x in a['launches'] if x['slot']==reviewer.get('slot')]
                     valid=valid and bool(launches) and binding.get('attempt_id')==a['attempt_id']
                     if launches:
                         last=launches[-1]
-                        valid=valid and last['session_id']==reviewer.get('session_id') and last['raw_sha256']==p.get('raw_sha256')
-                        valid=valid and last['bytes']==p.get('byte_length') and last['original_start']==p.get('receipt',{}).get('started_at')
+                        valid=valid and last['session_id']==reviewer['session_id']
+                        if conforms(p.get('raw_sha256'),'sha256'): valid=valid and last['raw_sha256']==p['raw_sha256']
+                        if conforms(p.get('byte_length'),'nonnegative'): valid=valid and last['bytes']==p['byte_length']
+                        if conforms(p.get('receipt'),PAIR_RECEIPT): valid=valid and last['original_start']==p['receipt']['started_at']
     r.need(valid, 'risk-attempt-invalid','referred')  # rule:attempt-ledger
 
 
@@ -1583,8 +1603,8 @@ def evaluate(b):
             run_independent=True  # rule:no-expiry-skip
             if run_independent:
                 corpus_checks(b,r,capture)
-                pair_checks(b,cfg,r)
-                envelope_checks(b,cfg,r,cap,envelope_record,drifted,capture)
+                validated=pair_checks(b,cfg,r)
+                envelope_checks(b,cfg,r,cap,envelope_record,drifted,capture,validated)
                 independence_checks(b,cfg,r,cap,record,drifted)
                 attempt_checks(b,cfg,r)
     pr=b.get('pr') or {}; n=b.get('pr_number'); H=identity(pr.get('head'),SHA40); B=identity(b.get('main_tip'),SHA40)
