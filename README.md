@@ -413,7 +413,7 @@ dogfooding the mechanism it specifies.
 | `settings/session-hooks.json` | `SessionStart`/`SessionEnd` hooks, `attribution.commit`. Symlinked as `.claude/settings.json`. |
 | `hooks/` | `git-guardrails` (the `PreToolUse` guard against destructive git commands, plus the merge guard; fails open on a broken environment), `push-after-commit`, and the native git hooks `pre-commit`/`pre-push`/`commit-msg`, which cover commits and pushes made outside Claude Code. |
 | `skills/` | Canonical shared skills — see `WORKFLOW.md`'s routing table for the current list. Symlinked into `.claude/skills/`. |
-| `USER-CLAUDE.md` | Trigger for the per-machine adoption prompt, plus the Claude Code chat-language rule. Symlinked as `~/.claude/CLAUDE.md`. |
+| `USER-CLAUDE.md` | Trigger for the per-machine adoption prompt. Symlinked as `~/.claude/CLAUDE.md`. |
 
 **What adoption scaffolds into a project** — copied once, never overwritten once filled in:
 
