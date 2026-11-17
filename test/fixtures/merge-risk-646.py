@@ -2,6 +2,7 @@
 
 No model or network is called. Synthetic receipts exercise validation only.
 Run: python3 -I test/fixtures/merge-risk-646.py <S number> [--baseline]
+D3 ownership: python3 -I test/fixtures/merge-risk-646.py --d3-owning EVIDENCE_DIRECTORY
 D2 ownership: python3 -I test/fixtures/merge-risk-646.py --d2-owning EVIDENCE_DIRECTORY
 The independently specified control must pass before mutation credit is given.
 Baseline mode reports ALL rows, including failed controls, without mutations.
@@ -2427,9 +2428,9 @@ def run_row(root,entry,observe=False):
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         expected=() if want=='eligible' else ('hold-release-stale',)
         check(actual==expected,name+': exact release codes '+repr(actual)+' != '+repr(expected))
-    if name in D1_CODES or name in D2_CODES:
+    if name in D1_CODES or name in D2_CODES or name in D3_CODES:
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
-        check(actual==(D2_CODES[name] if name in D2_CODES else D1_CODES[name]),name+': ordered codes '+repr(actual))
+        check(actual==(D3_CODES[name] if name in D3_CODES else D2_CODES[name] if name in D2_CODES else D1_CODES[name]),name+': ordered codes '+repr(actual))
         check(sum(line.startswith('merge-risk: ') for line in p.stdout.splitlines())==1,name+': one header')
         check(first=='merge-risk: '+want+' pr=700 head='+H+' base='+B+
               ' diff='+sha(request['diff_text'])+' config='+sha(request['config_text']),name+': header identity')
@@ -5818,7 +5819,247 @@ def d2_owning_campaign(destination, resume=False):
     return 0
 
 
+# A60 addenda 17-23, D3: frozen Q4/Q7 CLI oracles, independent of evaluator.
+D3_CODES = {'a17-cross-0-empty-object-quality': ('gate-quality', 'risk-result-invalid'),
+ 'a17-cross-0-depth1100-quality': ('gate-quality', 'risk-result-invalid'),
+ 'a17-cross-1-empty-object-quality': ('gate-quality', 'risk-result-invalid'),
+ 'a17-cross-1-depth1100-quality': ('gate-quality', 'risk-result-invalid'),
+ 'a17-only-quality': ('gate-quality',),
+ 'a17-cross-0-empty-object-hard-stop': ('hard-stop', 'risk-result-invalid'),
+ 'a17-cross-0-depth1100-hard-stop': ('hard-stop', 'risk-result-invalid'),
+ 'a17-cross-1-empty-object-hard-stop': ('hard-stop', 'risk-result-invalid'),
+ 'a17-cross-1-depth1100-hard-stop': ('hard-stop', 'risk-result-invalid'),
+ 'a17-only-hard-stop': ('hard-stop',),
+ 'a17-cross-0-empty-object-identity': ('identity-binding', 'risk-result-invalid'),
+ 'a17-cross-0-depth1100-identity': ('identity-binding', 'risk-result-invalid'),
+ 'a17-cross-1-empty-object-identity': ('identity-binding', 'risk-result-invalid'),
+ 'a17-cross-1-depth1100-identity': ('identity-binding', 'risk-result-invalid'),
+ 'a17-only-identity': ('identity-binding',),
+ 'a17-cross-0-empty-object-hold': ('hold-window', 'risk-result-invalid'),
+ 'a17-cross-0-depth1100-hold': ('hold-window', 'risk-result-invalid'),
+ 'a17-cross-1-empty-object-hold': ('hold-window', 'risk-result-invalid'),
+ 'a17-cross-1-depth1100-hold': ('hold-window', 'risk-result-invalid'),
+ 'a17-only-hold': ('hold-window',),
+ 'a17-output-both-invalid': ('risk-result-invalid',),
+ 'a17-output-both-referral': ('risk-referral',),
+ 'a17-output-quality-invalid': ('gate-quality', 'risk-result-invalid'),
+ 'a17-output-identity-hold-invalid': ('identity-binding', 'hold-window', 'risk-result-invalid'),
+ 'a17-output-multiple': ('gate-quality',
+                         'hard-stop',
+                         'identity-binding',
+                         'hold-window',
+                         'risk-result-invalid',
+                         'risk-referral',
+                         'risk-binding'),
+ 'a17-cross-0-empty-object-binding': ('risk-result-invalid', 'risk-binding'),
+ 'a17-cross-0-depth1100-binding': ('risk-result-invalid', 'risk-binding'),
+ 'a17-cross-1-empty-object-binding': ('risk-result-invalid', 'risk-binding'),
+ 'a17-cross-1-depth1100-binding': ('risk-result-invalid', 'risk-binding'),
+ 'a17-only-binding': ('risk-binding',),
+ 'a17-cross-0-empty-object-deadline': ('risk-result-invalid', 'risk-deadline'),
+ 'a17-cross-0-depth1100-deadline': ('risk-result-invalid', 'risk-deadline'),
+ 'a17-cross-1-empty-object-deadline': ('risk-result-invalid', 'risk-deadline'),
+ 'a17-cross-1-depth1100-deadline': ('risk-result-invalid', 'risk-deadline'),
+ 'a17-only-deadline': ('risk-deadline',),
+ 'a17-cross-0-empty-object-age': ('risk-expired', 'risk-result-invalid'),
+ 'a17-cross-0-depth1100-age': ('risk-expired', 'risk-result-invalid'),
+ 'a17-cross-1-empty-object-age': ('risk-expired', 'risk-result-invalid'),
+ 'a17-cross-1-depth1100-age': ('risk-expired', 'risk-result-invalid'),
+ 'a17-only-age': ('risk-expired',),
+ 'a17-raw-equality-0': ('risk-binding',),
+ 'a17-raw-equality-1': ('risk-binding',),
+ 'a17-cross-0-empty-object-session': ('risk-result-invalid', 'risk-independence'),
+ 'a17-cross-0-depth1100-session': ('risk-result-invalid', 'risk-independence'),
+ 'a17-cross-1-empty-object-session': ('risk-result-invalid', 'risk-independence'),
+ 'a17-cross-1-depth1100-session': ('risk-result-invalid', 'risk-independence'),
+ 'a17-only-session': ('risk-independence',),
+ 'a17-cross-0-empty-object-ledger': ('risk-result-invalid', 'risk-attempt-invalid'),
+ 'a17-cross-0-depth1100-ledger': ('risk-result-invalid', 'risk-attempt-invalid'),
+ 'a17-cross-1-empty-object-ledger': ('risk-result-invalid', 'risk-attempt-invalid'),
+ 'a17-cross-1-depth1100-ledger': ('risk-result-invalid', 'risk-attempt-invalid'),
+ 'a17-only-ledger': ('risk-attempt-invalid',)}
+
+
+def d3_independent(b,kind,slot=0):
+    if kind=='quality': b['quality']['approved']=False
+    elif kind=='hard-stop': files_edit(path='adopt.sh')(b)
+    elif kind=='hold': b['now']=stamp(100)
+    elif kind=='binding':
+        p=b['risk_pair'][slot]; d=json.loads(base64.b64decode(p['raw_b64']))
+        p['envelope']['binding']['repository']=d['binding']['repository']='laboratory/wrong'
+        seal(p,d)
+    elif kind=='deadline': relaunch(slot,-1851)(b)
+    elif kind=='age':
+        for p in b['risk_pair']:
+            for key in ('started_at','received_at','sealed_at','compared_at'):
+                old=datetime.strptime(p['receipt'][key],'%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                p['receipt'][key]=(old-timedelta(seconds=86500)).strftime('%Y-%m-%dT%H:%M:%SZ')
+            for launch in b['attempts'][0]['launches']:
+                if launch['slot']==p['envelope']['reviewer']['slot']:
+                    launch.update(started_at=p['receipt']['started_at'],original_start=p['receipt']['started_at'])
+        b['attempts'][0]['created_at']=stamp(-86700)
+    elif kind=='session': b['risk_pair'][slot]['receipt']['no_inheritance']=False
+    elif kind=='ledger': b['attempts'][0]['provider_retries_visible']=False
+
+
+def d3_identity(b):
+    # Expire only final narrative, retaining the original selected record and trailer.
+    b['pr']['title']='Changed honest final narrative'
+    b['current']['narrative_sha256']=fixture_narrative(b['pr'])
+
+
+def d3_raw_fault(b,slot,kind):
+    seal(b['risk_pair'][slot],b'{}' if kind=='empty-object' else b'['*1100+b'0'+b']'*1100)
+
+
+def d3_consumer(kind,slot=0,rawkind=None):
+    def edit(b):
+        d3_independent(b,kind,slot); prepared(b)
+        if rawkind:
+            d3_raw_fault(b,slot,rawkind); d2_capture(b)
+        if kind=='identity': d3_identity(b)
+        b['_frozen']=True
+    return edit
+
+
+def d3_raw_equality(slot):
+    def edit(b):
+        prepared(b)
+        p=b['risk_pair'][slot]; d=json.loads(base64.b64decode(p['raw_b64']))
+        d['binding']['repository']='laboratory/wrong'; seal(p,d); d2_capture(b)
+    return edit
+
+
+def d3_composition(kind):
+    def edit(b):
+        if kind in ('quality-invalid','multiple'): d3_independent(b,'quality')
+        if kind=='multiple':
+            d3_independent(b,'hard-stop'); d3_independent(b,'binding'); d2_peer(b,1,'refer')
+        if kind in ('identity-hold-invalid','multiple'): d3_independent(b,'hold')
+        if kind=='both-referral':
+            for slot in (0,1): d2_peer(b,slot,'refer')
+        prepared(b)
+        if kind!='both-referral': d3_raw_fault(b,0,'empty-object')
+        if kind=='both-invalid': seal(b['risk_pair'][1],b'{ }')
+        d2_capture(b)
+        if kind in ('identity-hold-invalid','multiple'): d3_identity(b)
+    return edit
+
+
+def d3row(s,name,edit):
+    verdict={'a17-only-quality':'unresolved','a17-only-identity':'unresolved','a17-only-hold':'held'}.get(name,'referred')
+    row(s,name,edit,verdict,D3_CODES[name][0])
+
+
+for kind in ('quality','hard-stop','identity','hold','binding','deadline','age','session','ledger'):
+    scenario=654 if kind in ('binding','deadline','age') else 658 if kind=='session' else 669 if kind=='ledger' else 606
+    d3row(scenario,'a17-only-'+kind,d3_consumer(kind))
+    for slot in (0,1):
+        for rawkind in ('empty-object','depth1100'):
+            d3row(scenario,f'a17-cross-{slot}-{rawkind}-{kind}',d3_consumer(kind,slot,rawkind))
+for slot in (0,1): d3row(654,f'a17-raw-equality-{slot}',d3_raw_equality(slot))
+for kind in ('both-invalid','both-referral','quality-invalid','identity-hold-invalid','multiple'):
+    d3row(606,'a17-output-'+kind,d3_composition(kind))
+
+
+def d3_owning_campaign(destination):
+    """A23's exact Q4/Q7 owners, executed against this segment's actual source."""
+    source=(ROOT/'lib/merge-risk.py').read_text()
+    entries={e[0]:e for rr in ROWS.values() for e in rr}
+    names=list(D3_CODES); specs=[]
+    def family(kind):
+        return [n for n in names if n.startswith('a17-cross-') and n.endswith('-'+kind)]+['a17-only-'+kind]
+    def add(label,old,new,selected,masked=False):
+        check(old!=new and source.count(old)==1,'D3 owning anchor '+label)
+        specs.append((label,source.replace(old,new),selected,masked))
+    def rule(tag):
+        lines=[l for l in source.splitlines() if '# rule:'+tag+'\n' in l+'\n']
+        check(len(lines)==1,'D3 rule anchor '+tag)
+        return lines[0]
+    consumers=[('quality','gate-quality','valid'),('hard-stop','hard-stop','not matched'),
+               ('hold','hold-window',"elapsed >= cfg['hold_seconds']"),
+               ('binding','envelope-repository','repository_ok'),('deadline','risk-deadline','ontime'),
+               ('session','no-inheritance','fresh'),
+               ('ledger','provider-retries',"all(a['provider_retries_visible'] is True for a in attempts)")]
+    for kind,tag,predicate in consumers:
+        old=rule(tag); check(predicate in old,'D3 predicate '+kind)
+        add('q4-'+kind,old,old.replace(predicate,'True'),family(kind))
+    add('q4-identity-source',"digest=narrative(pr,b.get('repository'),closing[0])",
+        "digest=sel.manifest['evidence']['narrative_sha256'] if sel is not None else narrative(pr,b.get('repository'),closing[0])",family('identity'),True)
+    old=rule('narrative-record')
+    add('q4-identity-record',old,old.replace('record_ok','True'),family('identity'),True)
+    add('q4-identity-selected-source','    c,m=found[0]',
+        "    c,m=found[0]\n    m['evidence']['narrative_sha256']=(b.get('current') or {}).get('narrative_sha256')",family('identity'))
+    for tag,predicate,masked in [('full-hold-age','survives',False),('risk-expired',"0<=age<cfg['max_age_seconds']",True)]:
+        old=rule(tag)
+        add('q4-age-'+tag,old,old.replace(predicate,'True'),family('age'),masked)
+    start=source.index('def consistency_checks('); end=source.index('\ndef ',source.index('def envelope_checks(')+1)
+    old=source[start:end]
+    check(old.count("cfg['max_age_seconds']")==2,'D3 shared age operand scope')
+    add('q4-age-shared-limit',old,old.replace("cfg['max_age_seconds']",'10**9'),family('age'))
+    old=rule('risk-binding')
+    add('q4-raw-equality',old,old.replace('raw_equal','True'),[n for n in names if n.startswith('a17-raw-equality-')])
+    output=[n for n in names if n.startswith('a17-output-')]
+    add('q7-dedupe','reasons=list(dict.fromkeys((code,detail) for _,code,detail in r.reasons))',
+        'reasons=[(code,detail) for _,code,detail in r.reasons]',output)
+    old=rule('pair-approvals'); add('q7-referral',old,old.replace('both','True'),output)
+    add('q7-precedence',"for kind in ('referred','unresolved','held'):","for kind in ('held','unresolved','referred'):",output)
+    old="out=[first]+['reason: '+c+(' '+d if d else '') for c,d in reasons]"
+    for code in ('gate-quality','hard-stop','identity-binding','hold-window','risk-result-invalid','risk-referral','risk-binding'):
+        add('q7-drop-'+code,old,old[:-1]+' if c!='+repr(code)+']',output)
+    add('q7-reorder',old,old.replace('in reasons','in reversed(reasons)'),output)
+    # Each gate suppresses exactly ONE named consumer when raw becomes unavailable.
+    helper="\ndef audit_raw_available(b):\n    try:\n        return all(valid_verdict(p,b.get('artifacts',[])) for p in b.get('risk_pair',[]))\n    except (Invalid,ValueError,UnicodeError,KeyError,TypeError,RecursionError): return False\n\n"
+    for kind,tag,predicate in consumers+[('identity','narrative-record','record_ok'),
+            ('age','full-hold-age','survives'),('age-envelope','risk-expired',"0<=age<cfg['max_age_seconds']")]:
+        old=rule(tag); new=old.replace(predicate,'('+predicate+') or not audit_raw_available(b)')
+        check(old!=new,'D3 raw gate '+kind)
+        specs.append(('q4-raw-gate-'+kind,helper+source.replace(old,new),family('age' if kind=='age-envelope' else kind),kind in ('identity','age-envelope')))
+    check(len(specs)==35,'D3 owning inventory')
+    def observe(root,name):
+        p=run_row(root,entries[name],observe=True)
+        return {'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr}
+    dest=Path(destination); dest.mkdir(parents=True,exist_ok=True)
+    controls=('valid-final-control','one-refer','a17-only-identity','a17-only-hold','add2-frozen-table-byte-only')
+    baseline={}
+    for n in dict.fromkeys(names+list(controls)):
+        run_row(ROOT,entries[n]); baseline[n]=observe(ROOT,n)
+    report={'source_sha256':sha(source),'baseline':baseline,'mutants':[]}
+    with tempfile.TemporaryDirectory(prefix='mr646-d3-owning-') as tmp:
+        for label,mutated,selected,masked in specs:
+            root=Path(tmp)/label; (root/'lib').mkdir(parents=True)
+            (root/'lib/merge-risk.py').write_text(mutated)
+            (dest/(label+'.py')).write_text(mutated)
+            for lib in ('markdown.sh','model-record.sh'): shutil.copy(ROOT/'lib'/lib,root/'lib'/lib)
+            result={'mutant':label,'source_sha256':sha(mutated),'credit_allowed':not masked,'controls':{},'rows':[]}
+            for n in controls[:2]:
+                # These are targeted owners, never falsely labelled independent controls.
+                targeted=n=='one-refer' and label in ('q7-referral','q7-drop-risk-referral')
+                got=observe(root,n)
+                if targeted:
+                    result['controls'][n]={'status':'TARGETED; no independent preservation credit',**got}
+                else:
+                    run_row(root,entries[n]); check(got==baseline[n],label+' independent control '+n)
+                    result['controls'][n]={'status':'PASS',**got}
+            for n in selected:
+                got=observe(root,n); state='SURVIVES' if got==baseline[n] else 'KILLED'
+                result['rows'].append(dict(name=n,state=state,**got))
+            kills=sum(r['state']=='KILLED' for r in result['rows'])
+            check((kills==0) if masked else (kills>0),label+' unexpected ownership status')
+            report['mutants'].append(result)
+            (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+            print(label,'KILLED='+str(kills),'SURVIVES='+str(len(selected)-kills),
+                  'MASKED / NON-CREDIT' if masked else 'canonical owner',flush=True)
+    report['complete']=True
+    (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+    print('D3 OWNING CAMPAIGN PASS: 35 mutants; masked diagnostics earn zero credit',flush=True)
+    return 0
+
+
 def main():
+    if sys.argv[1]=='--d3-owning':
+        check(len(sys.argv)==3,'usage: --d3-owning EVIDENCE_DIRECTORY')
+        return d3_owning_campaign(sys.argv[2])
     if sys.argv[1]=='--d2-owning':
         check(len(sys.argv)==3,'usage: --d2-owning EVIDENCE_DIRECTORY')
         return d2_owning_campaign(sys.argv[2])
