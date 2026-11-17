@@ -9889,3 +9889,127 @@ carrier, M1-M9/M8 and C6 decisions are not resolved or accepted by this statemen
 Doubt: Python recursion thresholds vary; natural-depth and injected-fault evidence must be distinguished.
 Doubt: This finite head-local audit supplies no live producer authenticity, isolation, qualification or C6 proof.
 Doubt: Final exact companion codes and red/green/mutation evidence belong to QA/Developer; this Planning report makes no behavioral-pass claim.
+
+### A60 addendum 18 — corrected Q6 dictionary and complete addendum-17 count audit, #646
+
+**Ruling (Architect / Planning, 2026-11-17, `08a3768`).** [A]
+SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, following
+QA's stop report `.handoff/qa-report-646-21-stop.md` (#646 comment 6949630362).
+Addendum 17 remains historical; this addendum supersedes its inventory/count
+errors and the source references identified below. AC contradictions or
+narrowing: **none**. Retain C4, all named assertions, ownership, stopping rules,
+deferred-701 relations and the disabled delivery posture. No new requirement,
+carrier, security decision, Module, Interface or Seam is introduced.
+
+**Independent producer audit.** [V] At this head, literal reason arguments of
+`need`, `check`, `r.need`, `r.add` and the reason-building local `add` functions
+in `capability_identity`/`capability_evaluate` yield **104** distinct fixed
+codes. Trace variable forwarding through `Invalid`, `check`, capability items,
+comparison codes and `capability_reasons`: `CAPABILITY_REFER`/comparison
+production adds ONLY `capability-below-author` and `capability-effort-no-gain`;
+the CLI fallback adds `verifier-crash`. Thus the Q6 fixed refusal dictionary
+has **107** codes. No QA-supplied list was used to derive this set.
+
+`inert_corpus`'s different local `add(data,kind,source,path=None)` at
+lib/merge-risk.py:1735 writes `kind` into an artifact dictionary. Its calls at
+1741-1742 pass `diff` and `inventory` as artifact kinds. Neither reaches a
+Result reason or `Invalid` propagation. They MUST NOT be accepted as reason
+codes merely to reconcile an erroneous inventory. D5 adds the missing
+`acceptance-unverified` and removes these two spurious reason allowances.
+
+The current shell list has **109** entries: **106** of the 107 Q6 codes,
+plus `diff`, `inventory`, `preparation-only`. Corrected list: **108** entries
+(107 plus the already retained legacy `preparation-only`). Precisely correct
+the legacy description too: `evaluate` emits a NOTE for prepare/class, but
+`export_corpus` at 1775 actually emits `reason: preparation-only` with its
+successful export header/exit 0. Therefore the entire file has **108** distinct
+emitted reason tokens when that successful-export exception is included.
+It is outside Q6's refusal dictionary, not an unproduced shell-only token.
+Retain its existing export coverage without adding another Q6 assertion.
+Capability pass/correlation notes and reader `code:` outcomes remain excluded;
+wrapper-owned failures are not evaluator producers.
+
+**Frozen Q6 dictionary (107; copy literally).** [A]
+
+```text
+acceptance-unverified artifact-identity autonomy-disabled base-not-main base-unreadable behind-base cap-files cap-lines
+capability-below-author capability-effort-no-gain capability-effort-unavailable capability-entry-missing capability-exception-invalid
+capability-identity-missing capability-profile-mismatch capability-table-invalid changes-requested classification-unresolved closing-issues
+completion-invalid config-absent config-date-unreadable config-invalid config-malformed config-repository control-closed control-unreadable
+corpus-invalid duplicate-json-key evidence-incomplete evidence-schema executor-invalid finding-provenance gate-check gate-escape-hatch
+gate-preflight gate-preflight-stream gate-preflight-warning gate-quality gate-review-marker git-identity git-unreadable gitlink guard-invalid
+hard-stop hold-release-missing hold-release-stale hold-release-target hold-release-words hold-window identity-binding instruction-load-invalid
+issue-unreadable label-hold label-off label-off-control labels-unreadable lfs-unavailable manifest-schema narrative-invalid nonfinite-json
+now-unreadable off-since-config open-findings path-unsafe phase-invalid pr-not-open pr-unreadable project-unconfigured protection-invalid
+qualification-unavailable queue-edited queue-key-repeated queue-outcome-unknown queue-unreadable raw-identity read-only record-duplicate
+record-edited record-id record-label record-selection record-time records-unreadable release-head remote-identity repository-identity
+reserved-authority reviews-unreadable risk-attempt-invalid risk-binding risk-deadline risk-expired risk-independence risk-pair-required
+risk-referral risk-result-invalid risk-unavailable runtime-invalid self-delegation timeline-unreadable tree-collision unsafe-json-string
+verifier-crash verifier-not-at-base void-after-announcement working-kind
+```
+
+**Full finite-count audit.** [V/A] Expanded all selector atoms independently,
+checked their consumers and fixture constructors, and reconciled their union.
+These are specification counts, not passing tests or additional historical rows.
+
+| Owner | Expansion / source and fixture reconciliation | Ruled count |
+|---|---|---:|
+| Q1 S650/S651 | 8 cardinalities + 2 slots x 8 member forms. Four raw-metadata forms leave typed envelope/receipt available; `third_slot` supplies the extra member. No missing member is fabricated. | 24, unchanged |
+| Q2 S650-S652 | 2 slots x 15 listed raw faults x 3 peer outcomes. `seal`, `verdict_edit`, `valid_refer`, confirmed `finding` and RETURN_CAP=65536 support these distinct inputs. Existing 65535/65536 approvals and 65537 refusal stay retained. | 90, unchanged |
+| Q3 S653 | 2 x 4 depths x 3 outcomes = 24; 2 x 3 targeted decoder/finite/strings faults = 6. Depth bytes are 201/601/1401/2201, all under the cap; no portable recursion threshold. | 30, unchanged |
+| Q4 S606/S654/S658/S669 | 2 slots x 2 raw faults x 9 actual consumers = 36; 9 isolated consumer controls; 2 raw-only equality controls. Actual quality/source, narrative/hold, envelope/deadline/age, independence and attempt checks match these owners. | 47, unchanged |
+| Q5 S614/S615/S659 | 11 consumers x 2 malformed/deep forms = 22; manifest-comparison and exception-score overflow = 2. Four manifest uses share `parse_manifest`; three retained bodies share `retained_json`; mapping/revocation/exception have their listed consumers. `10**400` reaches the number-schema conversion fault. | 24, unchanged |
+| Q5A S614 | 5 listed adapter probes: gh, collect config, queue config, acceptance deep and acceptance nonobject. Together with Q3/Q5 these cover all 12 actual `strict_json` call sites; outer bundle has its retained regression. | 5, unchanged |
+| Q6 S660 | 107 literal `a17-wrapper-code-<code>` assertions + the SAME 9 named wrapper protocol assertions. `diff`/`inventory` have no positive selectors. | **116**, replaces 118 |
+| Q7 S606 | 5 named composition assertions. Result order, `(code,detail)` dedupe, R > U > H and exits 3/4/1 (eligible 0) agree with the retained oracle. Distinct invalid bytes avoid duplicate-result masking. | 5, unchanged |
+| Q8 S606/S615 | 5 named trailer states; both existing named valid-trailer companions exist independently. Absent currently clears (the known defect); malformed/duplicate refer, same-issue mismatch is unresolved, canonical matching clears. | 5, unchanged |
+
+**Package total: 346**, namely
+24+90+30+47+24+5+116+5+5. Independently, addendum 17's OWN printed family
+counts sum to **348**, not 448. Subtracting its two false Q6 positives yields
+346, not 446. Neither 448 nor 446 has a named extra 100-assertion block.
+Do not add assertions, companion replays or historical rows to manufacture it.
+
+**D1-D5 file-list and handoff audit.** [V/A]
+
+| Segment | Actual permitted files/functions and audit result |
+|---|---|
+| D1 | `lib/merge-risk.py` consistency/selection; `test/fixtures/merge-risk-646.py` control/narrative/preparation/body edits. Both `a6s2-trailer-control` (S606) and `a6s2-url-control` (S615) exist. **Mismatch:** `add4-actual-body` does not exist; correct that reference to existing `a6s2-narrative-source-body`, without adding/renaming a row. Preserve the trailer in that body-drift witness. |
+| D2 | Same two files; `valid_verdict`, `pair_checks`, existing raw builders and exact-output assertions. Two actual raw-validation call sites, pair and envelope, support the stated private validation reuse. No additional file or public Seam needed. |
+| D3 | Same two files; `envelope_checks`, `capability_evaluate`, `consistency_checks`, `independence_checks`, `attempt_checks` and existing age checks. Raw-metadata shape filtering is the named availability defect, not permission for a carrier or new field. No file-list mismatch. |
+| D4 | Same two files; schema number conversion and the listed JSON consumers, `gh`/`collect`/`collect_queue` only as J5 needs. **Wording mismatch:** there is no `gh-unavailable` reason. `gh`'s existing decode-failure result is `None`; its caller owns the existing fixed refusal. Do not put that invented token in QA arrays or the wrapper. Pre-Result probes preserve no nonexistent Result; retained outer CLI fallback remains a fixed refusal, not an uncaught traceback. |
+| D5 | `merge-risk-evidence.sh` and the same fixture; existing owning case scripts only if routing requires it. `wrapper_probe` really uses ROOT, so targeting the scratch wrapper needs the stated change. Use **107** fixed-code round trips, not 109. The retained `merge_risk` runner selection really contains **53** case files (47 use this shared fixture; 6 do not). No campaign-count mismatch. |
+
+The common Developer list remains exactly three primary files:
+`lib/merge-risk.py`, `merge-risk-evidence.sh`, `test/fixtures/merge-risk-646.py`;
+all **12** already existing optional case-script owners S606/S614/S615/
+S650-S654/S658/S659/S660/S669 resolve, with no new test file. Existing broader
+campaign members are revalidated, not granted edit scope. All other addendum-17
+family counts, selector atom counts, file lists and numerical limits above
+reconcile. The errors listed here are the complete mismatches found in this audit.
+
+**Exactly what QA writes next.** [A] Edit only TEST-SCENARIOS.md plus its own
+report/artifact under the ordinary role scope. Apply addendum 17's two named
+S606/S615 C4 prose insertions and its Q1-Q5/Q5A/Q7/Q8 sentences, selectors and
+oracles unchanged. For S660 write the Q6 sentence with the literal dictionary
+above, `a17-wrapper-code-<code>` for its 107 entries, and the unchanged nine
+`a17-wrapper-{acceptance-referral,unknown-reason,hostile-stdout,hostile-stderr,header-exit-mismatch,eligible-reason,malformed-note,bad-exit,nonfinal-eligible}`
+selectors: **116 Q6 assertions; 346 package assertions**. State the export
+`preparation-only` exception separately; retain export/queue/note/header checks.
+No positive `diff`/`inventory` reason oracle, `gh-unavailable` oracle or
+`add4-actual-body` row is to be invented. QA may include the two spurious tokens
+as rejected specimens in the existing unknown-reason assertion; that does not
+create additional counted selectors. Freeze literal complete ordered companion
+arrays, header/exit and no-leak oracles before execution, using the unchanged
+per-family rules; never derive expected codes from code under test. Publish the
+matching scenario artifact and explicit aliases/actual new/changed row counts.
+No scenario, implementation, behavioral-pass or mutation credit is supplied by
+this Planning correction. The existing one-pass/review/panel-stop route survives.
+
+MAINTAINER ITEMS for this correction: **none**. A request for an additional
+100 assertions, new carrier, deferred-701 relation, requirement or security
+choice is outside this correction: mark that point MAINTAINER ITEM / return-to-panel;
+do not infer such work from the erroneous total. Existing reservations survive.
+Doubt: Static inventory and bounded in-memory diagnostics do not establish final implementation, owning mutation kills or QA artifact agreement.
+Doubt: Recursion thresholds vary; this audit establishes no portable depth limit, live authenticity, isolation, qualification or C6 completeness.
+Doubt: Network/CI/publication and adoption entry points were unavailable in this scoped session; their owners must reconcile durable live state.
