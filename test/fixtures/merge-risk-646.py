@@ -2,6 +2,7 @@
 
 No model or network is called. Synthetic receipts exercise validation only.
 Run: python3 -I test/fixtures/merge-risk-646.py <S number> [--baseline]
+D2 ownership: python3 -I test/fixtures/merge-risk-646.py --d2-owning EVIDENCE_DIRECTORY
 The independently specified control must pass before mutation credit is given.
 Baseline mode reports ALL rows, including failed controls, without mutations.
 Rule-to-row mappings are kept with the rows; scratch mutants never edit ROOT.
@@ -5691,7 +5692,136 @@ def d2_fault_invoke(target,request,slot,stage,inject=True):
         return invoke(root,request)
 
 
+
+def d2_owning_campaign(destination, resume=False):
+    """A60 addendum 23: exact owners and explicit masked diagnostics, no rows added."""
+    source=(ROOT/'lib/merge-risk.py').read_text()
+    entries={e[0]:e for rows in ROWS.values() for e in rows}
+    selectors=list(D2_CODES)
+    controls=('valid-final-control','one-refer','same-code-both-slots')
+    def selected(*parts):
+        return [n for n in selectors if any(p in n for p in parts)]
+    def rawkind(k): return [f'a17-raw-{i}-{k}-{o}' for i in (0,1) for o in ('approve','refer','reject')]
+    specs=[]
+    def add(label,before,after,names,credit=True):
+        specs.append((label,before,after,list(dict.fromkeys(names)),credit))
+    add('pair-count',"r.need(exact, 'risk-pair-required','referred')","r.need(True, 'risk-pair-required','referred')",selected('a17-card-'))
+    add('pair-count-short-return',"    results=[]\n    for p in pair if isinstance(pair,list) else []:","    results=[]\n    if not exact: return results\n    for p in pair if isinstance(pair,list) else []:",selected('a17-card-one-'))
+    add('member-object',"need(isinstance(pair,dict), 'risk-result-invalid')","need(True, 'risk-result-invalid')",[f'a17-member-{i}-{k}' for i in (0,1) for k in ('null','integer','list')])
+    add('member-structure',"if not typed_pair(p) or set(p)!=set(PAIR): r.add('referred','risk-result-invalid')","if False: r.add('referred','risk-result-invalid')",selected('-missing-envelope'))
+    add('b64-metadata',"need(isinstance(pair.get('raw_b64'),str) and len(pair['raw_b64'])<=4*((RETURN_CAP+3)//3), 'risk-result-invalid')","need(True, 'risk-result-invalid')",selected('-raw-b64-type'),False)
+    for key,predicate,equality,kind in (
+        ('sha',"conforms(pair.get('raw_sha256'),'sha256')","sha(data)==pair['raw_sha256']",'raw-sha-type'),
+        ('length',"conforms(pair.get('byte_length'),'nonnegative')","len(data)==pair['byte_length']",'length-type')):
+        add(key+'-type-conjunct',predicate+' and '+equality,equality,selected('-'+kind),key=='length')
+    add('overflow-conjunct',"len(data)<=RETURN_CAP and pair.get('overflow') is False","len(data)<=RETURN_CAP",selected('-overflow-type'))
+    catch='except (Invalid,ValueError,UnicodeError,KeyError,TypeError,RecursionError):'
+    # Every local class omission is measured across the complete Q1-Q3 package.
+    for omitted in ('Invalid','ValueError','UnicodeError','KeyError','TypeError','RecursionError'):
+        kept=[c for c in ('Invalid','ValueError','UnicodeError','KeyError','TypeError','RecursionError') if c!=omitted]
+        add('omit-only-'+omitted,catch,'except ('+','.join(kept)+'):',selectors,omitted in ('Invalid','ValueError','RecursionError'))
+    add('decode-failure-normalization',catch,'except (Invalid,KeyError,TypeError,RecursionError):',
+        [n for k in ('empty','whitespace','truncated','trailing-object','bad-utf8','bad-base64') for n in rawkind(k)])
+    for label,old,new,names,credit in (
+        ('closure',"need(not closure, 'risk-result-invalid')  # rule:verdict-closed","need(True, 'risk-result-invalid')  # rule:verdict-closed",rawkind('empty-object')+rawkind('unknown-key'),True),
+        ('types',"need(not types, 'risk-result-invalid')  # rule:verdict-types","need(True, 'risk-result-invalid')  # rule:verdict-types",rawkind('wrong-type'),True),
+        ('hash-equality',"sha(data)==pair['raw_sha256']",'True',rawkind('wrong-hash'),True),
+        ('length-equality',"len(data)==pair['byte_length']",'True',rawkind('wrong-length'),True),
+        ('decoded-cap',"len(data)<=RETURN_CAP and pair.get('overflow') is False","pair.get('overflow') is False",rawkind('over-cap'),True),
+        ('overflow',"len(data)<=RETURN_CAP and pair.get('overflow') is False","len(data)<=RETURN_CAP",rawkind('overflow')+selected('-overflow-type'),True),
+        ('duplicates',"need(k not in result, 'duplicate-json-key')","need(True, 'duplicate-json-key')",rawkind('duplicate-key'),True),
+        ('finite',"need(finite(value), 'nonfinite-json')","need(True, 'nonfinite-json')",rawkind('nonfinite'),False),
+        ('two-valid-semantics',"both=all(x.verdict is None or x.verdict['outcome']=='approve' for x in results)","both=not all(x.verdict is not None for x in results) or all(x.verdict['outcome']=='approve' for x in results)",selected('a17-raw-','a17-depth-'),True)):
+        add(label,old,new,names,credit)
+    # Independently skip the selected public raw-validation slot; no consumer deletion.
+    for slot in (0,1):
+        old="        try: d=valid_verdict(p,b.get('artifacts',[]))"
+        new="        try: d=None if len(results)=="+str(slot)+" else valid_verdict(p,b.get('artifacts',[]))"
+        add('skip-raw-slot-'+str(slot),old,new,[n for n in selectors if n.startswith((f'a17-raw-{slot}-',f'a17-depth-{slot}-'))])
+    for func in ('envelope_checks','capability_evaluate','independence_checks'):
+        a=source.index('def '+func+'('); z=source.find('\ndef ',a+1)
+        chunk=source[a:z if z>=0 else len(source)]
+        old,new=(('if typed_pair(p)]','if conforms(p,PAIR)]') if func=='capability_evaluate' else
+                 ('if not typed_pair(p): continue','if not conforms(p,PAIR): continue'))
+        check(chunk.count(old)==1,'owning typed-skip '+func)
+        add('typed-skip-'+func,chunk,chunk.replace(old,new),[f'a17-member-{i}-{k}' for i in (0,1) for k in ('raw-b64-type','raw-sha-type','length-type','overflow-type')],func!='independence_checks')
+    def observe(root,name,inject=True,entry=None):
+        b=control(root); e=entries[name] if entry is None else entry
+        if e[1]: e[1](b)
+        b=prepared(b); request=b.pop('_request',b)
+        if name in D2_FAULTS:
+            p=d2_fault_invoke(root,request,*D2_FAULTS[name],inject=inject)
+        else: p=invoke(root,request)
+        return {'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr}
+    # Execute full assertions before mutations; expected outputs never come from a mutant.
+    dest=Path(destination); dest.mkdir(parents=True,exist_ok=True)
+    if resume:
+        report=json.loads((dest/'campaign.json').read_text())
+        check(report['source_sha256']==sha(source),'resume source identity')
+        baseline=report['baseline']
+    else:
+        baseline={}
+        for n in dict.fromkeys(selectors+list(controls)+['bytes-65535','bytes-65536']):
+            run_row(ROOT,entries[n]); baseline[n]=observe(ROOT,n)
+        report={'source_sha256':sha(source),'baseline':baseline,'mutants':[],'fault_controls':{}}
+    with tempfile.TemporaryDirectory(prefix='mr646-d2-a23-') as tmp:
+        report['laboratory']=tmp
+        for label,old,new,names,credit in specs:
+            previous=next((r for r in report['mutants'] if r['mutant']==label),None)
+            if previous and previous['before']==old and previous['after']==new and [r['name'] for r in previous['rows']]==names:
+                print(label,'RETAINED actual completed observations',flush=True)
+                continue
+            if previous: report['mutants'].remove(previous)
+            check(old!=new and source.count(old)==1,'owning anchor '+label)
+            root=Path(tmp)/label; (root/'lib').mkdir(parents=True)
+            mutated=source.replace(old,new); (root/'lib/merge-risk.py').write_text(mutated)
+            for lib in ('markdown.sh','model-record.sh'): shutil.copy(ROOT/'lib'/lib,root/'lib'/lib)
+            result={'mutant':label,'before':old,'after':new,'source_sha256':sha(mutated),'credit_allowed':credit,'controls':{},'rows':[]}
+            # Persist the exact source independently of TemporaryDirectory cleanup.
+            (dest/(label+'.py')).write_text(mutated)
+            for n in controls:
+                if label=='skip-raw-slot-0' and n=='one-refer':
+                    # The original P places refer in the deliberately skipped slot.
+                    # Keep that targeted observation, and use the other independently valid slot for P.
+                    result['targeted_one_refer']=observe(root,n)
+                    e=entries[n]; companion=(e[0],verdict_edit(valid_refer,1),*e[2:])
+                    run_row(root,companion)
+                    got=observe(root,n,entry=companion)
+                    check(got==observe(ROOT,n,entry=companion),label+' independent other-slot P')
+                    result['controls']['one-refer-other-slot']=got
+                else:
+                    run_row(root,entries[n]); got=observe(root,n)
+                    check(got==baseline[n],label+' changed independent control '+n)
+                    result['controls'][n]=got
+            if label in ('decoded-cap','overflow'):
+                for n in ('bytes-65535','bytes-65536'):
+                    if n in baseline:
+                        run_row(root,entries[n]); check(observe(root,n)==baseline[n],label+' cap control '+n)
+                        result['controls'][n]=baseline[n]
+            for n in names:
+                got=observe(root,n); state='SURVIVES' if got==baseline[n] else 'KILLED'
+                result['rows'].append(dict(name=n,state=state,**got))
+            kills=sum(r['state']=='KILLED' for r in result['rows'])
+            check(not credit or kills>0,'unowned canonical mutant '+label)
+            check(credit or kills==0,'diagnostic unexpectedly killable '+label)
+            report['mutants'].append(result)
+            (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+            print(label,'KILLED='+str(kills),'SURVIVES='+str(len(names)-kills),'credit='+str(credit),flush=True)
+        # Selected-stage no-fault controls use the same instrumentation and public CLI.
+        for n in D2_FAULTS:
+            p=observe(ROOT,n,inject=False)
+            check(p['exit']==0 and not p['stderr'] and '\nreason: ' not in p['stdout'],n+' no-fault control')
+            report['fault_controls'][n]=p
+    report['complete']=True
+    (dest/'campaign.json').write_text(json.dumps(report,indent=2))
+    print('D2 OWNING CAMPAIGN PASS: '+str(len(specs))+' mutants; masked diagnostics earn zero credit',flush=True)
+    return 0
+
+
 def main():
+    if sys.argv[1]=='--d2-owning':
+        check(len(sys.argv)==3,'usage: --d2-owning EVIDENCE_DIRECTORY')
+        return d2_owning_campaign(sys.argv[2])
     s=sys.argv[1].lstrip('S'); baseline='--baseline' in sys.argv
     entries=ROWS.get(s,[])
     check(entries,'no rows for S'+s)
