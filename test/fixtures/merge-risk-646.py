@@ -2399,7 +2399,7 @@ def run_row(root,entry,observe=False):
     request=b.pop('_request',b)
     target=Path(sys.argv[sys.argv.index('--against')+1]) if '--against' in sys.argv else root
     if command=='capability': return capability_assert(target,dict(b,_name=name),want,entry[5])
-    p=invoke(target,request,command)
+    p=(d2_fault_invoke(target,request,*D2_FAULTS[name]) if name in D2_FAULTS else invoke(target,request,command))
     if observe:
         check(command=='evaluate',name+': observation must use evaluate seam')
         return p
@@ -2426,9 +2426,9 @@ def run_row(root,entry,observe=False):
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         expected=() if want=='eligible' else ('hold-release-stale',)
         check(actual==expected,name+': exact release codes '+repr(actual)+' != '+repr(expected))
-    if name in D1_CODES:
+    if name in D1_CODES or name in D2_CODES:
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
-        check(actual==D1_CODES[name],name+': ordered codes '+repr(actual))
+        check(actual==(D2_CODES[name] if name in D2_CODES else D1_CODES[name]),name+': ordered codes '+repr(actual))
         check(sum(line.startswith('merge-risk: ') for line in p.stdout.splitlines())==1,name+': one header')
         check(first=='merge-risk: '+want+' pr=700 head='+H+' base='+B+
               ' diff='+sha(request['diff_text'])+' config='+sha(request['config_text']),name+': header identity')
@@ -5569,6 +5569,126 @@ def c6_basis_mutant(root, entry, tag):
     check(result.returncode == {'referred': 3, 'unresolved': 4, 'eligible': 0}[verdict]
           and result.stdout.startswith('merge-risk: ' + verdict + ' '), entry[0] + ': mutant outer result')
     print('KILLED S' + sys.argv[1].lstrip('S') + '/' + tag + ' -> ' + entry[0] + ' (lost only ' + own + '; own two-author control passed)')
+
+# A60 addenda 17-19, D2: literal Q1-Q3 public CLI oracles.
+D2_CODES={}
+D2_FAULTS={}
+def d2row(s,name,edit,codes):
+    row(s,name,edit,'referred',codes[0])
+    D2_CODES[name]=codes
+
+
+def d2_peer(b,slot,outcome):
+    def edit(d):
+        if outcome=='refer':
+            d['outcome']='refer'; d['uncertainties']=['SENTINEL missing context.']
+            d['coverage'][0]['status']='unknown'
+        elif outcome=='reject':
+            finding(d,confirmed=True); d['outcome']='reject'
+    verdict_edit(edit,slot)(b)
+
+
+def d2_capture(b):
+    # Capture deliberately supplied raw bytes/metadata without parsing or repair.
+    # sync() has already run on the honest control before a raw fault is applied.
+    for p in b['risk_pair']:
+        for launch in b['attempts'][-1]['launches']:
+            if launch['session_id']==p['envelope']['reviewer']['session_id']:
+                launch.update(raw_sha256=p['raw_sha256'],bytes=p['byte_length'])
+    m=announcement(b)
+    b['issue_comments'][0]['body']=record_body(m)
+    b['_frozen']=True
+
+
+def d2_raw(slot,kind,outcome):
+    def edit(b):
+        d2_peer(b,1-slot,outcome); prepared(b)
+        p=b['risk_pair'][slot]; data=base64.b64decode(p['raw_b64']); d=json.loads(data)
+        if kind=='empty': data=b''
+        elif kind=='whitespace': data=b' \n'
+        elif kind=='empty-object': data=b'{}'
+        elif kind=='truncated': data=data[:-1]
+        elif kind=='trailing-object': data+=b'{}'
+        elif kind=='bad-utf8': data=b'\xff'
+        elif kind=='over-cap': data+=b' '*(65537-len(data))
+        elif kind=='unknown-key': d['SENTINEL']=True; data=raw(d)
+        elif kind=='wrong-type': d['rationale']=7; data=raw(d)
+        elif kind=='duplicate-key': data=data[:-1]+b',"rationale":"SENTINEL"}'
+        elif kind=='nonfinite': data=data.replace(b'"rationale":',b'"SENTINEL":NaN,"rationale":',1)
+        elif kind.startswith('depth'): data=b'['*int(kind[5:])+b'0'+b']'*int(kind[5:])
+        seal(p,data)
+        if kind=='bad-base64': p['raw_b64']='SENTINEL!'
+        elif kind=='wrong-hash': p['raw_sha256']=sha('wrong')
+        elif kind=='wrong-length': p['byte_length']+=1
+        elif kind=='overflow': p['overflow']=True
+        d2_capture(b)
+    return edit
+
+
+CARD_CODES=('identity-binding','capability-identity-missing','risk-pair-required')
+for kind in ('absent','null','object','empty','one-approve','one-refer','one-reject','extra-typed'):
+    def edit(b,kind=kind):
+        if kind.startswith('one-'): d2_peer(b,0,kind[4:])
+        prepared(b); b['_frozen']=True
+        if kind=='absent': b.pop('risk_pair')
+        elif kind=='null': b['risk_pair']=None
+        elif kind=='object': b['risk_pair']={}
+        elif kind=='empty': b['risk_pair']=[]
+        elif kind.startswith('one-'): b['risk_pair']=b['risk_pair'][:1]
+        else: third_slot(b)
+    codes=(('identity-binding','risk-pair-required','risk-binding','risk-attempt-invalid') if kind=='extra-typed'
+           else CARD_CODES+('risk-referral',) if kind in ('one-refer','one-reject') else CARD_CODES)
+    d2row(650,'a17-card-'+kind,edit,codes)
+
+for slot in range(2):
+    for kind in ('null','integer','list','missing-envelope','raw-b64-type','raw-sha-type','length-type','overflow-type'):
+        def edit(b,slot=slot,kind=kind):
+            d2_peer(b,1-slot,'refer'); prepared(b); b['_frozen']=True
+            if kind in ('null','integer','list'): b['risk_pair'][slot]={'null':None,'integer':7,'list':[]}[kind]
+            elif kind=='missing-envelope': b['risk_pair'][slot].pop('envelope')
+            else:
+                p=b['risk_pair'][slot]
+                key={'raw-b64-type':'raw_b64','raw-sha-type':'raw_sha256','length-type':'byte_length','overflow-type':'overflow'}[kind]
+                p[key]='false' if kind=='overflow-type' else 7
+                p['envelope']['binding']['repository']='laboratory/wrong'
+        codes=(('identity-binding','capability-identity-missing','risk-result-invalid','risk-referral')
+               if kind in ('null','integer','list','missing-envelope') else
+               ('identity-binding','risk-result-invalid','risk-referral','risk-binding'))
+        d2row(651,f'a17-member-{slot}-{kind}',edit,codes)
+    for kind in ('empty','whitespace','empty-object','truncated','trailing-object','bad-base64','bad-utf8','wrong-hash','wrong-length',
+                 'over-cap','overflow','unknown-key','wrong-type','duplicate-key','nonfinite'):
+        scenario=650 if kind in ('empty-object','unknown-key','wrong-type','duplicate-key','nonfinite') else 651 if kind in ('empty','whitespace','truncated','trailing-object','bad-base64','bad-utf8','wrong-hash','wrong-length') else 652
+        for outcome in ('approve','refer','reject'):
+            codes=('risk-result-invalid',) if outcome=='approve' else ('risk-result-invalid','risk-referral')
+            d2row(scenario,f'a17-raw-{slot}-{kind}-{outcome}',d2_raw(slot,kind,outcome),codes)
+    for depth in (100,300,700,1100):
+        for outcome in ('approve','refer','reject'):
+            codes=('risk-result-invalid',) if outcome=='approve' else ('risk-result-invalid','risk-referral')
+            d2row(653,f'a17-depth-{slot}-{depth}-{outcome}',d2_raw(slot,'depth'+str(depth),outcome),codes)
+    for stage in ('decoder','finite','strings'):
+        name=f'a17-fault-{slot}-{stage}'
+        D2_FAULTS[name]=(slot,stage)
+        d2row(653,name,None,('risk-result-invalid',))
+
+
+def d2_fault_invoke(target,request,slot,stage,inject=True):
+    # Instrument ONLY verdict-mode parsing of the selected slot's exact bytes.
+    # Every assertion still crosses the unchanged public evaluate CLI.
+    with tempfile.TemporaryDirectory(prefix='mr646-d2-fault-') as tmp:
+        root=Path(tmp); (root/'lib').mkdir()
+        source=(target/'lib/merge-risk.py').read_text()
+        anchors={'decoder':'    value = json.loads(data, object_pairs_hook=_no_dupes)',
+                 'finite':"    need(finite(value), 'nonfinite-json')",
+                 'strings':'        need(safe_strings(value),'}
+        anchor=anchors[stage]; check(source.count(anchor)==1,'fault stage anchor '+stage)
+        data=base64.b64decode(request['risk_pair'][slot]['raw_b64']).decode()
+        indent='        ' if stage=='strings' else '    '
+        fault=indent+'if verdict and data=='+repr(data)+': raise RecursionError()\n'
+        if inject: source=source.replace(anchor,fault+anchor)
+        (root/'lib/merge-risk.py').write_text(source)
+        for name in ('markdown.sh','model-record.sh'): shutil.copy(ROOT/'lib'/name,root/'lib'/name)
+        return invoke(root,request)
+
 
 def main():
     s=sys.argv[1].lstrip('S'); baseline='--baseline' in sys.argv
