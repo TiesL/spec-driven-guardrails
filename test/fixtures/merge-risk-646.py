@@ -2,6 +2,7 @@
 
 No model or network is called. Synthetic receipts exercise validation only.
 Run: python3 -I test/fixtures/merge-risk-646.py <S number> [--baseline]
+D5 ownership: python3 -I test/fixtures/merge-risk-646.py --d5-owning EVIDENCE_DIRECTORY
 D4 ownership: python3 -I test/fixtures/merge-risk-646.py --d4-owning EVIDENCE_DIRECTORY
 D3 ownership: python3 -I test/fixtures/merge-risk-646.py --d3-owning EVIDENCE_DIRECTORY
 D2 ownership: python3 -I test/fixtures/merge-risk-646.py --d2-owning EVIDENCE_DIRECTORY
@@ -1365,16 +1366,28 @@ mutate(626,'instruction-cap','RISK-REVIEW.md-16001')
 mutate(626,'instruction-full-load','RISK-REVIEW.md-truncated')
 
 
-def wrapper_probe(phase='final'):
+def wrapper_probe(root, phase='final', payload=None, child_exit=0, child_stderr=''):
+    """Run the selected wrapper copy with an offline child at its CLI Seam."""
+    legacy = payload is None
+    if legacy:
+        payload=('SENTINEL unknown collector output' if phase=='final' else
+                 'merge-risk: eligible pr=700 head='+H+' base='+B+' diff='+sha('diff')+' config='+sha('config'))
     with tempfile.TemporaryDirectory(prefix='mr646-wrapper-') as tmp:
-        root=Path(tmp)
-        payload='SENTINEL unknown collector output' if phase=='final' else 'merge-risk: eligible pr=700 head='+H+' base='+B+' diff='+sha('diff')+' config='+sha('config')
-        (root/'python3').write_text('#!/bin/sh\nprintf "%s\\n" '+repr(payload)+'\nexit 0\n');(root/'python3').chmod(0o755)
-        (root/'gh').write_text('#!/bin/sh\nexit 99\n');(root/'gh').chmod(0o755)
-        p=subprocess.run(['bash',str(ROOT/'merge-risk-evidence.sh'),'--phase',phase,'700'],capture_output=True,text=True,
-                         env=dict(os.environ,PATH=str(root)+':'+os.environ['PATH']))
-        check(p.returncode==4 and 'SENTINEL' not in p.stdout+p.stderr,'unknown output/preparation authority leaked or accepted')
-    return p
+        lab=Path(tmp); tools=lab/'bin'; tools.mkdir()
+        shutil.copy(root/'merge-risk-evidence.sh',lab/'merge-risk-evidence.sh')
+        (lab/'payload').write_text(payload); (lab/'stderr').write_text(child_stderr)
+        children={'python3':'#!/bin/sh\n/bin/cat "$MR646_PAYLOAD"\n/bin/cat "$MR646_STDERR" >&2\nexit "$MR646_EXIT"\n',
+                  'gh':'#!/bin/sh\nexit 99\n','git':'#!/bin/sh\nexit 99\n'}
+        for name,body in children.items():
+            (tools/name).write_text(body); (tools/name).chmod(0o755)
+        env=dict(os.environ,PATH=str(tools)+':'+os.environ['PATH'],
+                 MR646_PAYLOAD=str(lab/'payload'),MR646_STDERR=str(lab/'stderr'),MR646_EXIT=str(child_exit))
+        result=subprocess.run(['bash',str(lab/'merge-risk-evidence.sh'),'--phase',phase,'700'],
+                              capture_output=True,text=True,env=env)
+        if legacy:
+            check(result.returncode==4 and 'SENTINEL' not in result.stdout+result.stderr,
+                  'unknown output/preparation authority leaked or accepted')
+        return result
 for phase in ('final','prepare'): row(611,'wrapper-'+phase,lambda b,p=phase:b.update(_wrapper_phase=p),'eligible',None,'wrapper-probe')
 
 
@@ -2386,6 +2399,7 @@ for field in dict.fromkeys(documented_reviewer_fields(ROOT)+['slot']):
 
 def run_row(root,entry,observe=False):
     name,edit,want,code,command=entry[:5]
+    if command=='d5-probe': return d5_assert(root,name,observe)
     if command=='d4-probe': return d4_assert(root,name,observe)
     if command=='structure': return structure_assert(root,sys.argv[1].lstrip('S'))
     if command=='collector-inert': return export_probe(root,inert=True)
@@ -2398,7 +2412,7 @@ def run_row(root,entry,observe=False):
         documented_verdict(b,b.pop('_omit_reviewer',None),root if (root/'skills').exists() else ROOT)
         command='evaluate'
     if command=='export-probe': return export_probe(root,b.pop('_export_defect',None),b.pop('_capability_defect',None),b.pop('_guard_defect',None))
-    if command=='wrapper-probe': return wrapper_probe(b.pop('_wrapper_phase','final'))
+    if command=='wrapper-probe': return wrapper_probe(root,b.pop('_wrapper_phase','final'))
     b=prepared(b)
     request=b.pop('_request',b)
     target=Path(sys.argv[sys.argv.index('--against')+1]) if '--against' in sys.argv else root
@@ -7261,7 +7275,287 @@ def d4_owning_campaign(destination):
     return 0
 
 
+
+# A60 addenda 18/19 Q6: independent frozen QA literals, not producer introspection.
+D5_FIXED_CODES = (
+    'acceptance-unverified',
+    'artifact-identity',
+    'autonomy-disabled',
+    'base-not-main',
+    'base-unreadable',
+    'behind-base',
+    'cap-files',
+    'cap-lines',
+    'capability-below-author',
+    'capability-effort-no-gain',
+    'capability-effort-unavailable',
+    'capability-entry-missing',
+    'capability-exception-invalid',
+    'capability-identity-missing',
+    'capability-profile-mismatch',
+    'capability-table-invalid',
+    'changes-requested',
+    'classification-unresolved',
+    'closing-issues',
+    'completion-invalid',
+    'config-absent',
+    'config-date-unreadable',
+    'config-invalid',
+    'config-malformed',
+    'config-repository',
+    'control-closed',
+    'control-unreadable',
+    'corpus-invalid',
+    'duplicate-json-key',
+    'evidence-incomplete',
+    'evidence-schema',
+    'executor-invalid',
+    'finding-provenance',
+    'gate-check',
+    'gate-escape-hatch',
+    'gate-preflight',
+    'gate-preflight-stream',
+    'gate-preflight-warning',
+    'gate-quality',
+    'gate-review-marker',
+    'git-identity',
+    'git-unreadable',
+    'gitlink',
+    'guard-invalid',
+    'hard-stop',
+    'hold-release-missing',
+    'hold-release-stale',
+    'hold-release-target',
+    'hold-release-words',
+    'hold-window',
+    'identity-binding',
+    'instruction-load-invalid',
+    'issue-unreadable',
+    'label-hold',
+    'label-off',
+    'label-off-control',
+    'labels-unreadable',
+    'lfs-unavailable',
+    'manifest-schema',
+    'narrative-invalid',
+    'nonfinite-json',
+    'now-unreadable',
+    'off-since-config',
+    'open-findings',
+    'path-unsafe',
+    'phase-invalid',
+    'pr-not-open',
+    'pr-unreadable',
+    'project-unconfigured',
+    'protection-invalid',
+    'qualification-unavailable',
+    'queue-edited',
+    'queue-key-repeated',
+    'queue-outcome-unknown',
+    'queue-unreadable',
+    'raw-identity',
+    'read-only',
+    'record-duplicate',
+    'record-edited',
+    'record-id',
+    'record-label',
+    'record-selection',
+    'record-time',
+    'records-unreadable',
+    'release-head',
+    'remote-identity',
+    'repository-identity',
+    'reserved-authority',
+    'reviews-unreadable',
+    'risk-attempt-invalid',
+    'risk-binding',
+    'risk-deadline',
+    'risk-expired',
+    'risk-independence',
+    'risk-pair-required',
+    'risk-referral',
+    'risk-result-invalid',
+    'risk-unavailable',
+    'runtime-invalid',
+    'self-delegation',
+    'timeline-unreadable',
+    'tree-collision',
+    'unsafe-json-string',
+    'verifier-crash',
+    'verifier-not-at-base',
+    'void-after-announcement',
+    'working-kind',
+)
+D5_U = 'merge-risk: unresolved pr=- head=- base=- diff=- config=-\n'
+D5_R = 'merge-risk: referred pr=- head=- base=- diff=- config=-\n'
+D5_E = ('merge-risk: eligible pr=700 head='+H+' base='+B+
+        ' diff='+sha('diff')+' config='+sha('config')+'\n')
+D5_PROTOCOL_CODES = {
+    'acceptance-referral': ('acceptance-unverified','risk-referral'),
+    'unknown-reason': ('collector-output-invalid',),
+    'hostile-stdout': ('collector-output-invalid',),
+    'hostile-stderr': ('acceptance-unverified',),
+    'header-exit-mismatch': ('collector-output-invalid',),
+    'eligible-reason': ('collector-output-invalid',),
+    'malformed-note': ('collector-output-invalid',),
+    'bad-exit': ('verifier-crash',),
+    'nonfinal-eligible': ('collector-output-invalid',),
+}
+
+
+def d5_specimens(name):
+    """Multiple specimens remain executions of one frozen named assertion."""
+    kind=name.removeprefix('a17-wrapper-')
+    payload=D5_U; rc=4; phase='final'; err=''
+    expected_codes=(kind[5:],) if kind.startswith('code-') else D5_PROTOCOL_CODES[kind]
+    expected_header=D5_R if kind=='acceptance-referral' else D5_U
+    expected_exit=3 if kind=='acceptance-referral' else 4
+    expected={'stdout':expected_header+''.join('reason: '+c+'\n' for c in expected_codes),
+              'exit':expected_exit,'stderr':''}
+    if kind.startswith('code-'): payload+='reason: '+kind[5:]+'\n'
+    elif kind=='acceptance-referral':
+        payload=D5_R+'reason: acceptance-unverified\nreason: risk-referral\n'; rc=3
+    elif kind=='unknown-reason':
+        return [(name+'/'+c,D5_U+'reason: '+c+'\n',4,'final','',expected)
+                for c in ('unknown-token','diff','inventory')]
+    elif kind=='hostile-stdout': payload+='reason: acceptance-unverified\nSENTINEL\n'
+    elif kind=='hostile-stderr': payload+='reason: acceptance-unverified\n'; err='SENTINEL\n'
+    elif kind=='header-exit-mismatch': payload=D5_R+'reason: risk-referral\n'
+    elif kind=='eligible-reason': payload=D5_E+'reason: gate-quality\n'; rc=0
+    elif kind=='malformed-note': payload+='reason: gate-quality\nnote: SENTINEL\n'
+    elif kind=='bad-exit': payload+='reason: gate-quality\n'; rc=2
+    elif kind=='nonfinal-eligible':
+        return [(name+'/'+p,D5_E,0,p,'',expected) for p in ('prepare','class')]
+    else: raise Failure('unknown D5 assertion '+name)
+    return [(name,payload,rc,phase,err,expected)]
+
+
+def d5_observe(root,name):
+    observations=[]
+    for selector,payload,rc,phase,err,expected in d5_specimens(name):
+        result=wrapper_probe(root,phase,payload,rc,err)
+        actual={'stdout':result.stdout,'exit':result.returncode,'stderr':result.stderr}
+        observations.append({'name':selector,'expected':expected,'actual':actual,
+                             'status':'PASS' if actual==expected else 'FAIL'})
+    return observations
+
+
+def d5_assert(root,name,observe=False):
+    observations=d5_observe(root,name)
+    if observe: return observations
+    for item in observations:
+        check(item['status']=='PASS',name+': '+repr(item))
+    return observations
+
+
+for code in D5_FIXED_CODES:
+    row(660,'a17-wrapper-code-'+code,None,'unresolved',code,'d5-probe')
+for kind,codes in D5_PROTOCOL_CODES.items():
+    row(660,'a17-wrapper-'+kind,None,'referred' if kind=='acceptance-referral' else 'unresolved',
+        codes[0],'d5-probe')
+
+
+
+def d5_mutants(source):
+    """A23 single-owner recipes rebuilt against actual current wrapper bytes."""
+    for code in D5_FIXED_CODES:
+        token=(code+' | ' if code=='acceptance-unverified' else
+               ' | '+code+')' if code=='working-kind' else ' | '+code+' |')
+        replacement='' if code=='acceptance-unverified' else ')' if code=='working-kind' else ' |'
+        # Every occurrence is restricted to the allowlist line, never producer text.
+        lines=source.splitlines(keepends=True)
+        hits=[i for i,line in enumerate(lines) if 'artifact-identity | autonomy-disabled' in line]
+        check(len(hits)==1,'D5 reason allowlist anchor')
+        line=lines[hits[0]]
+        check(line.count(token)==1,'D5 literal deletion '+code)
+        lines[hits[0]]=line.replace(token,replacement,1)
+        yield 'code-'+code,''.join(lines),('a17-wrapper-code-'+code,),True
+    recipes=(
+        ('acceptance-referral','acceptance-unverified | ','',('acceptance-referral',)),
+        ('hostile-stderr',' "$@" 2>/dev/null)',' "$@")',('hostile-stderr',)),
+        ('unknown-reason','        *) unresolved collector-output-invalid ;;',
+         '        *) : ;;',('unknown-reason',)),
+        ('hostile-stdout','    *) unresolved collector-output-invalid ;;',
+         '    *) : ;;',('hostile-stdout','malformed-note')),
+        ('header-exit','    [[ "$first" =~ $header ]] || unresolved collector-output-invalid',
+         '    [[ "$first" =~ $header ]] || :',('header-exit-mismatch',)),
+        ('eligible-reason','      if [ "$mode" = collect ] && [ "$rc" -eq 0 ]; then unresolved collector-output-invalid; fi',
+         '      :',('eligible-reason',)),
+        ('note-time','      [[ "$line" =~ $time_line ]] || unresolved collector-output-invalid',
+         '      [[ "$line" =~ $time_line ]] || :',('malformed-note',)),
+        ('bad-exit','case "$rc" in 0 | 1 | 3 | 4) : ;; *) unresolved verifier-crash ;; esac',
+         ':',('bad-exit',)),
+        ('nonfinal','      [ "$phase" = final ] || unresolved collector-output-invalid',
+         '      :',('nonfinal-eligible',)),
+    )
+    for label,before,after,names in recipes:
+        # Anchor complete lines, so indented sibling arms remain untouched.
+        if label not in ('acceptance-referral','hostile-stderr'):
+            before='\n'+before; after='\n'+after
+        # The first of the two four-space header lines belongs to collect.
+        check(source.count(before)==(2 if label=='header-exit' else 1),
+              'D5 source recipe anchor '+label)
+        yield label,source.replace(before,after,1),tuple('a17-wrapper-'+n for n in names),label!='note-time'
+
+
+def d5_controls(root,label):
+    code='read-only' if label=='code-gate-quality' else 'gate-quality'
+    result=[]
+    # A distinct legal reason and a final eligible protocol stay independently valid.
+    for payload,rc,phase in ((D5_U+'reason: '+code+'\n',4,'final'),(D5_E,0,'final')):
+        p=wrapper_probe(root,phase,payload,rc)
+        actual={'stdout':p.stdout,'exit':p.returncode,'stderr':p.stderr}
+        check(actual=={'stdout':payload,'exit':rc,'stderr':''},label+': independent control '+repr(actual))
+        result.append({'phase':phase,**actual})
+    if label=='nonfinal':
+        for phase in ('prepare','class'):
+            payload=D5_U+'reason: gate-quality\n'; p=wrapper_probe(root,phase,payload,4)
+            check((p.stdout,p.returncode,p.stderr)==(payload,4,''),'D5 legal '+phase+' control')
+            result.append({'phase':phase,'stdout':p.stdout,'exit':p.returncode,'stderr':p.stderr})
+    return result
+
+
+def d5_owning_campaign(destination):
+    out=Path(destination); out.mkdir(parents=True,exist_ok=True)
+    source=(ROOT/'merge-risk-evidence.sh').read_text()
+    campaign={'source_sha256':sha(source),'complete':False,'mutants':[]}
+    mutants=list(d5_mutants(source))  # Validate every recipe before running any owner.
+    with tempfile.TemporaryDirectory(prefix='mr646-d5-owning-') as tmp:
+        root=Path(tmp)
+        for label,changed,names,credit in mutants:
+            baselines=[]
+            for name in names:
+                baseline=d5_assert(ROOT,name,True)
+                check(all(r['status']=='PASS' for r in baseline),label+': failing baseline')
+                baselines.extend(baseline)
+            path=out/(label+'.sh'); path.write_text(changed)
+            syntax=subprocess.run(['bash','-n',str(path)],capture_output=True,text=True)
+            check(syntax.returncode==0,label+': invalid shell mutant '+syntax.stderr)
+            (root/'merge-risk-evidence.sh').write_text(changed)
+            controls=d5_controls(root,label)
+            rows=[]
+            for name in names:
+                for observed in d5_assert(root,name,True):
+                    state='KILLED' if observed['status']=='FAIL' else 'SURVIVES'
+                    check((state=='KILLED')==credit,label+': wrong A23 state '+observed['name']+' '+state)
+                    rows.append({'name':observed['name'],'state':state,
+                                 'expected':observed['expected'],'actual':observed['actual']})
+            campaign['mutants'].append({'mutant':label,'source_sha256':sha(changed),
+                                        'credit_allowed':credit,'baselines':baselines,
+                                        'controls':controls,'rows':rows})
+            (out/'campaign.json').write_text(json.dumps(campaign,indent=2))
+            print(('KILLED' if credit else 'MASKED / NON-CREDIT')+' D5/'+label,flush=True)
+    check(len(campaign['mutants'])==116,'D5 owning mutant count')
+    campaign['complete']=True
+    (out/'campaign.json').write_text(json.dumps(campaign,indent=2))
+    print('D5 OWNING CAMPAIGN PASS: 116 mutants; 115 canonical owners, 1 masked non-credit',flush=True)
+    return 0
+
+
 def main():
+    if sys.argv[1]=='--d5-owning':
+        check(len(sys.argv)==3,'usage: --d5-owning EVIDENCE_DIRECTORY')
+        return d5_owning_campaign(sys.argv[2])
     if sys.argv[1]=='--d4-owning':
         check(len(sys.argv)==3,'usage: --d4-owning EVIDENCE_DIRECTORY')
         return d4_owning_campaign(sys.argv[2])
