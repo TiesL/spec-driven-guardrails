@@ -9696,3 +9696,196 @@ Doubts: #701 was read from local body/elaboration snapshots only; no live gh rea
 Doubts: Full expanded counts, input closure and C6 proof remain uncomputed; further gaps may appear in #701.
 Doubts: Baseline suite totals are historical combined evidence; no fresh behavioral campaign was run in this Architect session.
 Doubts: Adoption/status/context entry points and .agents links are absent; rerun ordinary Codex adoption (adopt.sh --runtime codex) through the orchestrator; live loading remains unverified.
+
+### A60 addendum 17 — bounded C4 dependency availability and refusal preservation, #646
+
+**Ruling (Architect / Planning, 2026-11-17, `c378194`).** [A]
+`panel-646-d1` (PR #696 comment 6947490246; local unchanged text in
+`.handoff/panel-646-d1-comment.md`) authorizes ONE bounded correction cycle.
+This clarifies retained C4, addendum-6 S4 and addendum 16; it introduces no
+requirement, authority, carrier, schema, security concession or C6 proof.
+AC contradictions or narrowing: **none** (retained AC2/F71 malformed-result
+referral and AC4/F73 complete outcome/disagreement reporting). Earlier text is
+history. This addendum supplies neither review approval nor merge permission.
+
+An invalid or unavailable dependency suppresses ONLY comparisons requiring that
+dependency. Every independently evaluable refusal survives to the public result.
+Unavailable never means passed. In particular, malformed raw data cannot hide a
+valid peer's refer/confirmed reject, its own independently typed envelope's wrong
+repository, a receipt check or an unrelated refusal. An exception in ANY raw
+parse/reparse or recursive validation must not escape and erase accumulated
+causes. Preserve R > U > H, exits 3/4/1 (eligible 0), first-occurrence order and
+one display per `(code, detail)`, with identity before capability as already
+specified. No candidate text becomes a diagnostic.
+
+Keep the deep evaluator Module and existing CLI Interface/Seam. A private,
+slot-indexed validation result may retain raw, envelope and receipt availability
+separately; it confers no authority. Prefer decoding each raw once and reusing
+its validated result rather than maintaining two exception lists. If a reparse
+remains, it has the identical local failure behavior. Preserve validation errors
+before semantic pair reasons in the pair-check phase: invalid plus refer/reject
+in EITHER order prints `risk-result-invalid`, then `risk-referral`.
+The deletion test puts this complexity back into pair/envelope callers; keeping
+it local earns Depth, Leverage and Locality. The two existing real Adapters
+(collection and replay) suffice; no new public Seam or hypothetical Adapter.
+
+**Frozen sibling inventory.** [A] Locations below are at full head
+`c378194c61098ad3a6b0ef18145718bf60a59dfd`, not future line numbers. Q identifiers
+name the finite QA families below; an existing-scope disposition grants no new
+expanded relation. No row is evidence of C6 completeness.
+
+| ID / location in lib/merge-risk.py unless stated | Actual dependency, failure/availability at this head | QA owner or explicit disposition |
+|---|---|---|
+| P1 `pair_checks` 299-311 | Pair list/count is separate from each existing member's validation. Current early return loses all member semantics on wrong count; `len(results)==2` loses valid peer semantics on invalid raw. Exact-two approval remains mandatory. | Q1/S650-S651 cardinality/member-shape; Q2/S650-S652 each slot x peer outcome. Traverse retained members for independently available causes; never fabricate a missing member. |
+| P2 `valid_verdict` 236-265 | Base64 string/cap, decode, overflow, original hash/length, strict JSON, closed schema, coverage/cross-fields and artifact reference validity make ONLY that raw semantic result available. `p.get` currently assumes object. Invalid raw metadata does not invalidate a separately typed envelope/receipt. | Q1 wrong member types; Q2 raw faults; retain existing S650-S652 leaf/semantic/reference rows, including confirmed reject. Guard type access rather than catching arbitrary attribute failures. |
+| P3 duplicate `valid_verdict` calls 304 and 753 | Pair catch: `Invalid, ValueError, UnicodeError, KeyError, TypeError, RecursionError`; envelope catch omits `RecursionError` and skips every envelope check. Base64 `binascii.Error` is a `ValueError`. | Q3/S653 natural depth and local fault probes; Q4/S654 invalid/deep raw plus wrong-repository envelope. Share validation or normalize both sites; no outer crash substitution. |
+| P4 `strict_json` 95-101; `finite` 74-78; `safe_strings` 81-86; `_no_dupes` 87-92 | UTF-8 decode, JSON decoder, recursive finite traversal, then verdict-only recursive string/key traversal; none catches locally. `Invalid` covers duplicate/nonfinite/unsafe values; decoder can raise `ValueError`, Unicode failures and `RecursionError`; traversals can raise `RecursionError`. | Q2 malformed/duplicate/nonfinite/encoding; Q3 decoder/finite/string exception sites. Catch known bounded-input failures at owning consumers, not `except Exception` around evaluate. No new portable depth limit. |
+| P5 `shape/conforms` 143-169, `config_errors`, `manifest_errors`, capability schemas | Schema recursion follows the finite schema and typed arrays, not arbitrary unknown JSON subtrees; arbitrary deep values are traversed earlier by `finite`/`safe_strings`. Number schema uses `math.isfinite` on integers and may raise `OverflowError` for a large finite integer; schema calls often lie outside decode catches. | Q5/S615,S659 numeric overflow in manifest comparison score and exception score. Validate numeric conversion safely or make the local validation operation unavailable. Preserve closed schemas, bool/int distinction and existing finite refusals. Do not invent unlimited recursive schema expansion. |
+| P6 `envelope_checks` 747-823, `capture_copy_matches` 742-745 | Raw binding/reviewer equality needs validated raw AND typed envelope. Repository/PR/capture H/B, Rule G echoes, issue/ledger identities need the typed fields and their own referents, NOT raw semantics. Receipt deadline needs typed receipt/time/config only. Capability echoes alone depend on successful capability derivation, slot/e0 and the existing Rule G record copy. | Q4/S654 raw-only equality controls and invalid/deep x binding/deadline; preserve existing S654/S659 raw-leaf, paired-destination, unknown-slot and Rule G rows. Validate envelope/receipt portions with existing schemas independently of invalid raw metadata. No nonce/run/source authority expansion. |
+| P7 `capability_evaluate` 1021-1045; `consistency_checks` 508-595; `independence_checks` 1373-1418 | Quality/author exclusion uses actual participants plus summaries; per-slot freshness/profile/resolved-model/runtime/sealing uses typed envelope/receipt. Two-member uniqueness/peer chronology needs its actual members. Current whole-PAIR filters (including capability slot selection) and count return must not manufacture comparisons from absent values or suppress other available ones. Capability identity/effort links require typed envelope/receipt, not valid raw encoding/hash/length metadata. | Q1 member shapes/count; Q4/S658 independence; retain current unique-id/raw/output/slot, same-vendor, no-inheritance, profiles-drift and chronology controls. An unavailable operand suppresses its equality/separation test, not peer checks. |
+| P8 `gate_checks` 268-296; `source_checks` 332-408; `corpus_checks` 1186-1210 | Quality approval/head/marker/findings, source/classification/hard-stop and corpus identity have their own inputs, no dependency on raw decoding. Corpus base64/path catch is `ValueError, KeyError, TypeError, UnicodeError`, no JSON recursion. | Q4/S606 quality/hard-stop; S662 remains byte-identical, its helper supplies the adopt.sh combination. Corpus parser gets existing tests: no new JSON consumer or corpus-source expansion. |
+| P9 `attempt_checks` 1421-1468; consistency ledger 537-570 | Complete typed attempts own ledger/session/launch links independently of raw semantics; raw identity comparisons need only typed metadata and ledger values. Current `p.get` assumes member object. | Q1 type-safe member traversal; Q4/S669 `provider_retries_visible=false` with other ledger relations valid. Retain launch/ordinal/decision/transport rows. Invalid ledger skips ONLY ledger-referent comparisons, never typed repository checks. |
+| P10 `record_checks` 598-693; `hold_checks` 696-739; consistency/envelope age 571-595,824-827; evaluate 1571-1587 | Selected schema-valid record permits hold/stop/off checks even if unbound. Time comparisons need their actual typed times. Expiry is a cause, never a global skip. Current starts comprehension assumes object receipt. | Q1 safe unavailable members; Q4/S606 identity/hold and S654 age, Q7/S606 output precedence. Retain S617-S619 release/timeline and exact table-drift rows. No fallback clock, expiry renewal or bound-only hold selector. |
+| J1 `load_config` 216-234 | Configuration text decode catches `ValueError, Invalid, UnicodeError`; schema validation follows outside catch. No `RecursionError` catch. Without valid cfg, cfg-dependent consumers are unavailable; bundle schema/phase checks still run. | Q5/S614 config nested text plus independent evidence-schema failure. Map malformed text to existing config-malformed; typed bad config to config-invalid. Do not run cfg-dependent checks using defaults. |
+| J2 `parse_manifest` 461-470 -> records 598, reader 1494, queue 1516 | Manifest block decode catches `Invalid, ValueError, UnicodeError`, not recursion; schema validation at callers is separate. A malformed historical candidate may be ignored, not allowed to crash scanning valid peers. Selected malformed record leaves record-selection; schema-invalid selected record owns manifest-schema. Reader owns manifest-schema; queue skips malformed manifests under existing behavior. | Q5/S615 selected/history/reader/queue rows; no new historical-record refusal. Retain existing candidate filters and selection rules. Rendering receives typed manifest data; preserve S653 literal-display tests. |
+| J3 `retained_json` 861-865 -> capability decision 994, brief 1271, qualification 1281 | Accepted REF plus original body hash first, then decode; catches `ValueError, Invalid, UnicodeError`, not recursion. Invalid decision -> capability-table-invalid; invalid brief -> project-unconfigured; invalid qualification body -> qualification-unavailable (with existing independently caused identity codes). | Q5/S659 decision; Q5/S614 brief/qualification. Recompute laboratory source digest for deliberately malformed retained bytes; do not fake valid source observations or add a carrier. |
+| J4 capability mapping 997-1003; ledger revocation/exception 1068-1080 | Mapping decode catches `ValueError, Invalid, UnicodeError`; schema outside catch. Same list on revocation and exception decode. Bad mapping owns capability-table-invalid; bad revocation makes ledger unavailable; malformed exception cannot satisfy a claimed exception. Other valid entries/peer causes survive. | Q5/S659 mapping/revocation/exception; use an existing claimed/otherwise applicable exception control so ledger-unavailable is observable as capability-exception-invalid. No new ledger trust/lifecycle requirement. |
+| J5 other actual strict_json sites: gh 1628; collect config 1802; acceptance 1909; collect_queue config 1928; CLI bundle 1943 | gh catches `ValueError, Invalid, UnicodeError`; acceptance catches `Invalid, ValueError` only and assumes dict for update; config/queue/bundle rely on outer CLI handling. These precede creation of an evaluator Result, so they cannot preserve a Result that does not yet exist. They must remain fixed-output/noneligible on invalid input. | Q5A/S614 five offline fake-process probes (see below). Shared known decode-failure handling may normalize them locally; no live collection/network tests, new carrier or invented accumulated causes. Keep original gh-unavailable/acceptance-unverified/config refusal ownership; top unreadable bundle may retain verifier-crash. Acceptance non-object must not become a dictionary update or approval. |
+| O1 `Result` 173-187; evaluate/render 1552-1602; cli 1957-1963 | r accumulates causes in check order. render dedupes `(code,detail)` and reorders late identity before capability. Outer catch creates a NEW unresolved result, so it is only an ultimate unexpected-fault guard, never raw/retained-input recovery. | Q7/S606 five exact-output rows and mutants; retain outer fallback, do not merely rename its verifier-crash. No text/detail widening. |
+| O2 fixed-code producers (need/check/r.need/r.add, capability lists, Invalid/CLI) vs merge-risk-evidence.sh 44-119 | Wrapper requires header/exit/phase and closed reasons/notes, suppresses stderr. Audit below covers ALL fixed reason producers, including collector/export/queue/reader error paths, not only normal evaluate. | Q6/S660 109 literal code round trips + 9 protocol rows. Current sole missing producer code is acceptance-unverified. |
+| L1 `narrative` 473-483, consistency 522-535, record selection 598-616; collect trailer 1879-1881 | Digest excludes an optional validated bookkeeping trailer; FINAL authority requires the existing SINGLE validated trailer to select active_record_url and the selected comment. Current replay checks selection only if trailer present. | Q8/S606,S615 five selection rows; canonical fixture repair below. Preparation may still compute narrative before a trailer exists; never require a final record during preparation. |
+
+**Fixed-code audit and low rulings.** [A] Static AST call-site enumeration was
+reconciled manually with `need`/`Invalid` propagation, capability item/code lists
+and CLI literals. Exclude set.add/schema-field strings; include indirect
+`capability-below-author`, `capability-effort-no-gain` and `verifier-crash`.
+There are **109** fixed producer reasons, **108** accepted by the 109-entry shell
+list. `acceptance-unverified` is the ONLY missing producer reason.
+`preparation-only` is shell-only legacy allowance (evaluator emits it as a note);
+retain it in this bounded package. `capability-score-pass`,
+`capability-maintainer-exception` and correlation strings are notes/reader
+outcomes, not new reason codes. Wrapper-owned dependency failures and
+`collector-output-invalid` are not evaluator producer reasons.
+
+Freeze this complete independent Q6 reason dictionary; QA must copy it literally,
+not derive its expected set from the evaluator or wrapper under test:
+
+```text
+acceptance-unverified artifact-identity autonomy-disabled base-not-main base-unreadable behind-base cap-files cap-lines capability-below-author capability-effort-no-gain capability-effort-unavailable capability-entry-missing capability-exception-invalid capability-identity-missing capability-profile-mismatch capability-table-invalid changes-requested classification-unresolved closing-issues completion-invalid config-absent config-date-unreadable config-invalid config-malformed config-repository control-closed control-unreadable corpus-invalid diff duplicate-json-key evidence-incomplete evidence-schema executor-invalid finding-provenance gate-check gate-escape-hatch gate-preflight gate-preflight-stream gate-preflight-warning gate-quality gate-review-marker git-identity git-unreadable gitlink guard-invalid hard-stop hold-release-missing hold-release-stale hold-release-target hold-release-words hold-window identity-binding instruction-load-invalid inventory issue-unreadable label-hold label-off label-off-control labels-unreadable lfs-unavailable manifest-schema narrative-invalid nonfinite-json now-unreadable off-since-config open-findings path-unsafe phase-invalid pr-not-open pr-unreadable project-unconfigured protection-invalid qualification-unavailable queue-edited queue-key-repeated queue-outcome-unknown queue-unreadable raw-identity read-only record-duplicate record-edited record-id record-label record-selection record-time records-unreadable release-head remote-identity repository-identity reserved-authority reviews-unreadable risk-attempt-invalid risk-binding risk-deadline risk-expired risk-independence risk-pair-required risk-referral risk-result-invalid risk-unavailable runtime-invalid self-delegation timeline-unreadable tree-collision unsafe-json-string verifier-crash verifier-not-at-base void-after-announcement working-kind
+```
+
+`risk-wrapper-omits-acceptance-refusal`: fix in this package; preserve legal
+acceptance-only U/4 and acceptance-plus-referral R/3 streams byte-for-byte, while
+unknown/hostile protocol still refuses. Do not make the allow-list permissive.
+`risk-selection-without-trailer`: fix in this package. Absence is U/record-selection;
+malformed/duplicate is R/narrative-invalid; a valid URL to another comment in the
+same issue is U/record-selection; one valid matching trailer is eligible/0.
+Keep the existing invalid-repository/issue/PR-comment URL and CRLF grammar refusals.
+Do not alter digest semantics to require a trailer in prepare/class.
+
+Canonical fixture controls: change `control()` (367-442) to include exactly one
+`Merge-risk decision: <active_record_url>` line and compute current narrative by
+`fixture_narrative()`, excluding that line. Keep `prepared()`/`announcement()`
+from inserting, repairing or changing a deliberately absent/malformed/mismatched
+trailer. `narrate()` remains an explicit body edit, never an auto-repair.
+Audit every explicit body override: ordinary/quotation/source-drift controls,
+`a6s2-trailer-control`, `a6s2-url-control`, `add4-actual-body` and frozen narrative
+variants retain the canonical trailer unless that row attacks it. Malformed and
+duplicate rows must replace/build from a known body, not accidentally append a
+second canonical trailer to the malformed specimen. Same-issue URL mismatch must
+recompute digest without changing selected record or otherwise causing expiry.
+Revalidate ALL existing fixture rows/mutants, including capability reader/final
+companions, because they share `control()`. Existing valid-trailer controls
+remain independent positives, not rewritten to a weaker selection path.
+
+**Developer segments, ONE remediation pass.** [A] QA first edits only
+TEST-SCENARIOS.md and publishes its matching artifact. Developer then implements
+these small sequential segments within that same pass; they are not permission
+for repeated fix cycles. Each segment starts by implementing/running its frozen
+public falsifiers against `c378194` (record actual reds AND surviving controls),
+then makes the production change and records green plus its owning mutations.
+An already-green sibling is preservation evidence, never fabricated red history.
+
+| Segment | Files/functions | Red tests first / done criterion |
+|---|---|---|
+| D1 canonical selection | lib/merge-risk.py `consistency_checks`/selection; fixture `control`, `fixture_narrative`, `prepared`, body-edit rows | Q8 negatives + both named positives. Make canonical controls first so all later reds use honest selection. Final-only single validated selection required; prepare/class retain behavior. Run affected S606/S615 and fixture control first; account for every explicit body edit without weakening existing negatives. |
+| D2 slot-local raw validation | lib/merge-risk.py `valid_verdict`, `pair_checks`, private validation result; fixture Q1-Q3 raw builders/exact-output assertions | Both-order invalid+refer/reject and deep witnesses red; wrong cardinality/type never crashes or clears. Raw invalid emits its owning code; all surviving peer semantics retained once. Decoder/finite/string failures stay local, no candidate text. |
+| D3 independent consumers | lib/merge-risk.py `envelope_checks`, typed member traversal in capability/consistency/independence/attempt/age; fixture Q4/Q7 | Malformed raw + wrong-repository envelope red in both slots, plus deadline/session/quality/ledger/hold/expiry/source crosses. Raw equality alone skips on unavailable raw. Preserve capability, Rule G, ledger, clock availability and original order. No derivative code from invented missing values. |
+| D4 retained JSON failure normalization | lib/merge-risk.py `strict_json` callers, `shape` numeric handling, load_config/parse_manifest/retained_json/capability mapping/ledger; existing collector functions only as J5 needs; fixture Q5/Q5A | Each named consumer has a bounded malformed/deep probe and its valid control; large finite integers never escape schema validation. Known input exceptions map to existing owning behavior; malformed history/queue entries retain their prior ignore disposition. No blanket evaluate catch and no new error vocabulary. |
+| D5 wrapper and integration | merge-risk-evidence.sh reason list; fixture `wrapper_probe` extended to target scratch wrapper under test; Q6 plus retained case scripts only as needed | Missing acceptance round trip red, all 109 fixed codes green, hostile/unknown streams refused. Probe the mutated scratch wrapper, not hard-coded ROOT, to earn actual mutation kills. Refresh exact outputs and full retained 53-case campaign, matching QA artifact, ordinary final checks; no C6 completion claim. |
+
+Common Developer files: only `lib/merge-risk.py`, `merge-risk-evidence.sh`,
+`test/fixtures/merge-risk-646.py`, and existing owning `test/cases/` scripts for
+S606/S614/S615/S650-S654/S658/S659/S660/S669 if routing needs change.
+Do not touch TEST-SCENARIOS.md (QA owns it), skills/contracts/core pins, policy,
+closed wire schemas, E1/S662 rows, deferred declarations/grammar, carriers or
+C6 machinery. No enablement/qualification/live model calls, generic refactor,
+merge/deploy or updated historical proof totals. Normalize known input failures
+(`Invalid`, JSON/base64 `ValueError`, `UnicodeError`, `RecursionError`; safe
+numeric handling for `OverflowError`; guarded `KeyError`/`TypeError` where raw
+metadata needs them). Validate type access instead of swallowing programmer bugs,
+resource exhaustion or arbitrary `Exception` into approval.
+
+**Exact QA scenario change list and finite counts.** [A] QA adds the following
+sentences/row stems to the EXISTING scenarios, no new S-number or requirement.
+Counts are independently named assertions in this new package, not additions to
+historical suite totals; existing row reuse is allowed only with explicit alias
+and identical full oracle. The count is frozen: a new necessary case outside
+these owners returns to panel before expansion. Common sentence for S606/S615:
+"An unavailable dependency suppresses only its dependent comparisons; independently
+typed envelope/receipt checks and valid peer semantics survive every local raw
+failure, with exact ordered deduplicated reasons and existing precedence/exits;
+no raw parse/reparse exception may replace accumulated causes with verifier-crash."
+Append that same C4 clarification to the S615 `C3 is I33; C4 availability` paragraph
+and extend S606's `C4.raw-unavailable[s]` row by explicit references to Q1-Q4/Q7.
+Retain the table/clock-unavailable rows and every existing now/deferred status.
+
+| Family / owning scenario sentence and exact row selectors | Count / oracle |
+|---|---|
+| Q1 S650/S651: "Cardinality and each retained member have separate availability." `a17-card-{absent,null,object,empty,one-approve,one-refer,one-reject,extra-typed}` (8); `a17-member-{0,1}-{null,integer,list,missing-envelope,raw-b64-type,raw-sha-type,length-type,overflow-type}` (16), each with a valid refer peer. The four raw-metadata cases keep a typed wrong-repository envelope in the invalid slot, so its independent risk-binding survives. Extra typed member uses existing third-slot construction; retain its existing binding/attempt causes. | **24**. Noneligible; risk-pair-required for count, risk-result-invalid for invalid member; retained refer/reject adds risk-referral. Do not assert a three-member eligible control or invent risk-independence from nonexistent operands. QA fixes ALL applicable companion codes in literals before execution. |
+| Q2 S650/S651/S652: "Each raw failure leaves each valid peer outcome independently observable." `a17-raw-{0,1}-{empty,whitespace,empty-object,truncated,trailing-object,bad-base64,bad-utf8,wrong-hash,wrong-length,over-cap,overflow,unknown-key,wrong-type,duplicate-key,nonfinite}-{approve,refer,reject}`. Reject contains confirmed finding/reference; refer uses valid uncertainty/coverage. | **90** (=2x15x3). R/3 with [risk-result-invalid] for approve peer, [risk-result-invalid,risk-referral] otherwise. Original hash/length/ledger linkage reflect deliberately supplied bytes/metadata; typed envelope stays valid. Existing 65535/65536 approvals, 65537 refusal and cross-field/reference negatives remain. |
+| Q3 S653: "Bounded nested raw and decoder/recursive-validator failures stay local in both slots." `a17-depth-{0,1}-{100,300,700,1100}-{approve,refer,reject}` (24), bytes `b'['*n+b'0'+b']'*n`; `a17-fault-{0,1}-{decoder,finite,strings}` (6), scratch fault injection at that exact stage for ONLY the selected slot inside valid_verdict on otherwise eligible raw; never inject into outer-bundle parsing or both slots. | **30**. Natural invalid specimens all R/3 with Q2 lists, independent of runtime recursion threshold. Six fault probes inject RecursionError then cross public CLI, own the catch, expect [risk-result-invalid]; they are fault probes, not natural-input red credit. Log where natural witnesses fail; no portable numerical depth promise. Existing schema/cap/Unicode controls survive. |
+| Q4 S606 (quality,hard-stop,identity,hold), S654 (binding,deadline,age), S658 (session), S669 (ledger): "Malformed or deep raw does not suppress independently available consumers." `a17-cross-{0,1}-{empty-object,depth1100}-{quality,hard-stop,identity,hold,binding,deadline,age,session,ledger}` (36); nine `a17-only-<consumer>` isolated controls; `a17-raw-equality-{0,1}` (2 raw-only binding mismatches, envelope/reference fixed). | **47**. Each cross R/3; Q2 invalid cause plus that isolated consumer's exact surviving causes. quality=gate-quality; hard-stop=hard-stop via adopt.sh; identity=honest frozen narrative expiry; hold=hold-window; binding=typed wrong-repository risk-binding (including the invalid slot itself); deadline=risk-deadline with valid sealing chain; age=risk-expired with consistent old starts; session=risk-independence via no-inheritance=false; ledger=risk-attempt-invalid via retries visibility. QA freezes full ordered arrays including unavoidable existing companions, no set/subset oracle. Raw-only equality isolated R/3 [risk-binding]. |
+| Q5 S614 (config/brief/qualification), S615 (selected/history/reader/queue manifest), S659 (decision/mapping/revocation/exception): "Every retained JSON consumer owns malformed/deep evidence locally; valid peers and independent causes survive." `a17-json-{config,manifest-selected,manifest-history,manifest-reader,manifest-queue,brief,qualification,decision,mapping,revocation,exception}-{malformed,deep1100}` (22); `a17-number-{manifest-score,exception-score}` (2) uses `10**400`, finite but unconvertible by math.isfinite. | **24**. Each uses J1-J4's existing owning refusal/ignore disposition and valid isolated companion; evaluator variants add a valid raw referral (except bad cfg: add evidence-schema, because cfg-dependent pair semantics unavailable). Malformed config maps config-malformed; bad selected manifest parse maps record-selection; schema overflow maps manifest-schema; exception overflow cannot satisfy claim. History/queue malformed entry may be ignored, retaining valid peer/entries. No verifier-crash or candidate-text replacement. QA writes full exact outputs before implementation. |
+| Q5A S614: "Pre-Result JSON faults remain fixed-output and noneligible without fabricating causes." `a17-adapter-{gh-deep,collect-config-deep,queue-config-deep,acceptance-deep,acceptance-nonobject}` via existing fake-process collector/CLI harness, zero network/effects. | **5**. Existing refusal/None behavior at J5; no eligible header, hostile stderr/text or uncaught traceback. These own the extra actual decode sites; do not assert preservation of a nonexistent evaluator Result. Unparseable outer bundle retains current outer fallback, existing regression sufficient. |
+| Q6 S660: "Every frozen fixed reason traverses the closed wrapper; unknown protocol remains refused." `a17-wrapper-code-<code>` for EACH of the literal 109 codes; plus `a17-wrapper-{acceptance-referral,unknown-reason,hostile-stdout,hostile-stderr,header-exit-mismatch,eligible-reason,malformed-note,bad-exit,nonfinal-eligible}`. | **118** (=109+9). Use valid noneligible header/exit, each reason round trip byte-exact (acceptance-only U/4, plus referral R/3); fixed-code dictionary is independent. Hostile stderr beside a legal result is suppressed while that legal result survives. Other hostile/unknown/mismatched streams U/4 collector-output-invalid (bad child exit retains existing verifier-crash). Existing queue/export/header/note grammars stay covered; no permissive vocabulary. |
+| Q7 S606: "Cause composition is ordered, deduplicated, one-result and precedence preserving." `a17-output-{both-invalid,both-referral,quality-invalid,identity-hold-invalid,multiple}`. | **5** exact lists respectively [risk-result-invalid], [risk-referral], [gate-quality,risk-result-invalid], [identity-binding,hold-window,risk-result-invalid], [gate-quality,hard-stop,identity-binding,hold-window,risk-result-invalid,risk-referral,risk-binding]; all R/3, one header. Both-invalid uses distinct byte strings `{}` and `{ }`, preserving distinct hashes/output sources; duplicate raw identity is a separate existing refusal, not this dedupe witness. Multiple uses wrong-repository typed envelope in invalid slot. Existing identity-only U/4 and hold-only H/1 controls remain independently required; identity/capability exact table-drift control stays unchanged. |
+| Q8 S606/S615: "Final selection requires exactly one validated trailer naming both active_record_url and selected comment." `a17-selection-{absent,malformed,duplicate,mismatch,matching}`; malformed uses non-comment URL; mismatch uses another valid comment in same issue. | **5**. Absent U/4 [record-selection]; malformed/duplicate R/3 [narrative-invalid]; mismatch U/4 [record-selection]; matching eligible/0 []. Build current and frozen narrative consistently to isolate selection, with no auto-repair. Reuse both named existing valid-trailer positives as independent companions. |
+
+Total: **448** finite new-package assertions (24+90+30+47+24+5+118+5+5).
+This is a behavioral/protocol inventory, not a C6 key count or claim of 448 new
+fixture rows on top of all existing rows. QA records explicit reuse and actual
+new/changed row counts in its artifact. No unbounded Cartesian expansion of the
+old I01-I34 inventory is authorized here. Existing exact raw-leaf, profile,
+capability/table-drift, E1, collector-inert and unknown-stream controls remain.
+
+For each Q-family QA freezes literal complete ordered code arrays, outer header
+count/identity, exit, absence of derivative codes and absence of SENTINEL in both
+streams. Inputs must isolate the named rule: valid receipt/ledger/source bindings
+are built before capture; final expiry edits never re-seal raw, rebuild ledger or
+rewrite the frozen record. Use existing helpers; no invented observations.
+Owning mutants: restore two-valid-only semantic gate; skip either raw slot;
+restore raw-gates-envelope; omit each local exception handling site; suppress each
+independent consumer on raw failure/expiry; remove raw equality only; remove each
+fixed code from the scratch wrapper; allow unknown reason; omit final-trailer
+requirement; alter Result precedence/dedupe/order. Exact owning assertion must
+fail while its independent eligible control survives. Same-code masking needs a
+separate isolated row, not whole-loop deletion credit. No C6 mutation campaign.
+
+**Limits and handoff.** [A] One Developer pass, matching QA evidence/artifact
+comparison, fresh Review round 4, both fresh lenses on corrected head, final
+fresh Claude Reviewer, then orchestrator-owned live traceability/CI and ordinary
+gates. A remaining/new medium/high, a failed owning falsifier, or material
+expansion ends this authorization: reconvene panel under decisions 84/122; no
+automatic second loop, waiver or silent deferral. If any frozen entry needs a new
+carrier, deferred-701 relation, requirement/security choice or cannot be bounded
+by its named owner, STOP that point as MAINTAINER ITEM / return-to-panel before
+implementing it. No security decision is made here. No new such item was needed
+to freeze this local consumer inventory. Existing #701/#682/enabling reservations
+and panel model-floor flag remain outstanding with their owners.
+
+MAINTAINER ITEMS for this bounded clarification: **none**. Existing panel-floor,
+carrier, M1-M9/M8 and C6 decisions are not resolved or accepted by this statement.
+Doubt: Python recursion thresholds vary; natural-depth and injected-fault evidence must be distinguished.
+Doubt: This finite head-local audit supplies no live producer authenticity, isolation, qualification or C6 proof.
+Doubt: Final exact companion codes and red/green/mutation evidence belong to QA/Developer; this Planning report makes no behavioral-pass claim.
