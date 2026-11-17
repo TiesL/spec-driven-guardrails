@@ -1,0 +1,24 @@
+## S589-record-meaning
+
+Status: **UNRUN**. Inputs: the S589 inventory and complete record controls above,
+plus independently irrelevant or contradictory questions, scope/AC descriptions,
+artifact links, member evidence and dissent explanations. Keep structured fields
+intact so presence alone cannot answer the exercise. Use the canonical procedure
+and actual ground-truth artifacts to assess each contribution.
+
+Observable pass criteria: the captured return identifies each relevance defect,
+corrects/refers before claiming a resolved record, and drafts an ordinary comment
+on the driving issue with the PR-description link. Valid relevant controls retain
+all three contributions, minority dissent, predecessor/resolution links and the
+complete supplied inventory. Report any unavailable history; do not infer that
+no unrecorded historical decisions exist.
+
+### S589 — canonical home and complete issue-home record (#645; A54 D1/D4/D6; AC1)
+**Covers:** F67
+- Given: [A] the canonical Running the pipeline section in `skills/role-contracts/SKILL.md`, its policy/managed references, artifact-linked panel inputs and a controlled issue/PR decision inventory, including resolved, unresolved, escalated and process-policy decisions.
+- When: [A] mechanical assertions inspect the enumerated source pins and structured record/inventory relations in A54 D6; the Developer separately runs `S589-record-meaning` with captured briefs, returns, attempted comments and PR-description links to judge question/scope/evidence/dissent relevance, then reconciles the available issue/PR inventory against the records.
+- Then: [A] one canonical Temporary-decision panel section adjacent to Stage-selection panel states its relation to OR43/OR45 and maintainer-approved delegation. Product, Architect and orchestrator supply three named positions; two agreeing positions settle an eligible temporary outcome with dissent retained. Missing participants or evidence and three incompatible positions remain unresolved. Each decision has one ordinary comment on the work-item issue where it arose, including unresolved/escalated panels and process decisions on their driving issue; a PR-only record fails and the PR description links the issue comment. Each record contains literal `temporary, panel decision`, stable ID, question, scope/AC and artifact links, three positions and evidence/model records, explicit 3-0/2-1 vote where resolved, dissent, outcome, rationale, reservation/escalation status and limit/risk flag; supersession links preserve prior records and resolutions. No override marker is part of the shared format.
+- Mutation controls: [A] independently delete each required procedure clause/reference and each record field; introduce a conflicting duplicate policy; omit one issue record, relocate it only to a PR, drop its PR-description link, or invent a vote for an unresolved case. Each enumerated source/field/identity mutation changes bytes and fails its named structural or inventory diagnostic within A54 D6; opaque question, scope, evidence and dissent relevance belongs to `S589-record-meaning`. Positive controls include complete 3-0 and 2-1 records and correctly recorded unresolved/escalated/process cases, with valid issue-home links.
+- Falsifier: [A] an enumerated source/field/identity deletion, duplicate or missing/PR-only record passes its mechanical diagnostic, or `S589-record-meaning` proceeds without recording/referring a relevance defect. Mechanical checks establish source structure and supplied-inventory completeness only; Reviewer reconciliation must name missing evidence and cannot prove no unrecorded historical decision exists.
+- Added by #678 (items 1 and 3; A54 addendum 2026-11-09): [A] an explicit null `supersedes` returns `589/<id>/supersession` and raises nothing, while a missing key stays the missing-field diagnostic. An `unresolved` or `escalated` record carries no dissent: `dissent: []` passes; a non-empty list, an empty member row, null, a string or `0` returns `589/<id>/dissent`. A resolved record with null dissent also returns `/dissent`. Positive controls are unchanged. Fixture names `589/null/*`, `589/dissent/*`.
+

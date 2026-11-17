@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "finite-v1",
+  "rows": [
+    {
+      "exercise": "sample-import",
+      "case": "refusal",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    }
+  ]
+}

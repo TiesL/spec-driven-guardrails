@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "finite-v1",
+  "rows": [
+    {
+      "exercise": "sample-disagreement",
+      "case": "refusal",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    }
+  ]
+}
