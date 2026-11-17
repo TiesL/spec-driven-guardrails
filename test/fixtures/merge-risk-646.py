@@ -2549,6 +2549,8 @@ def history(kind):
 
 # A60 addenda 17-19 Q8: each selection state has its own exact oracle.
 D1_CODES = {
+    # Addendum 20 freezes this existing row's complete final refusal array.
+    'self-delegation': ('self-delegation','record-selection','narrative-invalid','risk-binding'),
     'a17-selection-absent': ('record-selection',),
     'a17-selection-malformed': ('narrative-invalid',),
     'a17-selection-duplicate': ('narrative-invalid',),
@@ -2657,7 +2659,7 @@ mutate(669,'ledger-decision-id',('a6s2-wrong-pr','a6s2-wrong-head'))
 # Remaining D/A/F places and now-read closed-schema leaves. These exercise the
 # same public bundle seam; frozen F edits never repair the captured record/pair.
 seg2(611,'closing-final',freeze_edit(change(['pr','closing_issues'],[702])),
-     'referred',('identity-binding','record-selection','risk-binding'))
+     'referred',('identity-binding','record-selection','narrative-invalid','risk-binding'))
 seg2(615,'manifest-issue',record_change(['issue'],702),'unresolved',('identity-binding',))
 seg2(615,'active-url-alone',freeze_edit(change(['active_record_url'],
      'https://github.com/'+REPO+'/issues/701#issuecomment-999')),'unresolved',('record-selection',))
