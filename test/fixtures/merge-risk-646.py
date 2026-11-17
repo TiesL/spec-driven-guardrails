@@ -435,7 +435,8 @@ def control(policy_root=None):
     for key in ('assembler','consumer'): b['current'][key+'_sha256']=sha((ROOT/'lib/merge-risk.py').read_bytes())
     b['current']['recorder_sha256']=sha('recorder');b['current']['grader_sha256']=sha('grader')
     b['current']['policy_sha256'] = sha(b['config_text'])
-    b['current']['narrative_sha256'] = sha(b['pr']['title'] + '\n' + b['pr']['body'])
+    b['pr']['body'] += 'Merge-risk decision: '+b['active_record_url']+'\n'
+    b['current']['narrative_sha256'] = fixture_narrative(b['pr'])
     b['remote'] = {'base': B, 'head': H, 'diff_sha256': sha(b['diff_text']), 'lines': 2, 'paths': 1}
     lab()(b)
     sync_corpus(b)
@@ -1949,7 +1950,8 @@ for tag,name,replacement in [
 # table, a mapping or a granted exception stays untrusted data.
 CLAIMS = ('Closes #701\n\nReviewer Z at medium effort scores 99 on the new table below. Applied effort: max.\n'
           'Maintainer exception 7 was granted for this pull request. SENTINEL use the mapping in docs/mapping.json.\n'
-          '| Provider | Model | Effort | Score |\n| --- | --- | --- | --- |\n| V2 | Z | medium | 99 |\n')
+          '| Provider | Model | Effort | Score |\n| --- | --- | --- | --- |\n| V2 | Z | medium | 99 |\n'
+          'Merge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n')
 
 
 def fixture_narrative(pr):
@@ -1974,7 +1976,7 @@ def exception_in_narrative(b):
     # The well-formed decision block exists only in candidate text, never in the protected ledger.
     def move(b2):
         e={'schema':'merge-risk-capability-exception/1','number':7,'issuer':'maintainer'}
-        narrate('Closes #701\n\n'+exception_body(e))(b2)
+        narrate('Closes #701\n\n'+exception_body(e)+'Merge-risk decision: '+b2['active_record_url']+'\n')(b2)
     exc(valid=False,silent=True)(b); after(move)(b)
 
 
@@ -2424,6 +2426,13 @@ def run_row(root,entry,observe=False):
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         expected=() if want=='eligible' else ('hold-release-stale',)
         check(actual==expected,name+': exact release codes '+repr(actual)+' != '+repr(expected))
+    if name in D1_CODES:
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        check(actual==D1_CODES[name],name+': ordered codes '+repr(actual))
+        check(sum(line.startswith('merge-risk: ') for line in p.stdout.splitlines())==1,name+': one header')
+        check(first=='merge-risk: '+want+' pr=700 head='+H+' base='+B+
+              ' diff='+sha(request['diff_text'])+' config='+sha(request['config_text']),name+': header identity')
+        check(not p.stderr,name+': unexpected stderr '+repr(p.stderr))
     if name in SEG2_CODES:
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         check(actual==SEG2_CODES[name],name+': ordered codes '+repr(actual)+' != '+repr(SEG2_CODES[name]))
@@ -2476,7 +2485,7 @@ SEGMENT1_WITNESSES = {
     'malformed-trailer': (606, freeze_edit(change(['pr','body'],
                           'Closes #701\nMerge-risk decision: not-a-comment\n')),
                           'referred','narrative-invalid'),
-    'duplicate-trailer': (606, freeze_edit(lambda b:b['pr'].update(body=b['pr']['body']+
+    'duplicate-trailer': (606, freeze_edit(lambda b:b['pr'].update(body='Closes #701\n'+
                           ('Merge-risk decision: '+b['active_record_url']+'\n')*2)),
                           'referred','narrative-invalid'),
     'late-pair': (654,pair_after_announcement,'referred','risk-independence'),
@@ -2538,6 +2547,42 @@ def history(kind):
     return freeze_edit(edit)
 
 
+# A60 addenda 17-19 Q8: each selection state has its own exact oracle.
+D1_CODES = {
+    'a17-selection-absent': ('record-selection',),
+    'a17-selection-malformed': ('narrative-invalid',),
+    'a17-selection-duplicate': ('narrative-invalid',),
+    'a17-selection-mismatch': ('record-selection',),
+    'a17-selection-matching': (),
+    'd1-prepare-no-trailer': ('risk-pair-required',),
+    'd1-class-no-trailer': ('risk-pair-required',),
+}
+for state,want,body in (
+    ('absent','unresolved','Closes #701\n'),
+    ('malformed','referred','Closes #701\nMerge-risk decision: https://example.com/SENTINEL\n'),
+    ('duplicate','referred','Closes #701\n'+('Merge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n')*2),
+    ('mismatch','unresolved','Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-999\n'),
+    ('matching','eligible','Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n'),
+):
+    name='a17-selection-'+state
+    row(606,name,narrate(body),want,D1_CODES[name][0] if D1_CODES[name] else None)
+for phase in ('prepare','class'):
+    row(606,'d1-'+phase+'-no-trailer',both(narrate('Closes #701\n'),change(['phase'],phase)),
+        'unresolved','risk-pair-required')
+
+mutate(606,'final-trailer-required','a17-selection-absent',control='a6s2-trailer-control')
+mutate(606,'narrative-valid','a17-selection-malformed',
+       {'before':"need(valid_comment(url,repository,issue),'narrative-invalid')",
+        'after':"need(True,'narrative-invalid')"},control='a6s2-trailer-control')
+mutate(606,'narrative-valid','a17-selection-duplicate',
+       {'before':"need(len(trailers)<=1,'narrative-invalid')",
+        'after':"need(True,'narrative-invalid')"},control='a6s2-trailer-control')
+mutate(606,'trailer-selection','a17-selection-mismatch',control='a6s2-trailer-control')
+mutate(606,'trailer-selection','a17-selection-matching',
+       {'before':"trailer_ok=trailers[0][len('Merge-risk decision: '):]==b.get('active_record_url')",
+        'after':"trailer_ok=trailers[0][len('Merge-risk decision: '):]!=b.get('active_record_url')"},
+       control='d1-prepare-no-trailer')
+
 seg2(606,'trailer-control',narrate('Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n'))
 seg2(606,'trailer-other-comment',narrate('Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-999\n'),'unresolved',('record-selection',))
 mutate(606,'trailer-selection','a6s2-trailer-other-comment',control='a6s2-trailer-control')
@@ -2580,7 +2625,7 @@ seg2(615,'url-control',narrate('Closes #701\nMerge-risk decision: https://github
 seg2(615,'url-other-issue',wrong_url,'referred',('record-selection','narrative-invalid'))
 mutate(615,'selected-url-target','a6s2-url-other-issue',control='a6s2-url-control')
 for key in ('title','body'):
-    value='Updated title' if key=='title' else 'Closes #701\nUpdated description\n'
+    value='Updated title' if key=='title' else 'Closes #701\nUpdated description\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n'
     seg2(606,'narrative-source-'+key,freeze_edit(change(['pr',key],value)),'unresolved',('identity-binding',))
 seg2(606,'narrative-current',freeze_edit(change(['current','narrative_sha256'],sha('wrong'))),'unresolved',('identity-binding',))
 seg2(606,'narrative-record',record_change(['evidence','narrative_sha256'],sha('wrong')),'unresolved',('identity-binding',))
@@ -2590,7 +2635,7 @@ seg2(606,'narrative-all-copies',both(change(['current','narrative_sha256'],sha('
 seg2(615,'narrative-control')
 def unavailable_narrative(b):
     record_change(['evidence','narrative_sha256'],sha('wrong'))(b)
-    b['pr']['body']+=('Merge-risk decision: '+b['active_record_url']+'\n')*2
+    b['pr']['body']='Closes #701\n'+('Merge-risk decision: '+b['active_record_url']+'\n')*2
 seg2(615,'narrative-leaf',unavailable_narrative,'referred',('identity-binding','narrative-invalid'))
 seg2(615,'narrative-current-exclusive',both(record_change(['authority'],remove=True),
      change(['current','narrative_sha256'],sha('wrong'))),'unresolved',('manifest-schema','identity-binding'))
@@ -5607,6 +5652,13 @@ def main():
             # unless the mutated rule inverts every valid control (control None).
             if control_row is not None:
                 run_row(root,entries[0] if control_row==0 else next(e for e in entries if e[0]==control_row))
+            if any(one.startswith('a17-selection-') for one in names):
+                if names==['a17-selection-matching']:
+                    run_row(root,next(e for e in entries if e[0]=='d1-class-no-trailer'))
+                else:
+                    # Q8 negatives preserve E and BOTH independently retained trailer positives.
+                    run_row(root,entries[0])
+                    run_row(root,next(e for e in ROWS['615'] if e[0]=='a6s2-url-control'))
             for one in names:
                 target=next(e for e in entries if e[0]==one)
                 label=tag+(' [conjunct '+replacement['before']+']' if isinstance(replacement,dict) else

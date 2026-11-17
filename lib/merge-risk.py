@@ -530,6 +530,8 @@ def consistency_checks(b,cfg,r,sel,cap,capture):
                 record_ok=sel.manifest['evidence']['narrative_sha256']==digest
                 r.need(record_ok, 'identity-binding')  # rule:narrative-record
             trailers=[line for line in pr['body'].splitlines() if line.startswith('Merge-risk decision:')]
+            # consistency_checks runs only for final evidence; preparation may omit selection.
+            r.need(len(trailers)==1, 'record-selection')  # rule:final-trailer-required
             if trailers:
                 trailer_ok=trailers[0][len('Merge-risk decision: '):]==b.get('active_record_url')
                 r.need(trailer_ok, 'record-selection')  # rule:trailer-selection
