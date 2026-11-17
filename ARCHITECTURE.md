@@ -10269,3 +10269,187 @@ panel/model-floor/M1-M9/M8/C6 reservations remain with their owners.
 Doubt: Reachability and local diagnostics do not establish final literal companion arrays, integrated red/green results or owning mutation kills after D1-D5.
 Doubt: Runtime recursion thresholds vary; bounded natural bytes and injected faults remain distinct evidence.
 Doubt: QA publication is unresolved above the comment limit; local scratch evidence grants no handoff or implementation authority.
+
+### A60 addendum 20 — canonical-trailer closing-drift oracle reconciliation, #646
+
+**Ruling (Architect / Planning, 2026-11-17, `10e25e4b543e65a62867825031101f0db88590f1`).** [A]
+SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
+#696, resolving `.handoff/dev-report-646-c4-d1-stop.md`. Choose **(a)**: QA
+adds `narrative-invalid` to S611 `a6s2-closing-final`'s complete ordered array.
+This is an **oracle CHANGE in a frozen QA scenario**, owned by QA, followed by
+Developer alignment of the fixture assertion. It is not a fixture-only correction
+and does not authorize Developer to amend TEST-SCENARIOS.md. This entry supersedes
+addendum 10's three-code oracle for that row, makes S613's existing
+self-delegation oracle exact, and updates S615's preservation inventory; earlier append-only entries remain historical.
+AC contradictions or narrowing: **none**. No new Module, Interface, Seam, Adapter,
+requirement, security decision, carrier or deferred-701 relation is introduced.
+
+**Invariant and smallest change.** [V/A]
+The frozen row changes ONLY `pr.closing_issues` from [701] to [702]. It retains
+`issue.number=701`, both binding.issue values, the current narrative digest,
+pair, attempt ledger, selected record and the entire canonical issue-701 body.
+A recursive before/after comparison confirms its sole changed JSON leaf is
+`pr.closing_issues[0]`. Existing `narrative` validation checks the trailer URL
+against the readable sole closing issue, now 702; its issue-701 URL is invalid.
+That independently establishes `narrative-invalid`, before any final-trailer
+equality check. Record identity drift still establishes `identity-binding`;
+issue/selected-URL target checks establish `record-selection`; the independent
+retained envelope issue referent establishes `risk-binding`. All four survive
+C4, in existing first-occurrence order with deduplication; final R/3 stays R/3.
+An invalid narrative makes its dependent digest/equality checks unavailable, not
+these independent causes. Unreadable closing/issue sources keep their isolated
+owning U/4 reasons and their existing absence assertions.
+
+Do not choose (b): changing the trailer also changes the specified sole-edit
+input and loses this exact frozen issue/body mismatch witness. Do not suppress
+URL grammar, compare against the stale issue instead of the actual closing
+issue, drop an established cause, or repair selection in preparation helpers.
+Q8 remains unchanged: final selection needs exactly one validated trailer equal
+to active_record_url and the selected comment; prepare/class may omit it.
+
+**Mechanical audit and complete changed-row table.** [V/A]
+Scratch root: `/tmp/arch646-a20-4xgyiyad/`. `d1/` copies the dispatched working
+tree; `before/` differs only by restoring the exact pre-D1 evaluator/fixture from
+`1abbc50` (the only two changed files). No executable source in the checkout was
+edited. `audit.py` executes every registered row through its original helper and
+public Interface, recording every `invoke` result, phase, exit, ordered codes
+and stderr. `summarize.py` pairs by scenario/name/OCCURRENCE, not just name:
+both existing S653 `nonfinite-inf` occurrences are retained and unchanged.
+There are **1,654 old / 1,661 D1 occurrences in 48 fixture scenario registries**:
+all 1,654 old occurrences paired, zero removed; seven added = the five specified
+Q8 selectors and two uncounted prepare/class companions. Recorded public calls:
+1,887 before / 1,894 D1. 1,263 paired occurrences differ from their own canonical
+control in at least one audited input: closing list (17), title (15), body (26),
+current narrative (36), active URL (16), or retained records (1,242); counts overlap
+and include derived record changes. The complete 1,654-row comparison is a
+superset of this selection-sensitive inventory, not a representative sample.
+
+| Existing row | Frozen oracle / pre-D1 observation | Actual D1 | Reconciliation / owner |
+|---|---|---|---|
+| S611 `a6s2-closing-final` | Exact R/3 `[identity-binding,record-selection,risk-binding]` | R/3 `[identity-binding,record-selection,narrative-invalid,risk-binding]`; the sole product-oracle failure | QA changes the exact array to actual; Developer changes only the fixture expectation, retaining the sole closing edit and all frozen evidence. |
+| S613 `self-delegation` | Oracle requires R/3 with `self-delegation`, not a complete array. Observed R/3 `[self-delegation,record-selection,risk-binding]` | R/3 `[self-delegation,record-selection,narrative-invalid,risk-binding]`; old subset assertion passes | QA explicitly freezes this complete four-code final array; Developer strengthens the existing row to complete ordered equality. Keep closing issue [646], issue/body/trailer 701 and the existing preparation/record construction. No new row. |
+| S653 `literal-render` | Successful record header, exit 0, `[]`; literal escaping, original-byte/hash preservation and no executor prose | Same header grammar, exit 0, `[]`; rendered manifest digest changes with materialized implementation identity | Existing computed/structural oracle remains correct; no frozen digest or array to amend, no input/assertion relaxation. |
+
+These are ALL three changed public output summaries: exactly two reason-array
+changes, no verdict/exit changes. The other **1,651 paired occurrences are
+unchanged**. S613 is not an earlier frozen three-code exact oracle; its additional
+cause was hidden by a permissive presence assertion. Its closing issue 646 is
+readable, so the retained issue-701 trailer independently fails existing URL
+validation, just as in S611. This clarifies the same C4 rule, not a new refusal.
+
+The full `./test/run.sh merge_risk` selected **all 53 cases**. Raw scratch run:
+49 passed / 4 failed: S611 plus S626/S627/S659, whose historical `git show` reads
+failed because `.git` was deliberately omitted. Eight EXACT immutable
+`51178851a1f6fba76e87d046788339c02f874f03:<path>` blobs were read from the source
+checkout and cached, with hashes in `history.json`; a scratch PATH shim serves
+only those exact reads and delegates every other git command unchanged. No
+source git state or production/test expectation was repaired. Replayed full
+S626, S627 and S659 cases all pass, including their mutations; the four affected
+fixture structural rows (two per tree) also pass on replay. `campaign-index.json`
+mechanically reconciles all 53 selected names, with no omissions: **52 pass,
+only S611 fails**. This is combined campaign evidence, not a claim that the raw
+runner printed 52/1 or that a single corrected 53/0 run occurred.
+
+| Scratch-only setup failure | Expected versus actual after exact-history replay | Disposition |
+|---|---|---|
+| S626 `structure` | Required protected bytes match; PASS, no reason array | Missing scratch history, no scenario/oracle change. Full case: 9 rows / 3 mutation mappings. |
+| S627 protected A-byte comparisons (four paths) | Required protected bytes match; PASS, no reason array | Missing scratch history, no scenario/oracle change; full pointer/budget/projection case passes. |
+| S659 `ordinary-floors-unchanged` | Required four historical sources and marker match; PASS, no reason array | Missing scratch history, no scenario/oracle change. Full case: 149 rows / 32 mutation mappings. |
+
+**Selection-sensitive preservation checks.** [V]
+This table exposes the neighboring exact arrays; each grouped name was executed
+separately. A grouped unchanged array is expected AND actual. U=unresolved/4,
+R=referred/3, E=eligible/0. All other recorded old arrays remain unchanged too.
+
+| Rows | Expected = actual under canonical control |
+|---|---|
+| S611 `closing-unreadable`; `issue-unreadable` | U `[closing-issues]`; U `[issue-unreadable]`, respectively; no derivative identity/selection/narrative/risk cause. |
+| S611 `a6s2-issue-target` | R `[record-selection,risk-binding]`. |
+| S613 `zero-closing`, `two-closing` | R `[closing-issues]` each; no invented sole-issue comparison. |
+| S606 `a6s2-trailer-control`; S615 `a6s2-url-control`, `a6s2-narrative-control` | E `[]` each, independently built. |
+| S606 `a6s2-trailer-other-comment`; S615 `selection`, `a6s2-active-url-alone` | U `[record-selection]` each. |
+| S615 `a6s2-url-other-issue` | R `[record-selection,narrative-invalid]`. |
+| S606 `identity-narrative_sha256`, `add4-actual-title`, `a6s2-narrative-{source-title,source-body,current,record,all-copies}`, `a6s2-current-narrative-{type-None,type-17,missing}` | U `[identity-binding]` each; body drift retains its trailer without renewing the frozen digest. |
+| S606 `add4-malformed-trailer`, `add4-duplicate-trailer` | R `[narrative-invalid]` each; explicit one-malformed/two-canonical-line bodies stay intact. |
+| S615 `a6s2-narrative-leaf`; `a6s2-narrative-current-exclusive` | R `[identity-binding,narrative-invalid]`; U `[manifest-schema,identity-binding]`, respectively. |
+| S615 `add4-selected-{held,vetoed,unresolved,referred,failed,merged}`, `a6s2-history-{superseded,superseded-noneligible}` | U `[record-selection]` each. |
+| S615 `a6s2-history-outgoing`; `a6s2-history-{invalid,old-superseded}` | U `[record-duplicate]`; E `[]` for each latter row. |
+| Q8 S606 `a17-selection-{absent,malformed,duplicate,mismatch,matching}` | U `[record-selection]`; R `[narrative-invalid]`; R `[narrative-invalid]`; U `[record-selection]`; E `[]`, respectively. |
+| S606 `d1-{prepare,class}-no-trailer` (uncounted companions) | U `[risk-pair-required]` each. |
+
+The campaign also passes S606 85 rows / 19 mappings, S615 93 / 19 and S654
+365 / 335; candidate quotation/exception prose, all other retained manifest,
+expiry, capability reader/prepare/final and selected-record families were included
+in the whole-registry comparison, not excused by this focused table. Raw files:
+`before-audit.json`, `d1-audit.json`, their `*-normalized.json` copies with only
+historical-read setup errors resolved, `summary.json`, `summary.log`,
+`static-sensitive-sites.txt`, `sole-edit.json`, `campaign-original.log` and
+`campaign-rerun{626,627,659}.log`. Scratch artifacts are diagnostic evidence,
+not a substitute QA publication carrier.
+
+**Exact QA changes in TEST-SCENARIOS.md.** [A]
+
+1. **S611, current line 9455:** revise the addendum-6/addendum-10 closing-drift
+   sentence to cite addendum 20 and require exact final R/3
+   `[identity-binding,record-selection,narrative-invalid,risk-binding]`.
+   Explicitly retain the sole [701]->[702] closing edit, canonical issue-701
+   body/trailer, binding.issue=701, current digest and frozen pair/ledger/record.
+   Leave isolated unreadable-source absence assertions unchanged. This is the
+   one CHANGE to a previously frozen complete exact array.
+2. **S613, Then paragraph (currently line 9473):** add the existing final
+   `self-delegation` row's complete ordered R/3 array
+   `[self-delegation,record-selection,narrative-invalid,risk-binding]`, retaining
+   [646] closing selection, issue/body/trailer 701 and existing input construction.
+   This makes its existing subset oracle exact; it adds no selector, requirement,
+   preparation authority or new negative input.
+3. **S615 preservation paragraph, current line 9534:** retain addendum 10's nine
+   named exceptions, cite addendum 20's revised S611 array, and add S613
+   `self-delegation` as the tenth DISTINCT retained additive-refusal exception.
+   Cite this table alongside the historical addendum-10 table; do not pretend
+   addendum 10 originally enumerated ten. S611 is counted once. Every other old
+   array and all eligible controls stay unchanged.
+
+QA owns those three scenario-text locations and publishes a superseding matching
+artifact/report through the already authorized handoff route; owner resolution
+alone is not a published QA handoff. No other scenario edit is needed. **Counts:
+zero added/deleted/renamed/retargeted selectors, two existing final-row oracle
+clarifications (one frozen-array replacement and one subset-to-exact), nine to
+ten retained additive-refusal exceptions; package remains 344** =
+24+90+30+47+22+5+116+5+5. Q8 remains five; its occurrence pointers and two
+prepare/class companions remain uncounted. The 53 cases, historical suite totals,
+S-IDs/Covers and all C6/now/deferred-701 relations remain unchanged.
+
+**Developer next steps, same bounded pass.** [A]
+After the orchestrator verifies the superseding published QA artifact, resume
+**D1**, not D2 immediately: align S611's fixture tuple to its four-code QA oracle
+and add complete ordered equality for existing S613 `self-delegation`. Change no
+input/body to evade either cause. Preserve all five Q8 owning-mutant mappings,
+both independent valid-trailer positives, no-trailer prepare/class controls and
+absence/no-leak/header checks; no trailer auto-repair. Record the original S611
+failure honestly as an oracle conflict, not a missing production-guard red.
+In `reconciled/`, changing only S611's tuple passes **13 rows / 7 mappings**;
+`s613-exact.py` adds only a scratch assertion for S613's prescribed full array
+and passes **67 rows / 10 mappings**. These are local feasibility checks, not a
+Developer completion or substitute QA handoff. Developer reruns those checks,
+S606/S615 and the complete retained 53-case campaign before declaring D1 green.
+
+Then continue D2 (Q1-Q3 slot-local raw validation), D3 (Q4/Q7 independent
+consumers), D4 (Q5/Q5A actual JSON consumers/numeric normalization, no dropped
+queue-manifest decoder rows), and D5 (Q6's 107 codes + nine protocols and final
+integration), preserving addenda 17-19's corrected owners, controls and exact
+arrays. Do not restart a cycle, weaken a negative, amend scenarios as Developer,
+claim C6 completion or bypass fresh QA comparison/Review/lenses/final Reviewer.
+Existing remaining/new medium/high, failed owning falsifier or material expansion
+stop rules still apply; this resolution grants no automatic second pass.
+
+**MAINTAINER ITEMS: none for this reconciliation.** [A]
+No new carrier, deferred-701 relation, requirement or security choice was needed.
+The existing side-branch publication chain recorded in QA rerun 3 (ledger 163)
+is not changed or re-authorized here. If that route cannot carry QA's superseding
+artifact, mark that point **MAINTAINER ITEM / return-to-panel**; do not invent a
+replacement. All existing panel/model-floor, live qualification/enablement,
+M1-M9/M8/C6 and merge reservations remain with their owners.
+
+Doubt: This exhaustive comparison covers the dispatched D1 tree, not future D2-D5 outputs or live producer authenticity, isolation or qualification.
+Doubt: Combined campaign/replay and two scratch exact-oracle probes do not establish a single final 53/0 run, QA publication or Developer D1 completion.
+Doubt: Local adoption/status/session-context scripts and skill links are absent; ordinary Codex adoption and fresh-session discovery remain orchestrator-owned.
