@@ -9458,3 +9458,241 @@ Doubts: QA still must independently transcribe/compute/publish the full numeric 
 Doubts: A constructible syntax specimen does not establish original-source authenticity or an isolating behavioral kill; any input/proof gap remains explicit and cannot reduce expected coverage.
 Doubts: Adoption/status/context entry points and .agents skill links are absent; ordinary Codex adoption is the orchestrator remedy, with live discovery unverified.
 Doubts: No fresh behavior/53-case run, qualification, enablement, risk acceptance, merge or publication authority is claimed.
+
+### A60 addendum 16 — defer computed C6 proof to #701; retain inert #646
+
+**Ruling (Architect / Planning, 2026-11-17; SHORT OR19 loop-back,
+`65c3380`).** [A] TiesL's decision supplied for this dispatch is:
+"For C6.COMPLETE I take option C." Apply option C of
+`../607-orchestrator-notes/DECISION-C6-FOR-MAINTAINER.md`: deliver #646 with
+its current matrix, inert, and carry the computed completeness proof into #701,
+which blocks enabling. This is a delivery deferral, not deletion, sampling,
+proof credit or permission to weaken a refusal. Earlier architecture text stays
+byte-identical. This addendum supersedes earlier instructions ONLY where they
+require finishing C6 or its preparation before #646 can close.
+
+**Disposition of Segment 6.** [A]
+
+| Work | #646 disposition | #701 disposition |
+| --- | --- | --- |
+| Addendum-6 Segments 0-5 and their corrected concrete rows/mutants | Retain implementation and addenda 7-11's owner resolutions. Do not reopen resolved stops. | No duplicate implementation credit. |
+| Segment 6(b), S625 real-collector witness | Already implemented. Keep actual `collect()` through `export_probe(inert=True)`, laboratory enabled policy at B, referred/3, no masking `autonomy-disabled`, each missing-carrier absence and each owning unavailable code. Keep 13 carrier, 9 code and 4 shipped-default falsifiers (26 total). | Replace the witness deliberately when real carriers arrive; never silently lose its per-carrier tripwires. |
+| Segment 6(c), concrete FIRST/LAST, WRONG-AUTHORITY, raw-leaf and profile/VENDOR tests already present | Keep all registered rows/mutants and independent two-author basis companions. Existing tests remain required; no new exhaustive per-key mapping is required for #646. | Audit remaining exact member/domain/selector obligations against the full inventory; existing kills are candidates, not complete coverage. |
+| Literal dictionaries, nine-domain atlas helpers, independent controls | Already present; retain them and their corrected literals. They are preparation, not computed N/K/D/R or C6 proof. | Starting inputs, with provenance and a new frozen manifest when inputs change. |
+| Segment 6(a), complete inventory/partition, generated selectors, every-now proof registry, individual expanded deferred-key output, ONE C6.COMPLETE and all integrated falsifiers | Deferred to #701, not asserted red and not counted as PASS. No fabricated placeholder C6 assertion or completed Segment-6 claim. | Full obligation retained, including exact ordered diagnostic/control replay and all-now acyclic implications. |
+| Addendum-12 QA profile and independent numeric O/A/N/K/D/R/I/P manifest; Developer 6a-6f | No further implementation of these passes in #646. The C6-specific 6f campaign moves too; ordinary final #646 checks still run. | All six passes and their prerequisites move, with revalidation/resegmentation after input closure. |
+| Addenda 13-15 expansion grammar and audit | Keep their text as history and the explicit starting point for #701. They are not delivered QA profile/manifest artifacts. | Preserve semantics, cases, authority/consumer distinctions, canonical keys, scope/carriers and proof/input-gap rules; reconcile with #701's expanded inventory before implementation. |
+
+No original S2 `now` production relation becomes `deferred-701` through this
+decision. Work on proving the matrix complete is deferred as a package; that is
+different from moving a key between the existing now/deferred sets. Keep existing
+behavior, concrete regression assertions, addenda 9-11's codes/implications,
+S625/S677 collector checks and all prior refusals. The original Segment 6 remains
+partly completed with C6 deferred; only its retained #646 subset may be closed
+after final verification. Do not report the original 6a-6f DONE.
+
+**Evidence and the open input gap.** [A] The maintainer's accepted baseline is
+53/53 cases, 1,653 behavioral rows and 644 mutation entries killed. The retained
+`totals-recovery.json` distinguishes 801 killed target lines and 26 S625
+falsifiers from those 644 entries; it combines a full campaign with later suite
+overrides. These are historical observations, not a fresh run at `65c3380`, not
+expanded inventory counts and not C6.COMPLETE. The Developer must refresh final
+evidence, without inventing an integrated-proof red history.
+
+QA's fourth stop, `.handoff/qa-report-646-19-stop.md`, remains an open #701 input
+gap. Addendum-15 F4 requires POS[BINARY], POS[DELETED] and
+POS[EMPTY-INVENTORY] at applicable I24.lines locations, but the frozen atlas
+SHA256 `a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`
+contains only positive-length, one-line ASCII inventory/base/head artifacts,
+with identical base/head path sets. It supplies no binary, actually deleted or
+empty artifact/inventory specimen. Its 16 raw-findings LOC addresses and 48
+address/label combinations are input audits, not canonical proof counts.
+#701 must obtain independently retained originals/tree/source identities,
+reconcile applicable line semantics, freeze a new source snapshot/digest and
+have QA recompute the full profile/manifest. Do not manufacture originals,
+set missing cases to zero, sample them away or call the gap resolved. This is
+the currently identified gap, not an exhaustive absence-of-further-gaps claim.
+
+**Honest delivery and unchanged refusals.** [A] C6 checks test-suite coverage;
+it is not a production evidence field or a runtime eligibility predicate.
+`policy/merge-autonomy.json` remains enabled:false, acceptance:null,
+executor_host empty and qualification:null. Existing `load_config()` returns
+R/`autonomy-disabled` when disabled. On an otherwise enabled laboratory policy,
+the actual collector still supplies no invented carriers: preserve referred/3
+with `risk-pair-required`, `risk-attempt-invalid`, `gate-quality`,
+`instruction-load-invalid`, `runtime-invalid`, `executor-invalid`,
+`qualification-unavailable`, `guard-invalid` and the applicable `capability-*`
+referral. Preserve the existing R > U > H composition, exits, availability
+rules and exact independently applicable causes. Laboratory eligibility neither
+proves coverage nor grants enabling authority.
+
+`autonomy-disabled` explains why delivery cannot authorize autonomy; it does
+NOT say that C6 was computed or encode the deferral. The explicit disclosure
+in this addendum, QA's scenario note, #701 and final Developer/PR reporting is:
+
+> C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is
+> not computed. Current case/row/mutant totals establish only the exercised
+> matrix. The gate ships enabled:false; #701, qualification and separate
+> maintainer acceptance still block enabling.
+
+The smallest required new text is QA-owned wording in TEST-SCENARIOS.md below
+and owner reporting; this addendum is the shipped architecture disclosure.
+No production/fixture code change, new reason code, schema/status field,
+unconditional C6 pass, suppression of an existing refusal or skill/contract edit
+is needed. The fixture's existing `PASS S...: rows=... mutants=...` summary reports
+executed rows; it does not assert C6. Keep that distinction in final reports.
+
+**Exact QA diff list (QA owns edits/publication).** [A] Keep IDs, Covers fields,
+all numeric/dictionary tables, current concrete assertions and their expected
+ordered codes. Make only these scope/disclosure changes:
+
+1. S615: immediately before the systematic matrix protocol, insert the four
+   sentences in the disclosure block above, followed by: "The expansion,
+   exhaustive per-key proof mapping, profile/count manifest, integrated
+   falsifiers and individual expanded DEFERRED-701 output below are retained
+   requirements for #701. Existing implemented comparisons, concrete rows,
+   controls, mutations and implication witnesses remain required in #646;
+   their now/deferred classification is unchanged."
+2. S615: replace the entire bullet beginning "Completeness assertion
+   C6.COMPLETE (ONE assertion, owner S615; addendum 6)" with: "C6.COMPLETE:
+   deferred to #701, not asserted red and not counted as a pass. The full
+   computed inventory/partition, independent profile and numeric manifest,
+   per-key/per-obligation proof, all integrated falsifiers and individual
+   expanded deferred declarations remain required by A60 addenda 6 and 12-16
+   before enabling; the proof is not computed in #646."
+3. S615: in the final S2 paragraph replace "All deferred stems above expand
+   to individually named keys and printed declarations; `None` yields no
+   deferred key." with: "Full expansion to individually named keys and printed
+   declarations is deferred to #701, not asserted red; `None` yields no
+   deferred key. The declaration table remains visible in #646 and is not a
+   claim that its expanded complement was computed."
+4. S650, S651, S655, S656, S659, S668, S675 and S676: in each existing
+   deferred-declaration sentence replace "printed individually" with
+   "with individual expanded printing deferred to #701, not asserted red".
+   This removes the unfulfilled printing claim, not any existing behavior or
+   carrier declaration. S615's scope note governs the other references to
+   expansion/DEFERRED output; retain their existing concrete proof leaves.
+5. S625: append to its Then bullet: "Enabling also remains blocked by #701,
+   including the deferred computed C6.COMPLETE proof; current matrix totals
+   do not establish completeness." Leave the real-collector witness and
+   every existing default, code and per-carrier falsifier unchanged.
+
+At this head S615 is the only scenario literally asserting C6.COMPLETE. If QA
+finds another such assertion while reconciling the artifact, replace only its
+completion requirement for #646 with "deferred to #701, not asserted red" and
+retain its full requirement by reference to this addendum. No behavior oracle
+change, new scenario ID, red placeholder or publication waiver follows.
+
+**Exact text for the orchestrator to post on #701 (not posted here).** [A]
+
+~~~text
+Follow-up scope from #646 / PR #696, A60 addendum 16 (2026-11-17).
+
+TiesL decided: "For C6.COMPLETE I take option C." #646 ships with its current
+matrix and enabled:false. C6.COMPLETE is deferred to #701, not deleted, not
+asserted red and not counted as a pass. The completeness proof is not computed.
+Historical 53/53 cases, 1,653 behavioral rows and 644 killed mutation entries
+are exercised-matrix evidence, not proof that the matrix has no holes.
+
+#701 now explicitly owns the remaining computed proof as well as its existing
+carriers and full I01-I34 implementation. Preserve AC1-AC4: real retained
+carriers, authoritative full-inventory checks with owning unavailable refusals,
+computed neighbour closure and inert delivery. Enabling remains blocked by
+#701, real qualification (#682), M1-M9 and separate maintainer acceptance;
+neither this deferral nor merging #646 enables the gate.
+
+Retain the three existing carrier work packages: C-S, the independently
+retained accepted-source capture snapshot; C-Q, the retained quality record
+with all lens/author/implementer participants and approval time; C-L, the
+per-launch record with dispatch/nonce/runtime/applied arguments/settings,
+launcher/output identity and transport evidence. Retain item R, the remaining
+inventory/source/schema/runtime/check/disclosure/qualification rows without a
+new carrier. These supply missing observations; the C6 profile, manifest and
+replay artifacts carry the coverage proof. Neither substitutes for the other.
+
+Carry A60 addendum 12's QA-owned normative expansion profile and independently
+computed numeric O/A/N/K/D/R/I/P manifest, and Developer passes 6a-6f: reader,
+inventory/partition expansion, independent selector recipes, exact proof replay,
+ONE integrated C6.COMPLETE with all falsifiers and individual DEFERRED-701
+output, then the final evidence campaign. Preserve exact six-coordinate keys,
+every required actual member/domain/consumer, authority-versus-shape/wire
+distinctions, unchanged codes, surviving own controls and all-now acyclic
+implication proofs. Reconcile the original #646 now/deferred partition with
+the full #701 inventory explicitly; do not infer promotion from a passing row.
+
+Open input gap: QA's fourth stop (.handoff/qa-report-646-19-stop.md) found that
+the frozen nine-domain retained-source-atlas.json, SHA256
+a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34,
+lacks binary, actually deleted and empty artifact/inventory specimens required
+by addendum-15 F4 I24.lines POS[BINARY]/POS[DELETED]/POS[EMPTY-INVENTORY].
+All 27 artifacts are nonempty one-line ASCII and no base path is deleted.
+The 16 affected raw-findings LOC addresses are an input audit, not an expanded
+assertion total. Obtain independently retained original bytes/tree/source
+identities, reconcile line semantics, freeze a new snapshot/digest and have QA
+compute a new complete profile/manifest before dependent expansion. Do not
+invent originals, remove dimensions or treat missing proof as zero coverage.
+
+Starting points: ARCHITECTURE.md A60 addenda 6, 12, 13, 14, 15 and 16 on
+PR #696; the existing #701 carrier elaboration; S615's literal declarations
+and S2 table; the fixture's corrected dictionaries, c6_source_atlas(), nine
+retained domains and independent two-author basis companions; the Developer
+pass-5 and earlier Segment-6 reports and totals-recovery.json. Addenda 13-15
+remain the expansion-grammar starting point, not a delivered QA manifest.
+Preserve/publish the ignored handoff evidence through the established owner
+route; naming a local path does not claim it is available on GitHub.
+
+S625's real-collector witness, 13 carrier-absence assertions, 9 code assertions,
+4 default falsifiers and existing concrete selector/basis mutations stay in
+#646. They are already implemented and must not be redone or mistaken for
+complete per-key proof. Adapt the collector witness deliberately when #701
+adds carriers. No authenticity claim, closed schema, security trade-off,
+skill/contract edit or enabling change is accepted by this scope transfer.
+~~~
+
+**Developer remainder in #646.** [A] Nothing beyond the final checks and honest
+final evidence/reporting after QA publishes the deferral artifact. No additional
+implementation segment remains. Do not start 6a-6f, add missing specimens,
+construct a profile/manifest, install a stub C6, or change production/fixture
+behavior to close this work item. Reconcile the published QA artifact with the
+final scenario bytes using the existing provenance procedure; an owner report
+does not waive that gate. The old publication stop is already resolved by
+`.handoff/qa-handoff-19.md`; QA's new deferral edits need their own artifact.
+
+Final done criteria: freshly run the existing 53-case merge-risk selection and
+required dispatched checks at the final bytes; preserve S625's 26 falsifiers,
+S677 invocation-count checks, ordered causes, protected core/skill/policy/schema
+bytes, skill byte ceilings and stamp. Reconcile actual rows/mutation entries/
+killed target lines separately; retain historical totals as historical, explain
+any changed totals and route new failures to their owner. Report C6 as deferred,
+not passed, skipped-red, implied, computed or deleted. CI/fresh Review and
+ordinary merge conditions remain orchestrator work. This Architect runs only
+the three requested lightweight checks, never the Git-writing campaign.
+
+**AC consistency and MAINTAINER ITEMS.** [A] The changed obligation is delivery
+timing for A60's computed C6 closure: formerly a #646 completion condition, now
+a #701 enabling blocker under TiesL's explicit option C. No runtime behavior
+AC, full-hold/referral/human-authority clause (including #646 AC5/AC6), or
+F70-F74 behavior is weakened. #701's full-inventory/closure ACs remain open.
+No new maintainer decision is needed to implement this deferral.
+
+Existing future reservations are not decided here:
+- **MAINTAINER ITEM (#701 contract text):** accept concrete carrier/schema/skill
+  proposals and the closed RUN time field after owner elaboration, or retain
+  the affected observations unavailable. Recommendation: retain refusal until
+  the concrete proposals receive acceptance; no out-of-issue contract change.
+- **MAINTAINER ITEM (#701 security):** accept named self-reported participant/
+  launcher evidence with its forgery limits, or require independently observed
+  evidence first. Recommendation: obtain observed evidence where possible and
+  retain unavailable refusals until any residual risk is explicitly accepted.
+- **MAINTAINER ITEM (enabling, not #646 delivery):** separately accept M1-M9/M8
+  and qualifying revisions after #701/#682, or keep disabled. Recommendation:
+  keep disabled until all required evidence and decisions exist. Option C
+  accepts delayed coverage proof for inert delivery, not enabling risk.
+
+No new Module, Interface or Seam is introduced; the fixture-local C6 Module,
+Depth/Locality and CLI/collector Adapters of addendum 12 remain a #701 design
+starting point, subject to that issue's own owner elaboration.
+Doubts: #701 was read from local body/elaboration snapshots only; no live gh read was permitted by this dispatch's no-network scope.
+Doubts: Full expanded counts, input closure and C6 proof remain uncomputed; further gaps may appear in #701.
+Doubts: Baseline suite totals are historical combined evidence; no fresh behavioral campaign was run in this Architect session.
+Doubts: Adoption/status/context entry points and .agents links are absent; rerun ordinary Codex adoption (adopt.sh --runtime codex) through the orchestrator; live loading remains unverified.
