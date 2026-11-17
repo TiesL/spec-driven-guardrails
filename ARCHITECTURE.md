@@ -10013,3 +10013,259 @@ do not infer such work from the erroneous total. Existing reservations survive.
 Doubt: Static inventory and bounded in-memory diagnostics do not establish final implementation, owning mutation kills or QA artifact agreement.
 Doubt: Recursion thresholds vary; this audit establishes no portable depth limit, live authenticity, isolation, qualification or C6 completeness.
 Doubt: Network/CI/publication and adoption entry points were unavailable in this scoped session; their owners must reconcile durable live state.
+
+### A60 addendum 19 — mechanical row ownership correction, #646
+
+**Ruling (Architect / Planning, 2026-11-17, `c7f22248b12c3bfb9d8fd55525ebc1c13c8b2c58`).** [A]
+SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
+#696, resolving `.handoff/qa-report-646-21-stop2.md` (#646 comment 6952375948).
+Addenda 17/18 remain historical. This entry supersedes their queue-manifest
+ownership/count claims and the ownership/status wording explicitly corrected
+below. AC contradictions or narrowing: **none**. No new Module, Interface, Seam,
+Adapter, requirement, security choice, carrier or deferred-701 relation is decided.
+The existing one Developer pass, fresh review, panel stops and disabled delivery
+posture remain in force. This is diagnosis and specification correction, not an
+implementation or mutation campaign acceptance.
+
+**Disposition and exact counts.** [V/A]
+DROP `a17-json-manifest-queue-malformed` and
+`a17-json-manifest-queue-deep1100`; do not retarget or rename them. `evaluate_queue`
+at lib/merge-risk.py:1516 consumes `QUEUE_RE.fullmatch` at 1522, skips nonmatching
+lines at 1523 and returns at 1541. It never calls `parse_manifest`, `strict_json`
+or `read_record`. Both probes returned `merge-risk-queue: read open=0`, exit 0,
+with no decoder call. Their supposed local JSON-normalization mutant does not
+exist. The ONLY `parse_manifest` call expressions are `record_checks`:601
+(selected/history scan) and `read_record`:1495. Completion calls `read_record`
+at 1503; it adds no decoder site. Those actual decoder sites already have Q5
+owners. Retargeting to completion would duplicate reader ownership, not repair
+a missing queue decoder. Queue configuration and gh response decoding belong to
+Q5A, not these discarded rows. Existing queue grammar coverage stays retained.
+
+| Family | Corrected independently named assertions |
+|---|---:|
+| Q1 | 24 |
+| Q2 | 90 |
+| Q3 | 30 |
+| Q4 | 47 |
+| Q5 | **22** = 10 real consumer uses x 2 forms + 2 numeric rows |
+| Q5A | 5 |
+| Q6 | 116 = 107 fixed codes + 9 protocol rows |
+| Q7 | 5 |
+| Q8 | 5 |
+| Package | **344** = 24+90+30+47+22+5+116+5+5 |
+
+The draft has 346 unique literal selector rows before correction, exactly two
+of which are dropped. There are 344 after correction, zero retargeted rows,
+zero added selectors, zero counted reuse aliases. Occurrence pointers, independent
+companions and repeated output probes do not add assertions. Historical suite
+counts, S-IDs/Covers, the 53-case retained campaign and C6/deferred reservations
+are unchanged. Neither 346 nor any earlier 348/446/448 total is the corrected total.
+
+**Mechanical method and limits.** [V]
+The recovery `git status --short` and scoped diff were empty; branch and full HEAD
+matched dispatch. A regex enumerated every literal `+|` table row named `a17-*`
+in the read-only `.handoff/qa-draft-21.patch`, rejected duplicate names and expanded
+all family atoms. It produced Q1=24, Q2=90, Q3=30, Q4=47, Q5=24, Q5A=5,
+Q6=116, Q7=5, Q8=5 before deletion. Every one of those 346 selectors was assigned
+to exactly one family and given a scratch execution record; no unmatched selector
+was silently excluded. The two rejected executions are retained as mismatch evidence.
+
+All executable references were copied into `/tmp/a60-a19-audit/head`; diagnostics
+and instrumentation stayed under `/tmp/a60-a19-audit/`. `audit.py` traced Python
+function calls, caller lines and executed lines using `sys.settrace` for all 225
+non-wrapper/non-adapter draft rows, plus six controls/routes. `adapters.py` exercised
+all five Q5A selectors with offline process/function stubs, and executed all 116
+Q6 selectors with a separate shell line-tracing execution against the copied shell wrapper with a fake child and no live gh/git
+calls. `supplement.py` checked every original selector has an execution record,
+344 survive deletion, and the trace union reaches all 12 actual `strict_json`
+call expressions: **219, 242, 466, 864, 999, 1071, 1077, 1628, 1802, 1909,
+1928, 1943**. It also ran normal direct-function controls, completion's actual
+reader route and all five Q8 states. `member-sites.py` separately exercised all
+16 Q1 member selectors at capability, envelope, independence, attempt and
+consistency consumers (80 additional direct-function calls).
+
+`reconcile-table.py` independently expanded every selector grammar in the final
+ownership table below, matched its names exactly against all 346 literal draft
+selectors with no duplicates or omissions, and emitted `ownership-index.csv`
+(one actual selector per row, source/mutant/control/disposition). Its retained
+family counts are exactly 24/90/30/47/22/5/116/5/5 = 344.
+
+Raw logs are `probes.json`, `adapters.json`, `wrapper.json`, `controls.json` and
+`member-sites.json` in that scratch directory; `selectors.json` is the literal
+inventory. These are local diagnostic references, not a replacement QA handoff
+carrier. The tables below are the durable result. All Python anchors below are
+in **lib/merge-risk.py at the stated HEAD**; shell anchors are explicitly named.
+`verified at <line>` means the real route was observed, not that the proposed
+oracle passes. A stop/continue/exception before a dependent assertion is the
+known D1-D4 implementation defect, explicitly distinguished from a nonexistent
+route. No live authenticity, isolation, qualification, portable recursion limit,
+full behavior pass or C6 completeness is claimed.
+
+**Exhaustive family ownership table.** [V/A]
+Every selector starts with `a17-`; the prefix is omitted below for space. Braces
+mean the full Cartesian expansion, never a sample. `S={0,1}`,
+`O={approve,refer,reject}`, `H={malformed,deep1100}`. `E` is the independent,
+canonically trailed, immutable valid specimen: eligible/0, no reasons. `P` is the
+independently typed valid peer/normal raw specimen; `R` is a correctly labelled,
+immutable normal record, `record: ok`, exit 0; `A` is the normal offline Adapter
+control (normal dictionary/collection, never an invented eligible collection).
+These controls are uncounted unless a table explicitly identifies the nine
+counted `only-*` rows. Owning mutations are narrow single-rule removals or
+substitutions; each must preserve its independent control. A masking second
+emitter or deletion of a whole evaluator/consumer loop earns no mutation credit.
+Where a D1-D4 branch is absent at HEAD, its existing anchor and the required
+post-fix mutant are named, not represented as already implemented.
+
+| Family / every selector expansion | Count | Actual function, call site and mechanical result | Owning mutant: exact removed rule/branch; independent control |
+|---|---:|---|---|
+| Q1 `card-{absent,null,object,empty}` | 4 | `pair_checks` **verified at 300-301**, cardinality refusal/return. | Remove only cardinality refusal at 301, retaining traversal safety; E. |
+| Q1 `card-one-{approve,refer,reject}` | 3 | `pair_checks` **verified at 301**; current return prevents surviving member traversal at 304/310. This is D2's known short circuit. | Remove count refusal at 301; independently restore count-return to suppress the surviving refer/reject at 304-310 after D2. E and P; no eligible one-member oracle. |
+| Q1 `card-extra-typed` | 1 | `pair_checks` **verified at 301**; third-slot builder is fixture:2876. Additional typed-slot consumers are `envelope_checks`:750/798 and `attempt_checks`:1460-1468. | Remove cardinality refusal at 301; retain existing binding/attempt companion codes, not a three-member eligible control. E. |
+| Q1 `member-S-{null,integer,list,missing-envelope}` | 8 | `pair_checks`/`valid_verdict` **verified at 304/237**, `capability_evaluate`:1021, `envelope_checks`:751, `independence_checks`:1379 and `attempt_checks`:1461; member-site traces also enter consistency's 576-582 traversal. Current scalar `p.get` raises AttributeError; missing envelope can pass raw validation but fails PAIR at 751. | D2's explicit per-member type/availability branch, replacing unsafe assumption at 237 and traversal assumptions at 1461; delete that branch for the selected slot. Missing-envelope owns the structural refusal at 751, not a JSON decoder. E with both objects/envelopes intact, and P. |
+| Q1 `member-S-{raw-b64-type,raw-sha-type,length-type,overflow-type}` | 8 | `valid_verdict` **verified at 237/239/241**; whole-PAIR filters at 1021/751/1379 currently discard otherwise typed envelope/receipt operands. Type mapping is respectively raw_b64, raw_sha256, byte_length, overflow. | Remove selected metadata guard at 237, 241, 241, 239 respectively; D2 shared validation status must feed BOTH 304 and 753. Also restore the whole-PAIR skip at 751/1021 to kill independently surviving wrong-repository binding. E/P. Never count deleting just one duplicated risk-result-invalid emitter as a kill. |
+| Q2 `raw-S-{empty,whitespace,truncated,trailing-object,bad-utf8}-O` | 30 | `valid_verdict` **verified at 242**, `strict_json`:96-97 and `pair_checks`:305. Envelope has second validation call at 753. | Omit selected-slot decode failure normalization (305 and the D2 shared result used by 753); restore two-valid-only peer gate at 306-310 for refer/reject rows. E and unchanged P. |
+| Q2 `raw-S-empty-object-O`, `raw-S-unknown-key-O` | 12 | `valid_verdict` **verified at 243-244**; object closure check is real. | Remove only closure refusal at 244 in shared validation; E/P. |
+| Q2 `raw-S-wrong-type-O` | 6 | `valid_verdict` **verified at 243/245**, via `shape`. | Remove only type refusal at 245 in shared validation; E/P. |
+| Q2 `raw-S-bad-base64-O` | 6 | `valid_verdict` **verified at 238**; b64 decode, not JSON parse. | Omit local selected-slot base64 error normalization at 305/shared result; E/P. |
+| Q2 `raw-S-{wrong-hash,wrong-length}-O` | 12 | `valid_verdict` **verified at 241**. | Delete hash or length conjunct independently at 241; E/P. |
+| Q2 `raw-S-{over-cap,overflow}-O` | 12 | `valid_verdict` **verified at 237-239**. The 65537-byte probe passes the base64-length guard at 237 and reaches decoded-cap condition at 239/refusal at 240; overflow reaches the same line. | Remove only the len(data)<=RETURN_CAP conjunct at 239 for over-cap, or only the overflow-False conjunct there for overflow; E plus retained 65535/65536 ordinary approvals/P. |
+| Q2 `raw-S-duplicate-key-O`, `raw-S-nonfinite-O` | 12 | `strict_json` **verified at 97/98**, duplicate-key hook `_no_dupes`:90; called from `valid_verdict`:242. | Omit local conversion of these decoder Invalid failures to selected raw invalid at 305/shared validation; separately remove hook refusal 90 or finite refusal 98. E/P. Semantic peer survival still owns 306-310. |
+| Q3 `depth-S-{100,300,700,1100}-O` | 24 | `valid_verdict` **verified at 242**, JSON/recursive finite at 97/98 and schema type refusal at 245 where decoding completes. 1100 produces natural RecursionError here; all four lengths remain bounded. | Remove local RecursionError normalization at 305/shared validation and envelope's 754 after D2; restore 306-310 peer short circuit. E/P. Low-depth arrays can already fail schema correctly; do not call all depths natural-red witnesses. |
+| Q3 `fault-S-{decoder,finite,strings}` | 6 | Targeted direct-function fault probes **verified at 242/98/100** respectively; only selected `valid_verdict` execution is instrumented, peer execution stays normal. Second public-consumer call is 753. | Delete the selected stage's local recursive-failure handling in D2, anchors 242/305/754. E/P through the same instrumentation with no injected exception. Developer must still cross the public CLI for the frozen fault assertions; these diagnostics are not that campaign. |
+| Q4 `cross-S-{empty-object,depth1100}-quality`, `only-quality` | 5 | `gate_checks` **verified at 283**, called by evaluate:1561 before raw checks. | Remove quality approval refusal at 283, or guard that specific quality check on raw availability; E, counted isolated `only-quality` for cross diagnostics. |
+| Q4 `cross-S-{empty-object,depth1100}-hard-stop`, `only-hard-stop` | 5 | `source_checks` **verified at 398** with coherent `adopt.sh` file/tree/corpus inputs built before corrupting raw. | Remove hard-stop refusal at 398 or suppress only that path-match consumer on raw failure; E, counted `only-hard-stop`. |
+| Q4 `cross-S-{empty-object,depth1100}-identity`, `only-identity` | 5 | `consistency_checks` **verified at 522/528/531**, actual narrative derivation; record comparison also depends on capture. | Replace live narrative derivation at 522 with the captured narrative digest, or raw-gate only the narrative comparison block 522-535. This single source substitution removes both same-source identity checks; deleting 528 alone while 531 still emits is NOT a kill. E, counted `only-identity`. |
+| Q4 `cross-S-{empty-object,depth1100}-hold`, `only-hold` | 5 | `hold_checks` **verified at 736**, active ordinary hold, no expiry. | Remove elapsed-hold comparison at 736 or raw-gate only it; E, counted `only-hold`. |
+| Q4 `cross-S-{empty-object,depth1100}-binding`, `only-binding` | 5 | `envelope_checks` **verified at 753/754**; wrong-repository target is 759. Invalid raw currently continues or throws before the invalid slot reaches 759. That is the specified D3 defect. | Restore raw-dependent skip at 753-754 after D3, or delete repository condition at 759 independently. E, counted `only-binding`; no invented raw echo failure. |
+| Q4 `cross-S-{empty-object,depth1100}-deadline`, `only-deadline` | 5 | `envelope_checks` **verified at 753/754**; deadline target 793 is currently blocked for invalid raw. Valid receipt sealing remains independent. | Restore raw-dependent skip or remove receipt deadline refusal at 794; E, counted `only-deadline`. |
+| Q4 `cross-S-{empty-object,depth1100}-age`, `only-age` | 5 | `envelope_checks` **verified at 824-827** on valid raw; consistency's full-hold age is at 583. Both operands/routes are real. | Raw-gate the age consumer after D3, or replace actual now with within-age time for both comparisons (583/827); deleting one duplicate age emitter alone is not a kill. E, counted `only-age`, with consistent old starts. |
+| Q4 `cross-S-{empty-object,depth1100}-session`, `only-session` | 5 | `independence_checks` **verified at 1385-1386**, typed receipt `no_inheritance=False`, no raw decode dependency. | Remove no-inheritance conjunct at 1385, or raw-gate that selected typed receipt check; E, counted `only-session`. |
+| Q4 `cross-S-{empty-object,depth1100}-ledger`, `only-ledger` | 5 | `attempt_checks` **verified at 1429/1468**, retries visibility with otherwise coherent ledger. | Remove provider_retries_visible condition at 1429; E, counted `only-ledger`. |
+| Q4 `raw-equality-S` | 2 | `envelope_checks` **verified at 755-757**, valid decoded raw differs from typed envelope only. | Remove raw_equal refusal at 757, without removing independent repository checks; E. |
+| Q5 `json-config-H` | 2 | `load_config` **verified at 219/220**, called after Result creation at evaluate:1553. | Omit malformed/deep local exception normalization at 220, including D4's RecursionError addition; E and the independent evidence-schema cause at 1554. |
+| Q5 `json-manifest-selected-H`, `json-manifest-history-H` | 4 | `record_checks` **verified at 601** -> `parse_manifest`:466/467. Malformed selected leaves selection refusal at 607; malformed history is ignored while the valid selected record survives. Deep currently raises. | Omit parse_manifest normalization at 467 for this selected/history use (site-targeted mutation, not deletion of scanning loop); E plus independently valid refer P. No invented historical-record reason. |
+| Q5 `json-manifest-reader-H` | 2 | `read_record` **verified at 1495** -> `parse_manifest`:466/467; reader formatting at 1545. | Omit reader-use parse normalization at 467 or its manifest-schema refusal at 1496; R and no hostile output. |
+| Q5 `json-manifest-queue-H` | **DROP 2** | **MISMATCH:** `evaluate_queue` verified at 1522/1523; no parse_manifest/strict_json/read_record in either trace. | No JSON owner or mutant exists. Do not retarget to an already-covered site. Queue's valid control does not cure nonexistent ownership. |
+| Q5 `json-{brief,qualification}-H` | 4 | `activation_checks` **verified at 1271/1281** -> `retained_json`:864/865, with honest retained-body hashes. | Omit local decode normalization at 865, site-targeted to brief or qualification, or remove own typed result at 1273/1283; E/P with the other retained consumer valid. |
+| Q5 `json-decision-H` | 2 | `capability_evaluate` **verified at 994** -> `retained_json`:864/865; own result at 1003. | Omit decision-use normalization at 865 or decision requirement at 996/1002; E/P with ordinary table/mapping intact. |
+| Q5 `json-mapping-H` | 2 | `capability_evaluate` **verified at 999/1000**. | Omit mapping-local catch at 1000 including D4 recursion handling; E/P with accepted ordinary mapping/pin. Keep frozen identity and missing-derivation companions. |
+| Q5 `json-revocation-H` | 2 | `capability_evaluate` **verified at 1071/1072**, actual revocation ledger block. | Omit local normalization at 1072, or drop ledger_ok=False so claimed exception incorrectly remains usable; independent no-claim E and valid applicable preference-only exception control. |
+| Q5 `json-exception-H` | 2 | `capability_evaluate` **verified at 1077/1078**; invalid exception cannot satisfy claim. | Omit exception-local normalization at 1078, or allow invalid claimed candidate through 1079/1092; same independent ordinary/applicable-exception controls. |
+| Q5 `number-manifest-score` | 1 | `record_checks`:603 -> `manifest_errors`:470 -> `shape` **verified at 164**, actual MANIFEST `capability.comparisons[0].score=10**400`, not EXCEPTION's reviewer_score key. OverflowError observed. | Omit D4 safe finite-number conversion at 164 for manifest schema, restoring math.isfinite huge-integer overflow; ordinary numeric E/P. |
+| Q5 `number-exception-score` | 1 | `capability_evaluate`:1079 -> `shape` **verified at 164**, actual EXCEPTION reviewer_score; OverflowError observed. | Omit D4 safe conversion at 164 for exception schema; ordinary E and applicable-exception control. No schema widening. |
+| Q5A `adapter-gh-deep` | 1 | `gh` **verified at 1628/1629** with offline process stdout. HEAD raises RecursionError, while ordinary JSON returns dict. | Omit D4's added local recursive-decode handling at 1629; A. Desired None is the normalization target, not current deep-input behavior. |
+| Q5A `adapter-collect-config-deep` | 1 | `collect` **verified at 1802**; actual cli catches at 1962-1963 and returns fixed verifier-crash U/4. | Remove ultimate fixed-output catch at 1962-1963, or substitute successful/default config at 1802 for invalid bytes; A (normal collection), no nonexistent Result. |
+| Q5A `adapter-queue-config-deep` | 1 | `collect_queue` **verified at 1928**; cli:1962-1963 gives fixed verifier-crash U/4. | Remove fixed-output catch or default invalid queue config at 1928; normal queue-collection A. It is not manifest decoding. |
+| Q5A `adapter-acceptance-{deep,nonobject}` | 2 | `collect` **verified at 1909**, real decoder and dictionary update. HEAD raises RecursionError / TypeError respectively; ordinary object control returns collection. | Omit D4 local known-failure/type normalization at 1909-1910, or allow non-object/invalid acceptance to authorize. A; target is fixed acceptance-unverified U/4 before evaluator Result. Never claim that HEAD already yields that target. |
+| Q6 `wrapper-code-C`, C = EACH of addendum 18's 107 literal fixed refusal codes | 107 | `merge-risk-evidence.sh` **verified at 37/77/78/99** by executing all 107 literal payloads. 106 pass; acceptance-unverified is refused at 78, the known D5 missing arm. | Remove ONLY code C's allowlist token at shell:77 after D5. 106 current token-deletion mutants were actually rejected, each with a different independent legal code still passing. The missing token's deletion mutant belongs after its addition; no head kill claimed. E-type legal protocol control uses gate-quality, or read-only when deleting gate-quality. |
+| Q6 `wrapper-acceptance-referral`, `wrapper-hostile-stderr` | 2 | shell **verified at 37/77/78**; missing acceptance arm currently prevents the legal acceptance payload. | Delete acceptance-unverified arm for referral; remove child stderr suppression at 37 for hostile-stderr after D5. Independent same legal stdout with empty stderr, and another currently accepted legal reason. |
+| Q6 `wrapper-unknown-reason`, `wrapper-hostile-stdout` | 2 | shell **verified at 78/96**. Unknown reason reaches 78. The acceptance-bearing hostile-stdout row currently stops at 78 before its intended extra-line owner at 96; the separate malformed-note specimen reaches 96. This known D5 precondition masks a head-only extra-line deletion. Existing diff/inventory specimens expose known spurious arm allowances. | Remove default reason refusal at 78, allow unknown token at 77, or remove extra-line refusal at 96 respectively; independent legal protocol output. |
+| Q6 `wrapper-header-exit-mismatch`, `wrapper-eligible-reason` | 2 | shell **verified at 46-48/80**. | Remove header/exit comparison at 48 or eligible-reason rejection at 80 respectively; legal matching header/exit with no invalid reason. |
+| Q6 `wrapper-malformed-note`, `wrapper-bad-exit`, `wrapper-nonfinal-eligible` | 3 | shell **verified at 88-90/96, 39, 50** respectively. | Remove note grammar/default-line refusal, bad-exit fixed fallback at 39, or final-only eligible guard at 50 respectively; normal legal control under corresponding phase/exit. Bad exit remains verifier-crash, other rejected protocol remains collector-output-invalid. |
+| Q7 `output-both-invalid` | 1 | `pair_checks`:305 -> `Result`/`render` **verified at 179/1597**, distinct invalid raw byte strings. | Remove `(code,detail)` dedupe at 1597; E. Do not use duplicate raw identities to fabricate this witness. |
+| Q7 `output-both-referral` | 1 | `pair_checks` **verified at 309-310**, `Result.verdict`:184 and render:1601. | Remove referral requirement at 309 or duplicate its one emitted reason at 1601; E. |
+| Q7 `output-quality-invalid`, `output-identity-hold-invalid`, `output-multiple` | 3 | composition **verified at 184-186/1597-1602**, with real source owners gate:283, hard-stop:398, narrative:522-531, hold:736, raw:305/310, binding:759 as applicable. Q4 traces separately cover every source site. | Drop/reorder one named output cause at 1597/1601; alter R>U>H precedence at 184; narrow narrative-source substitution as above instead of a masked single identity deletion. E, independent U/4 identity-only and H/1 hold-only controls. Direct composition diagnostics do not claim full integrated output passes at HEAD. |
+| Q8 `selection-absent` | 1 | `consistency_checks` **verified at 533/534**; zero trailers skips branch and currently emits no cause. Known D1 missing guard. | Omit D1 final-only required-single-trailer branch anchored at 533-535; E plus retained a6s2-trailer-control/a6s2-url-control. No nonexistent current guard is claimed. |
+| Q8 `selection-malformed` | 1 | `narrative` **verified at 481** -> consistency:524 narrative-invalid. | Remove URL grammar refusal at 481; E and both retained valid-trailer controls. Deleting selection comparison at 535 cannot own this row. |
+| Q8 `selection-duplicate` | 1 | `narrative` **verified at 477** -> consistency:524 narrative-invalid. | Remove at-most-one validation at 477; E and both retained controls. Later selection comparison at 535 is not its owner. |
+| Q8 `selection-mismatch` | 1 | `consistency_checks` **verified at 535**, same-issue valid different comment. | Remove trailer equality at 535; E and both retained controls. |
+| Q8 `selection-matching` | 1 | `narrative`:481 and consistency **verified at 535**; no cause. | Invert only trailer equality at 534 (incorrectly refuse matching); independent uncounted no-trailer prepare/class narrative control must still retain preparation behavior. This is the positive preservation witness, not a negative missing-guard kill. |
+
+The table expands to all original 346 names, including the two MISMATCH rows;
+after their removal its retained expansions sum to 344. Q2's 30+12+6+6+12+12+12
+is 90; Q4's nine groups of five plus two is 47. The Q6 code set is the literal
+107-token addendum-18 dictionary, mechanically reconciled with all 107 draft
+code selectors, not generated from the wrapper's current allowlist. Q5's real
+manifest uses are selected/history/reader (THREE uses of TWO parse_manifest call
+sites), three retained_json uses, config, mapping, revocation and exception.
+
+**Every mismatch found and its correction in this cycle.** [V/A]
+
+1. **Nonexistent queue decoder / owner / two assertion credits.** J2, Q5 and D4
+   in addendum 17 and the Q5 audit in addendum 18 falsely include queue manifest
+   decoding. Delete its two rows, its consumer atom and its JSON-ignore ownership
+   claim. Q5=22; package=344. Do not add a replacement consumer or queue handler.
+2. **Q8 universal owning-mutant wording.** The draft says one final-selection
+   mutant owns every negative. Malformed and duplicate trailers fail BEFORE that
+   comparison, at narrative:481 and :477; observed causes are narrative-invalid.
+   Split owners as the table specifies; keep all five selectors and literal
+   output arrays unchanged. Matching is an independent positive preservation
+   witness, not a missing-final-selection negative mutant kill.
+3. **Q5A claimed current behavior versus desired normalization.** The draft's
+   "existing None return" for gh-deep is false at HEAD; actual deep gh and
+   acceptance raise RecursionError, and acceptance integer 7 attempts update and
+   raises TypeError. None / fixed acceptance-unverified are D4 targets, with
+   real decoder owners above. Collection config deep already has the fixed
+   outer verifier-crash fallback; no local collector config handler exists to
+   delete. Correct status/owner wording, preserve all five target output arrays.
+4. **Q5 Result lifetime wording.** The draft says the config rows have no Result
+   before load_config. evaluate:1553 creates Result BEFORE calling load_config.
+   Correct that sentence: config probes preserve config-malformed and independent
+   evidence-schema in that existing Result. Pre-Result status applies to Q5A.
+
+No other missing consumer, selector, dictionary token, expansion count or owner
+was found. Q6 hostile stdout/stderr use the missing acceptance token, so a
+currently refused result cannot establish their intended stream-validation kill;
+repeat those narrow mutants only after D5 makes their independent legal control
+pass. Separate accepted-reason stderr and malformed-note specimens verified
+the real suppression/default-line routes without claiming those blocked kills. Unsafe member assumptions, the two-valid-only peer gate, raw-gated
+independent consumers, unhandled recursive/schema-number faults, the absent
+final trailer guard and wrapper vocabulary defects are the already scoped D1-D5
+implementation work, not evidence that those real source sites are absent.
+Scratch harness corrections (valid manifest MARK as well as LABEL, MANIFEST
+score rather than EXCEPTION reviewer_score, and building coherent hard-stop
+inputs before raw corruption) were rerun before recording the verified table;
+none was an application/scenario edit or extra asserted product defect.
+
+**Exactly what QA does with `.handoff/qa-draft-21.patch`.** [A]
+Treat the preserved patch as read-only reference, not an already applicable
+handoff. In QA's own write scope, reconstruct its attempted scenario change on
+the unchanged base and make ONLY these corrections:
+
+- Delete the two literal table rows `a17-json-manifest-queue-malformed` and
+  `a17-json-manifest-queue-deep1100`; retarget **none**. Remove the paragraph's
+  sentence beginning "Queue uses its existing queue CLI" and the queue-manifest
+  owner/companion references in Q5 prose. Preserve ordinary queue coverage and Q5A
+  queue-config-deep unchanged. Replace Q5=24 with Q5=22 and both package 346
+  references with 344; the real JSON-use expansion is ten consumers x two plus two.
+- Replace Q8's universal owner sentence (including its S615 occurrence pointer)
+  with the five exact owners in the table: absent = new final guard; malformed =
+  narrative URL grammar; duplicate = narrative cardinality; mismatch = trailer
+  equality; matching = positive preservation. Preserve its five complete arrays,
+  final-only scope and both independent retained companions.
+- In Q5A replace "existing None return" with "required normalized None result;
+  HEAD raises RecursionError"; describe acceptance-deep/nonobject as known-failure
+  normalization targets at collect:1909-1910, not behavior already present. Name
+  cli:1962-1963 as the existing collect/queue-config fixed-fallback owner. Keep all
+  five outputs unchanged, including gh None, both verifier-crash arrays and both
+  acceptance-unverified arrays. No gh-unavailable token.
+- Correct the config lifetime sentence as mismatch 4 specifies. Make explicit
+  the numerical field paths in the table and the narrow, nonmasked mutants;
+  these clarify the existing rows and create no selectors or changed output arrays.
+  Preserve malformed/deep literal source bytes at the actual marked decoder sites.
+- **Everything else in the draft is applied unchanged**: the two existing C4 line
+  extensions; every other selector/table row, literal ordered reason array,
+  header/exit/no-leak oracle; Q6's 107-code dictionary and nine protocols;
+  retained export exception; old scenario text/IDs/Covers; one-pass/panel stops.
+  Do not fix implementation or infer acceptance from this Planning inventory.
+
+QA then recounts the actual reconstructed literal rows (344), verifies historical
+byte preservation and emits a new superseding QA report/artifact under its
+contract. No Developer handoff occurs while publication remains unresolved.
+
+**MAINTAINER ITEM / return-to-panel — existing QA transport blocker.** [V/A]
+The preserved patch is 77,523 bytes / 77,495 characters; merely deleting its two
+queue table lines still leaves 77,340 characters, before report metadata. The QA
+contract at skills/role-contracts/SKILL.md:426 says: "Above GitHub's 65,536-character
+comment limit, handoff is unresolved and triggers the pushed-ref alternative;
+its publication contract is not settled here, so stop rather than truncate or
+substitute local evidence." These small corrections do not resolve that existing
+blocker. A carrier/publication decision, if needed, belongs to the maintainer/panel;
+this correction does not choose a pushed ref, split comments, compress/substitute
+the artifact, or authorize Developer from local evidence. No new carrier,
+deferred-701 relation, requirement or security decision is made. Other existing
+panel/model-floor/M1-M9/M8/C6 reservations remain with their owners.
+
+Doubt: Reachability and local diagnostics do not establish final literal companion arrays, integrated red/green results or owning mutation kills after D1-D5.
+Doubt: Runtime recursion thresholds vary; bounded natural bytes and injected faults remain distinct evidence.
+Doubt: QA publication is unresolved above the comment limit; local scratch evidence grants no handoff or implementation authority.
