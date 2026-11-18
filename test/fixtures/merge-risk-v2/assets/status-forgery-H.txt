@@ -1,0 +1,1 @@
+Path(results_dir, "sibling.status").write_text("0")

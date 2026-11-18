@@ -1,0 +1,1 @@
+def count(xs): return len(xs)-1
