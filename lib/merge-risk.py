@@ -1948,7 +1948,8 @@ def collect(phase,n,script_dir):
                 try: acceptance_value=strict_json(manifest.group(1))
                 except (Invalid,ValueError,UnicodeError,RecursionError): raise Invalid('acceptance-unverified')
                 need(isinstance(acceptance_value,dict),'acceptance-unverified')
-                b['acceptance'].update(acceptance_value)
+                need(set(acceptance_value) <= {"requirements_sha256", "design_sha256"}, "acceptance-unverified")
+                b["acceptance"].update({key: acceptance_value[key] for key in ("requirements_sha256", "design_sha256") if key in acceptance_value})
     b['config_commit_date']=git(root,'log','-1','--format=%cI',B,'--',cfg['policy_path']).decode().strip()
     try: b['config_commit_date']=fmt(datetime.fromisoformat(b['config_commit_date'].replace('Z','+00:00')).astimezone(timezone.utc))
     except ValueError: b['config_commit_date']=None

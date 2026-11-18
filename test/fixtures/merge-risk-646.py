@@ -2401,6 +2401,7 @@ def run_row(root,entry,observe=False):
     name,edit,want,code,command=entry[:5]
     if command=='d5-probe': return d5_assert(root,name,observe)
     if command=='d4-probe': return d4_assert(root,name,observe)
+    if command=='acc25-probe': return acc25_assert(root,name[len('acc25-'):],observe)
     if command=='structure': return structure_assert(root,sys.argv[1].lstrip('S'))
     if command=='collector-inert': return export_probe(root,inert=True)
     if command=='shipped-inert': return shipped_inert_probe(root)
@@ -6185,6 +6186,146 @@ def d4_transport(m,base,config_text,acceptance):
     m.process=lambda *a,**k: (_ for _ in ()).throw(AssertionError('unexpected subprocess'))
 
 
+# A60 addendum 25 / QA artifact 26: literal collector oracles, separate from
+# the unchanged 344 a17 selectors and the direct eligible S614 control.
+ACC25_D = tuple(('gate-preflight,gate-quality,gate-review-marker,classification-unresolved,'
+    'verifier-not-at-base,runtime-invalid,guard-invalid,executor-invalid,instruction-load-invalid,'
+    'protection-invalid,gate-check,record-selection,identity-binding,project-unconfigured,'
+    'qualification-unavailable,capability-table-invalid,capability-identity-missing,'
+    'capability-profile-mismatch,risk-pair-required,risk-attempt-invalid').split(','))
+ACC25_A = ('acceptance-unverified',) + ACC25_D
+ACC25_U = 'merge-risk: unresolved pr=- head=- base=- diff=- config=-\nreason: acceptance-unverified\n'
+ACC25_PROJECTION = ('                need(set(acceptance_value) <= {"requirements_sha256", "design_sha256"}, "acceptance-unverified")\n'
+    '                b["acceptance"].update({key: acceptance_value[key] for key in ("requirements_sha256", "design_sha256") if key in acceptance_value})\n')
+
+
+def acc25_specimens():
+    # The fetched changes and payload changes are constructed independently.
+    # owner, name, fetched edits, body edits/bytes, expected D/A/U.
+    yield 'acceptance-revision','honest',{}, 'digests','D'
+    fields={'issue_url':'acceptance-issue','login':'acceptance-author','html_url':'acceptance-issue'}
+    for key,owner in fields.items():
+        for payload in ('digests','selected','all'):
+            yield owner,'wrong-'+key+'-'+payload,{key:'wrong'},payload,'A' if payload=='digests' else 'U'
+    for payload in ('digests','all'):
+        yield 'acceptance-issue','wrong-all-'+payload,dict.fromkeys(fields,'wrong'),payload,'A' if payload=='digests' else 'U'
+    for key in fields:
+        for state in ('missing','null'):
+            for payload in ('digests','selected','all'):
+                yield 'acceptance-missing',state+'-'+key+'-'+payload,{key:state},payload,'A' if payload=='digests' else 'U'
+    for state in ('missing','null'):
+        for payload in ('digests','all','login','user'):
+            yield 'acceptance-missing',state+'-user-'+payload,{'user':state},payload,'A' if payload=='digests' else 'U'
+    for payload in ('html_url','issue_url','login','all','user','unknown'):
+        yield 'acceptance-issue','honest-extra-'+payload,{},payload,'U'
+    for payload in ('empty','missing-requirements','missing-design','wrong-requirements','wrong-design','absent'):
+        yield 'acceptance-revision',payload,{},payload,'A'
+    for name,text in [('malformed','{'),('duplicate','{"design_sha256":"a","design_sha256":"b"}'),
+                      ('nonfinite','{"requirements_sha256":NaN}'),('deep','['*1100+'0'+']'*1100),
+                      ('integer','7'),('null','null'),('pairs','[["login","laboratory"]]'),('array','[]')]:
+        yield 'acceptance-revision',name,{},('raw',text),'U'
+
+
+ACC25_SPECIMENS={owner+'/'+name:(owner,name,meta,payload,want)
+                for owner,name,meta,payload,want in acc25_specimens()}
+
+
+def acc25_observe(root,spec):
+    import contextlib
+    import io
+    import types
+    owner,name,edits,payload,want=spec
+    m=types.ModuleType('acc25_probe');m.__file__=str(root/'lib/merge-risk.py')
+    exec(compile((root/'lib/merge-risk.py').read_text(),m.__file__,'exec'),m.__dict__)
+    base=prepared(control(ROOT));cfg=json.loads(base['config_text'])
+    provenance={'html_url':cfg['acceptance'],
+                'issue_url':'https://api.github.com/repos/'+REPO+'/issues/'+str(cfg['acceptance_issue']),
+                'login':'laboratory'}
+    digests={'requirements_sha256':cfg['requirements']['sha256'],'design_sha256':cfg['design']['sha256']}
+    body=dict(digests)
+    if payload=='empty': body={}
+    elif payload in ('missing-requirements','missing-design'): body.pop(payload.split('-')[1]+'_sha256')
+    elif payload in ('wrong-requirements','wrong-design'): body[payload.split('-')[1]+'_sha256']=sha('wrong')
+    elif payload=='all': body.update(provenance)
+    elif payload=='selected':
+        key=next(iter(edits));body[key]=provenance[key]
+    elif payload in provenance: body[payload]=provenance[payload]
+    elif payload=='user': body['user']={'login':'laboratory'}
+    elif payload=='unknown': body['harmless']=True
+    body_text=payload[1] if isinstance(payload,tuple) else raw(body).decode()
+    fetched={'html_url':provenance['html_url'],'issue_url':provenance['issue_url'],'user':{'login':'laboratory'},
+             'body':'ordinary acceptance words' if payload=='absent' else '<!-- merge-risk-acceptance v2 -->\n```json\n'+body_text+'\n```'}
+    for key,state in edits.items():
+        target=fetched['user'] if key=='login' else fetched
+        if state=='missing': target.pop(key,None)
+        else:
+            wrong={'issue_url':'https://api.github.com/repos/'+REPO+'/issues/1',
+                   'html_url':'https://github.com/'+REPO+'/issues/646#issuecomment-2','login':'wrong'}
+            target[key]=None if state=='null' else wrong[key]
+    d4_transport(m,base,base['config_text'],'{}');original_gh=m.gh
+    m.gh=lambda args,raw=False: copy.deepcopy(fetched) if '/issues/comments/' in ' '.join(args) else original_gh(args,raw)
+    stdout,stderr=io.StringIO(),io.StringIO()
+    with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):
+        try: collected=m.collect('final',700,str(ROOT))
+        except m.Invalid:
+            # Exercise the actual CLI fallback too, before any Result exists.
+            text,rc=m.cli(['collect','--phase','final','700',str(ROOT)])
+            observed={'stdout':text,'exit':rc,'pre_result':True}
+        else:
+            text,rc=m.render(*m.evaluate(collected))
+            observed={'stdout':text,'exit':rc,'pre_result':False,'acceptance':collected.get('acceptance')}
+    observed.update(captured_stdout=stdout.getvalue(),stderr=stderr.getvalue())
+    expected_meta={k:(fetched.get('user') or {}).get('login') if k=='login' else fetched.get(k) for k in provenance}
+    if payload!='absent': expected_meta.update(body)
+    return observed,expected_meta
+
+
+def acc25_assert(root,name,observe=False):
+    spec=ACC25_SPECIMENS[name];got,metadata=acc25_observe(root,spec)
+    if observe: return got
+    want=spec[-1]
+    check(not got['stderr'] and not got['captured_stdout'],name+': empty streams '+repr(got))
+    if want=='U':
+        check(got['pre_result'] and got['stdout']==ACC25_U and got['exit']==4,name+': exact pre-Result U/4 '+repr(got))
+    else:
+        codes=tuple(line[8:] for line in got['stdout'].splitlines() if line.startswith('reason: '))
+        check(not got['pre_result'] and got['exit']==3 and got['stdout'].startswith('merge-risk: referred pr=700 '),name+': R/3 '+repr(got))
+        check(codes==(ACC25_D if want=='D' else ACC25_A),name+': exact ordered acceptance cause '+repr(got))
+        check(got['acceptance']==metadata,name+': exact independent collected metadata '+repr(got))
+    return got
+
+
+def acc25_owning(destination):
+    dest=Path(destination);dest.mkdir(parents=True,exist_ok=True)
+    source=(ROOT/'lib/merge-risk.py').read_text()
+    check(source.count(ACC25_PROJECTION)==1,'acceptance-unrestricted-update: unique guarded projection')
+    names=['acceptance-author/wrong-login-selected','acceptance-issue/wrong-issue_url-selected',
+           'acceptance-issue/wrong-html_url-selected']
+    report={'owner':'acceptance-unrestricted-update','baseline':{},'mutant':{}}
+    for name in ['acceptance-revision/honest']+names: report['baseline'][name]=acc25_assert(ROOT,name)
+    with tempfile.TemporaryDirectory(prefix='acc25-mutant-') as tmp:
+        root=Path(tmp);(root/'lib').mkdir()
+        mutated=source.replace(ACC25_PROJECTION,"                b['acceptance'].update(acceptance_value)\n")
+        (root/'lib/merge-risk.py').write_text(mutated)
+        report['mutant_source_sha256']=sha(mutated)
+        (dest/'acceptance-unrestricted-update.py').write_text(mutated)
+        report['mutant']['acceptance-revision/honest']=acc25_assert(root,'acceptance-revision/honest')
+        for name in names:
+            got=acc25_assert(root,name,True)
+            codes=tuple(line[8:] for line in got['stdout'].splitlines() if line.startswith('reason: '))
+            check(not got['pre_result'] and got['exit']==3 and codes==ACC25_D and not got['stderr'] and not got['captured_stdout'],
+                  'STOP: owning falsifier did not lose acceptance cause '+name+' '+repr(got))
+            report['mutant'][name]={'status':'KILLED','observed':got}
+            print('KILLED acceptance-unrestricted-update -> '+name+'; exact D / R/3, acceptance cause absent')
+    report['complete']=True;(dest/'campaign.json').write_text(json.dumps(report,indent=2))
+    print('ACC25 OWNING PASS: 1 mutant, 3 killing specimens; independent honest D / R/3 control PASS')
+    return 0
+
+
+for name in ACC25_SPECIMENS:
+    row(614,'acc25-'+name,command='acc25-probe')
+
+
 def d4_adapter(root,name,normal=False):
     import contextlib
     import io
@@ -7163,11 +7304,11 @@ D4_MUTATIONS = [('q5-config',
   [('                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
     "Invalid('acceptance-unverified')\n"
     "                need(isinstance(acceptance_value,dict),'acceptance-unverified')\n"
-    "                b['acceptance'].update(acceptance_value)\n",
+    '                need(set(acceptance_value) <= {"requirements_sha256", "design_sha256"}, "acceptance-unverified")\n                b["acceptance"].update({key: acceptance_value[key] for key in ("requirements_sha256", "design_sha256") if key in acceptance_value})\n',
     '                except (Invalid,ValueError,UnicodeError,RecursionError): raise '
     "Invalid('acceptance-unverified')\n"
     "                need(True,'acceptance-unverified')\n"
-    "                b['acceptance'].update(acceptance_value)\n")],
+    '                need(set(acceptance_value) <= {"requirements_sha256", "design_sha256"}, "acceptance-unverified")\n                b["acceptance"].update({key: acceptance_value[key] for key in ("requirements_sha256", "design_sha256") if key in acceptance_value})\n')],
   ['a17-adapter-acceptance-nonobject'],
   []),
  ('q5a-gh-omit-Invalid',
@@ -7553,6 +7694,8 @@ def d5_owning_campaign(destination):
 
 
 def main():
+    if sys.argv[1]=='--acc25-owning':
+        return acc25_owning(sys.argv[2])
     if sys.argv[1]=='--d5-owning':
         check(len(sys.argv)==3,'usage: --d5-owning EVIDENCE_DIRECTORY')
         return d5_owning_campaign(sys.argv[2])
