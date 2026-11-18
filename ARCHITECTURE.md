@@ -11105,3 +11105,163 @@ retained row bytes/oracles/selectors, independent controls and counts remain
 unchanged. This exact legacy composite source operand is the sole permitted
 fixture difference and supersedes the preceding hash-only recipe. No scenario
 edit, requirement change or distinct production defect is involved.
+
+### A60 addendum 25 — acceptance payload cannot replace fetched provenance, #646
+
+**Authority and scope.** Architect / Planning, 2026-11-18, PR #696 at
+`0d8b155fc4694c2ac531d47c4c3b8d4362dadb7d`, within the ONE cycle of
+[panel-646-d2](https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6967606940).
+Read the cached panel comment and both complete Product/Architect positions;
+they match the separately retained positions. This corrects the retained MEDIUM
+`acceptance-any-comment`, not a new carrier, deferred-701 relation, requirement,
+security-risk acceptance or C6 proof. AC1/AC7/AC8 and F70/F72-F74 are preserved;
+no AC is contradicted or narrowed. Earlier architecture remains byte-identical.
+
+**Ruling and exact change.** Parsed body/text may supply only its designated
+payload fields. Identity, location, author and timestamps fetched independently
+remain separate observations; payload must never overwrite, fill in or validate
+itself as those observations. In `collect()`'s existing acceptance manifest block,
+retain strict decoding, its local exception normalization and the object guard.
+Immediately after the object guard, refuse ANY key outside
+`{requirements_sha256, design_sha256}` with `Invalid('acceptance-unverified')`;
+then project just those present keys into the acceptance dictionary. In particular
+body `html_url`, `issue_url`, `login`, nested `user` or unrelated unknown keys are
+**refused, not ignored**, even when their values equal the expected provenance.
+This applies the existing closed-object/fail-closed style without silently granting
+another field authority. The three metadata values still come only from `acc`
+and `acc.user` in the fetched response. Missing API values stay missing; no body
+fallback. `load_config()` and its comparisons remain unchanged.
+
+Do not require both keys at collection: `{}` and partial digest objects still
+collect and subsequently fail the existing digest comparisons; wrong/missing
+revision identities still produce `acceptance-unverified`. Do not guess values,
+add a new digest/type schema, reason or parser. Absent manifest retains the
+existing metadata-only path. Malformed/duplicate/nonfinite/undecodable JSON,
+nonobjects (including arrays of pairs) and recursive/deep failures retain the
+existing pre-Result fixed U/4 output `[acceptance-unverified]`, hyphen identity
+header, empty stderr. A new extra-key refusal uses that same fixed output; it
+must not fabricate an accumulated evaluator Result. This is provenance
+consistency, not authentication of a human, credential, receipt or checker.
+
+**Module and Seam.** Keep the existing collector/evaluator Module, public CLI
+Interface and `control`/`prepared`/`d4_transport` offline Seam. The change has
+Locality at the single acceptance projection; existing consumers retain Depth
+and Leverage. The deletion test gives no reason to extract a helper: there is
+only one affected projection. Already-separated siblings supply no second
+Adapter warranting a new external Seam or shared abstraction.
+
+**Complete family inventory at this head.** SAFE below means safe from this
+payload-overwrites-observation family, not authenticated or fully qualified.
+The audit covers all 12 `strict_json` call expressions, dictionary construction,
+all `.update`, `setdefault`, unpack and union expressions, and the shell Adapter.
+
+| Producer / place | Body/text payload fields | Independent metadata / observation fields | Consumer and verdict |
+|---|---|---|---|
+| `collect`, 1941-1951, acceptance comment | Initially arbitrary JSON object; designated requirements_sha256/design_sha256 only | Fetched html_url, issue_url, user.login copied as login | `load_config`, 222-239: **AFFECTED**, unrestricted update replaces observations; fix only this projection |
+| `collect`, 1934-1937, exception ledger | body retained as text; decoded EXCEPTION contains schema/number/issuer/words/provenance, repository/issue/pr/head, marker/effort/table/row/score/profile/qualification bindings, slot/departure/reason/correlation/scope/valid_until/supersedes | Fetched url/login/created_at/updated_at; ledger_complete comes from page-read success | `capability_evaluate`, 1093-1150: **SAFE**, `(comment,data,count)` tuples; closed EXCEPTION; provenance reads comment, scope reads data; neither is flattened |
+| Same ledger, revocation blocks | Exactly revokes (positive number) | Same fetched comment fields and completeness, kept outside decoded object | 1094-1098: **SAFE**, closed object adds only a number to ended; malformed revocation makes ledger incomplete. This inventory does not add a revoker-authentication rule |
+| `collect`, 1915-1918, issue comments / PR trailer | Marker selects manifest v2; decision_id/repository/issue/pr/head/base/diff_sha256/config_sha256/config_commit/ac/design, authors/capability/reasons/hold_release/outcome/earliest_merge/labels/executor_host/queue_key/revert/authority/attempt/evidence/risk_pair/quality/assessment/execution/supersedes/prior_attempts | Fetched url/created_at/updated_at remain on c; selection URL comes from separately validated PR trailer | `parse_manifest`, 482; `record_checks`, 621-716: **SAFE**, `(c,m,error)` scan and `(c,m)` selection, closed MANIFEST; m is compared to current observations, never merged over c |
+| Replay record / completion readers, 1533-1551 | Same parsed manifest; completion/revert prose | Record timestamps/url and separately supplied merge state/repo/pr/head/squash/time and saved identity | `read_record` then `read_completion`: **SAFE**, separate dictionaries/explicit comparisons; no body merge into merge/saved/record metadata |
+| `source_body`, 1817-1829 -> `collect`, 1926-1929 | Raw blob bytes or comment body only | Accepted reference supplies repository, immutable blob revision/path or exact comment URL plus digest; returned comment html_url checked before extracting body | `retained_body`/`retained_json`, 877-889: **SAFE**, source map is keyed by the accepted source and stores `{body:text}` only after hash check; JSON cannot replace key/reference metadata |
+| Accepted capability decision / mapping, 1010-1026 | DECISION schema/number/table/mapping; MAPPING schema/entries(runtime_id,variant,row); table text supplies model/effort/score/provider rows | Policy-selected table/decision/mapping sources, digests/revision/date; marker/launch sources checked separately | `capability_evaluate`, `capability_identity`: **SAFE**, separate parse, closure/digest/equality checks; no overwrite. parse_table/marker_model parse text, not JSON |
+| Accepted brief / qualification, 1287-1310 | BRIEF purpose/sensitive_assets/users/trust_boundaries; qualification status/identities/inputs/suite/runs/observations/decision refs | Accepted project brief ref and cfg qualification ref; launcher q.source retained separately | `activation_checks`/`qualification_samples`: **SAFE**, retained JSON conforms or equals q with source removed; decoded body never supplies outer source |
+| Accepted runtime profile, 1338-1362 | Closed project_dir/checker/preflight/isolated_config/tools_sha256/hooks_sha256/settings_sha256/wiring_sha256 | Runtime receipt fields and B/G roots/paths/tools/wiring observations, accepted profile reference/digest | `runtime_checks`: **SAFE**, parsed profile is compared via all(...), never assigned into runtime; no new runtime evidence supplied |
+| Reviewer raw JSON, 242-333; envelopes/receipts and corpus | VERDICT schema/binding/reviewer/outcome/findings/coverage/uncertainties/rationale | Launcher envelope/receipt, raw hash/byte length/overflow; corpus artifact IDs/digests/line counts | `valid_verdict`/`pair_checks`/`envelope_checks`: **SAFE**, RawValidation keeps pair and verdict separate; closed raw schema plus independent comparisons; raw cannot replace envelope/receipt metadata |
+| Queue, 1552-1580 / 1963-1978 | Fixed QUEUE_RE text captures id/pr/head/state/host; no JSON manifest decoder | Fetched comment timestamps; PR state/head separately fetched into pr_states; accepted repo/control issue | `evaluate_queue`: **SAFE**, text groups and actual PR states remain separate; body captures cannot update pr_states. Queue config JSON is B policy only |
+| B policy, 225 / 1841 / 1969; outer replay bundle, 1984 | Closed CONFIG payload; replay evidence/job/queue supplied explicitly | B/repo selected independently; config_text retained; replay outer bundle has no claim to fetched authentication | `load_config`/`collect`/`collect_queue`/`main`: **SAFE** for this family, parsed cfg stays separate from b; whole replay decode supplies b rather than merging text into observations |
+| `gh`/`pages`, 1660-1680; ordinary collector projections | JSON is the transport response, not a nested comment-body object; prose retained as body/title | Response fields explicitly projected to PR, issue/control, timeline, checks/protection and comments; server_now uses final response | **SAFE** for this family, no nested parsed body keys merged. Raw-response trust is an existing limitation |
+| Other update/unpack/union/output sites | None merges parsed body into fetched observations | `item.update` 1070 sets derived slot/vendor/profile_sha256/exceptions explicitly; QUALIFICATION.update 1245 and BINDING/CONFIG/AUTHORITY `**` are static schema assembly; env.update 1653 sets fixed git environment keys; authors.update 570 is a set; ledger/queue setdefault retain separate values | **SAFE**. No dictionary union of parsed text exists. Other `|` uses are set/regex/open flags. Corpus/export/record rendering serializes explicit typed evidence; shell `merge-risk-evidence.sh` parses only fixed protocol lines, no JSON merge |
+
+**Independent reproduction.** `python3 -I /tmp/lens646-acceptance-probe.py`
+replays the eight lens observations (including its combined wrong-issue/URL
+specimen). `/tmp/a60-add25/probe.py` adds genuinely independent wrong issue,
+author and URL, all three together, absent and null html_url/issue_url/login,
+absent/null user, per-field and all-field body substitutes, honest two-digest
+control, unknown/misleading body keys and parser/revision controls. Each uses
+real copied `collect()` then `evaluate()` when collection returns; every
+transport is replaced first and unexpected subprocess execution raises. Separate
+prepared replay controls stay eligible/0; no collected launch evidence is fabricated.
+
+At HEAD, each negative metadata variant with only digests emits
+acceptance-unverified; expected body provenance erases it. The scratch ruled
+projection refuses all such substitutes, including single-key ones, and the
+honest two-digest control still clears that acceptance check. Restoring the old
+unrestricted update reproduces the loss while that independent control still
+passes. The 137 matrix/control observations span HEAD, projected source and
+restored mutant; 15 Q5A selector/control pairs also preserve all five existing
+adapter outputs. No repository source, tests or scenarios were edited. Collected
+honest bundles remain R/3 due to missing real runtime/launch evidence, not eligible.
+Evidence: `/tmp/a60-add25/{probe.py,results.json,summary.json,q5a.json,lens-witness.jsonl}`;
+source copies and hashes are retained there. These are diagnostics, not delivered
+Developer red/green, mutation credit, live gates or C6 completeness.
+
+**QA handoff: keep 344.** No a17 selector is added, deleted, renamed or retargeted;
+Q1=24/Q2=90/Q3=30/Q4=47/Q5=22/Q5A=5/Q6=116/Q7=5/Q8=5 remain **344**.
+QA amends S614 owner/falsifier prose and Q5A owner/companion prose, retaining the
+five Q5A arrays/exits and every existing malformed/deep/nonobject specimen.
+Extend existing S614 acceptance-issue, acceptance-author, acceptance-missing and
+acceptance-revision owners with explicit collector subprobes; URL-only is a
+separate specimen under the existing issue/reference owner, not a replacement
+for wrong issue. Report additional concrete observations separately; do not call
+them additional a17 selectors or completeness. Honest two-digest metadata is a
+required independent control, not the existing Q5A `{}` dictionary-only control.
+
+QA freezes these constructions/oracles before Developer work: change ONLY the
+selected fetched field (wrong issue URL with correct html_url, wrong author,
+wrong html_url with correct issue_url), each with digest-only body and with the
+expected selected provenance key, plus all expected provenance keys. Also test
+all three wrong together; missing/null each API field and absent/null user with
+body substitutes; honest metadata/two digests; matching provenance duplicates
+and a harmless unknown key (both refused); wrong/missing digest controls.
+
+Exact outputs for the unchanged d4_transport fixture are defined here to avoid
+mistaking generic referral for a kill. D is the complete ordered array:
+`[gate-preflight,gate-quality,gate-review-marker,classification-unresolved,verifier-not-at-base,runtime-invalid,guard-invalid,executor-invalid,instruction-load-invalid,protection-invalid,gate-check,record-selection,identity-binding,project-unconfigured,qualification-unavailable,capability-table-invalid,capability-identity-missing,capability-profile-mismatch,risk-pair-required,risk-attempt-invalid]`.
+A is exactly `[acceptance-unverified]` followed by D, not a sorted/set comparison.
+
+| Collector specimen | Ruled complete ordered reasons / exit |
+|---|---|
+| Honest fetched provenance + correct two digests only | D / R/3; assert acceptance cause ABSENT and exact collected metadata |
+| Any independently wrong/missing/null provenance (or all wrong), body contains only correct digests | A / R/3; assert acceptance cause PRESENT |
+| Any expected provenance key supplied in body, with honest/wrong/missing API fields; any other extra key | `[acceptance-unverified]` / U/4 before Result; fixed hyphen header, empty stderr |
+| Honest metadata + `{}`, missing digest or wrong digest; absent manifest | A / R/3; missing revision behavior preserved |
+| Existing malformed/duplicate/nonfinite/deep/nonobject manifest regressions | `[acceptance-unverified]` / U/4; fixed hyphen header, empty stderr |
+
+The new owner `acceptance-unrestricted-update` replaces only the complete guarded
+projection with the old `b['acceptance'].update(acceptance_value)`; retain the
+strict decoder, exception normalization and object guard. Wrong-author plus
+body expected-login (and issue-only/URL-only siblings) MUST lose the expected
+acceptance cause under that mutant. The independently constructed honest
+metadata/two-digest control MUST still pass the acceptance check. Both positive
+and negative HEAD collection outcomes being R/3 cannot earn a kill by exit alone.
+Keep the existing direct S614 exact eligible/0 control too. The owning-mutant
+addition is separately reported and does not change the 344 selector count or
+claim an unchanged mutation total. QA's artifact owns scenario prose; Developer
+cannot rewrite it or derive expected arrays from evaluator internals.
+
+**Developer next steps and stop.** One narrow pass after QA publishes/verifies
+its matching artifact: implement only the ruled acceptance projection; add the
+collector subprobes and owning mutant; adapt only source operands in existing
+Q5A object-guard recipes that contain the old update line, preserving their
+single-guard omission, specimens, controls, outputs and masked/non-credit status.
+Rerun S614 and its real collector/CLI probes, affected Q5/Q5A ownership, S650-S653,
+retained S606/S654/S658/S669 and `./test/run.sh merge_risk` (53 cases).
+Preserve A23/A24 retained owners and controls. Refresh the matching QA comparison,
+commit/push at the checkpoint through the orchestrator, obtain CI check+macos on
+the corrected head, then fresh targeted Claude Review of delta/inventory and the
+final fresh Claude Review. No full lens repetition or mandatory-gate waiver.
+Architecture effort: small, localized projection plus scenario-owner handoff;
+Developer/QA estimates remain theirs, and CI/review dominates elapsed time.
+
+MAINTAINER ITEMS: none newly required for this ruling. The panel's already
+recorded optional model-floor concern is neither resolved nor reinterpreted.
+Any remaining/new medium/high, failed owning falsifier, need for another
+corrective pass, new carrier, deferred relation, requirement change or security
+decision ends this cycle: MAINTAINER ITEM / return-to-panel, no second automatic
+Developer loop and no silent deferral. Keep inert delivery, #701/#682/M1-M9 and
+separate protected acceptance/enabling prerequisites; the deferred freshness low
+stays with #701. This addendum supplies no merge or enabling authority.
+
+Doubt: Synthetic fetched values establish consistency failures, not live exploitability, authentication, qualification or complete coverage.
+Doubt: CI, live scenario/issue traceability and review outcomes have not been refreshed offline; they remain owner obligations.
+Doubt: Missing .guardrails/source and .agents paths prevent adoption/live-loading verification; remedy is owner-run ordinary adopt.sh --runtime codex, then a fresh-session observation; no repair attempted.
