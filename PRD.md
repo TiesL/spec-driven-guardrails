@@ -2492,8 +2492,9 @@ key) is not `caveman`, a `profile` names no profile table, or the `caveman`
 provider already sets `http_headers` or `env_http_headers`, in any TOML form
 (table, dotted key, inline table). A Codex command argument after `exec` (up
 to a lone `--`) from the documented list also refuses, naming the argument:
-`--profile`, `-p`, `--oss`, and `-c`/`--config` setting `model_provider`,
-`profile`, `profiles.*` or `model_providers*`. The wrapper refuses with exit 3
+`--profile`, `-p`, `--oss`, `--local-provider`, `--ignore-user-config`, and
+`-c`/`--config` whose key's first dotted segment is `model_provider`, `model_providers`, `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`; each in its separate, `=` and, for `-p`/`-c`, attached form (the list is closed and pinned to codex-cli 0.166.0;
+other versions unverified, accepted like AC8). The wrapper refuses with exit 3
 and a clear message when the proxy probe does not exit 0 (only an answer counts
 as up). There is no silent direct fallback.
 
@@ -2503,7 +2504,8 @@ pass-through header, each of `NO_PROXY`, `no_proxy` and
 `ANTHROPIC_CUSTOM_HEADERS` appended to its own inherited value.
 
 Under `SDG_MODEL_ROUTE=off` a Codex command with an argument of that list, an
-unparsable `config.toml`, or a top-level `profile` selecting a profile whose
+unparsable `config.toml`, a `config.toml` that sets `openai_base_url` or
+`chatgpt_base_url` (top level or selected profile), or a top-level `profile` selecting a profile whose
 `model_provider` is not `openai` also exits 4, without a probe, because it
 would otherwise be routed while `off` promises direct; a missing `config.toml`
 passes.
