@@ -274,4 +274,6 @@ compressed.
 ## Live check
 
 `test/behavior/model-routing-smoke.md` is the acceptance-time smoke test through
-the real proxy (AC12). It stays UNRUN until a run is recorded there.
+the real proxy (AC12). It records a PASS on 2026-11-19 against Caveman 4.1.0
+(`bin-v4.1.0`); a later run is recorded in the same file, and `./check` and CI
+never run it.

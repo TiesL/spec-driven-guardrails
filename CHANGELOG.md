@@ -13,6 +13,13 @@ point.
 
 ## Unreleased
 
+- #645: Document the temporary-decision panel proposal, allow-list, independent
+  model-floor evidence, issue-home records and grouped merge-approval disclosure;
+  decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
+  contract text, is reserved to the maintainer.
+
+## v0.7.0 — Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. (2026-11-19)
+
 - #707: `route-child.sh` routes a model child launched as a separate process
   (`claude -p`, `codex exec`) through the local Caveman proxy with a
   pass-through header (metered, text uncut), opted in per project through the
@@ -24,12 +31,8 @@ point.
   Orchestrator session, in-session subagents and the behavior runner stay
   direct; the runner now refuses an inherited non-first-party
   `ANTHROPIC_BASE_URL`, and the Claude session start warns once when the main
-  session looks routed. See `docs/model-routing.md`; the live smoke test is
-  UNRUN.
-- #645: Document the temporary-decision panel proposal, allow-list, independent
-  model-floor evidence, issue-home records and grouped merge-approval disclosure;
-  decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
-  contract text, is reserved to the maintainer.
+  session looks routed. See `docs/model-routing.md`; the live smoke test
+  passed on 2026-11-19 against Caveman 4.1.0 (`bin-v4.1.0`).
 
 ## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
 
