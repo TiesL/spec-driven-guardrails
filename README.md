@@ -12,6 +12,7 @@ A tag is a human reference point: an adopted project follows `main` or pins a ta
 
 | Tag | Date | Theme |
 |---|---|---|
+| `v0.7.0` | 2026-11-19 | Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. |
 | `v0.6.0` | 2026-11-04 | Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. |
 | `v0.5.1` | 2026-11-03 | Many low severity review findings resolved. See CHANGELOG.md for the improvements made |
 | `v0.5.0` | 2026-10-26 | Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages |
@@ -130,6 +131,11 @@ Stated up front rather than discovered later:
 Prerequisites: `git`, and the GitHub CLI (`gh`) installed and authenticated
 (`gh auth login`) — scripts call `gh` directly and fail partway through, not up front, if it
 isn't.
+
+The Caveman CLI is optional. It is needed only for `route-child.sh` and the
+`process-model-routing` opt-in (routing is opt-in per project); without it nothing
+else in the workflow changes. The installed and tested version is 4.1.0
+(`bin-v4.1.0`); see [`docs/model-routing.md`](docs/model-routing.md).
 
 **Pin a specific release** (recommended unless you want to follow `main` as it changes):
 
