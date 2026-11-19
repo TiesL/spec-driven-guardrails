@@ -2477,13 +2477,36 @@ Claude child then gets no routing variable, a Codex child goes directly to
 OpenAI through a per-run `-c 'model_provider="openai"'` override placed after
 `exec`. With routing on, the wrapper refuses (exit 4, naming the cause) when
 the inherited `ANTHROPIC_BASE_URL` is set to anything but exactly
-`https://api.anthropic.com` (empty and trailing slash included), when a
-settings file the child would load has the key `env.ANTHROPIC_BASE_URL` with
-any value or is unreadable, empty or not a JSON object, when the platform is
-neither macOS nor Linux, or
-when the Codex config does not route through Caveman or already sets
-`http_headers`; it refuses with exit 3 and a clear message when the proxy probe
-does not exit 0 (only an answer counts as up). There is no silent direct fallback.
+`https://api.anthropic.com` (empty and trailing slash included), when the
+inherited `ANTHROPIC_CUSTOM_HEADERS` already has an `x-cave-transforms` header
+(name compared case-insensitively; the message names the variable, not its
+value), when a settings file the child would load, or an inline `--settings`,
+has under `env` any of the five variables the wrapper adds (`ANTHROPIC_BASE_URL`,
+`_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL`, `NO_PROXY`, `no_proxy`,
+`ANTHROPIC_CUSTOM_HEADERS`) with any value, or is unreadable, empty or not a
+JSON object (the message names the file and the key, not the value), when the
+platform is neither macOS nor Linux, or when the Codex config does not route
+through Caveman: the effective provider (the `model_provider` of the profile
+selected by the top-level `profile` key when it sets one, else the top-level
+key) is not `caveman`, a `profile` names no profile table, or the `caveman`
+provider already sets `http_headers` or `env_http_headers`, in any TOML form
+(table, dotted key, inline table). A Codex command argument after `exec` (up
+to a lone `--`) from the documented list also refuses, naming the argument:
+`--profile`, `-p`, `--oss`, and `-c`/`--config` setting `model_provider`,
+`profile`, `profiles.*` or `model_providers*`. The wrapper refuses with exit 3
+and a clear message when the proxy probe does not exit 0 (only an answer counts
+as up). There is no silent direct fallback.
+
+On a routed Claude child the wrapper makes exactly five additions: the base
+URL, the first-party flag, the loopback on `NO_PROXY` and on `no_proxy`, and the
+pass-through header, each of `NO_PROXY`, `no_proxy` and
+`ANTHROPIC_CUSTOM_HEADERS` appended to its own inherited value.
+
+Under `SDG_MODEL_ROUTE=off` a Codex command with an argument of that list, an
+unparsable `config.toml`, or a top-level `profile` selecting a profile whose
+`model_provider` is not `openai` also exits 4, without a probe, because it
+would otherwise be routed while `off` promises direct; a missing `config.toml`
+passes.
 
 Not-yes means the wrapper does nothing, and the requirement says so in every
 place that mentions opting out. With the answer no, pending or absent the child
@@ -2497,6 +2520,12 @@ children direct or keeping their text uncut. Only `SDG_MODEL_ROUTE=off` under a
 yes answer sends a Codex child direct (decision 4); making not-yes Codex
 children direct or pass-through is not part of F75 and would need a new
 maintainer decision, since it changes what the opt-in answer controls.
+
+The routed child sends its credential (OAuth bearer or API key) over plain HTTP
+to whatever process answers on 127.0.0.1:8787; the probe is a bare request with
+no credential and does not identify Caveman. The maintainer accepted this risk
+(M1, option A); `docs/model-routing.md` discloses it, and the wrapper does not
+verify the listener's identity.
 
 Every routed child, Claude and Codex, carries the pass-through header
 `x-cave-transforms: caveman.pass-through.v1`, so it is metered but its text
