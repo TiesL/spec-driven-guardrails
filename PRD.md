@@ -2490,7 +2490,12 @@ through Caveman: the effective provider (the `model_provider` of the profile
 selected by the top-level `profile` key when it sets one, else the top-level
 key) is not `caveman`, a `profile` names no profile table, or the `caveman`
 provider already sets `http_headers` or `env_http_headers`, in any TOML form
-(table, dotted key, inline table). A Codex command argument after `exec` (up
+(table, dotted key, inline table), or the Codex `$CODEX_HOME/.env` (default
+`~/.codex/.env`), which Codex loads over the inherited environment, assigns
+`NO_PROXY` or `no_proxy` with any value (empty included) or cannot be read (the
+message names the file and the key, not the value; the `.env` is read only with
+routing on, so under `SDG_MODEL_ROUTE=off` and not-yes it never refuses). A
+Codex command argument after `exec` (up
 to a lone `--`) from the documented list also refuses, naming the argument:
 `--profile`, `-p`, `--oss`, `--local-provider`, `--ignore-user-config`, and
 `-c`/`--config` whose key's first dotted segment is `model_provider`, `model_providers`, `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`; each in its separate, `=` and, for `-p`/`-c`, attached form (the list is closed and pinned to codex-cli 0.166.0;
