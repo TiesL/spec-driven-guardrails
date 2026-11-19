@@ -232,6 +232,39 @@ for e in $RC_PROXY_ENVS; do
   not_yes_codex_env "$e"
 done
 
+# Round 5 (Architect report 9): under off (with (o1)) and without a yes
+# answer (with the routing user config), a Codex .env that would refuse with
+# routing on, (x1) or (x4), is not read: no refusal, no stderr, no probe.
+off_codex_dotenv() { # <x1|x4>
+  local label="S703/2/off/codex-dotenv/$1" h1
+  rc_answer yes
+  rc_env_reset; set_route off
+  rc_codex_config valid
+  rc_codex_dotenv "$1"
+  h1="$(rc_tree_hash "$RC/codexhome")"
+  off_codex_direct valid --ephemeral 'x y'
+  [ "$h1" = "$(rc_tree_hash "$RC/codexhome")" ] || fail "$label — .env or config.toml was written"
+  rc_dotenv_clear
+  rc_env_reset
+}
+not_yes_codex_dotenv() { # <x1|x4>
+  local h1
+  rc_answer no
+  rc_env_reset
+  rc_codex_config valid
+  rc_codex_dotenv "$1"
+  h1="$(rc_tree_hash "$RC/codexhome")"
+  unchanged_run "S703/1/no/codex-dotenv/$1" codex "$codex" exec --ephemeral 'x y'
+  [ "$h1" = "$(rc_tree_hash "$RC/codexhome")" ] || fail "S703/1/no/codex-dotenv/$1 — .env or config.toml was written"
+  rc_dotenv_clear
+  rc_answer yes
+  rc_env_reset
+}
+for x in x1 x4; do
+  off_codex_dotenv "$x"
+  not_yes_codex_dotenv "$x"
+done
+
 # --- (3) launch paths: subdirectory, symlink outside the repo, $SPEC_DRIVEN_GUARDRAILS_DIR
 ln -s "$RC_ROUTE" "$RC/elsewhere/rc-abs"
 ln -s ../elsewhere/rc-abs "$RC/elsewhere/rc-rel" 2>/dev/null || ln -s rc-abs "$RC/elsewhere/rc-rel"
@@ -352,6 +385,14 @@ rc_kill "S703/kill/loopback-extended-under-off" "$ROUTE_SWITCH" "${LOOPBACK_BLOC
 rc_kill "S703/kill/loopback-extended-under-off/e5" "$ROUTE_SWITCH" "${LOOPBACK_BLOCK}${ROUTE_SWITCH}" off_codex_env e5
 rc_kill "S703/kill/loopback-extended-before-the-opt-in" "$TOP_LINE" "${LOOPBACK_BLOCK}${TOP_LINE}" not_yes_codex_env e2
 rc_kill "S703/kill/loopback-extended-before-the-opt-in/e1" "$TOP_LINE" "${LOOPBACK_BLOCK}${TOP_LINE}" not_yes_codex_env e1
+# Round 5: the .env check run before the off branch, or before the opt-in.
+DOTENV_BEFORE_OPT_IN='[ "$runtime" = codex ] && { [ ! -r "${CODEX_HOME:-$HOME/.codex}/.env" ] || grep -q "NO_PROXY" "${CODEX_HOME:-$HOME/.codex}/.env"; } && [ -e "${CODEX_HOME:-$HOME/.codex}/.env" ] && exit 4
+'
+for x in x1 x4; do
+  rc_kill "S703/kill/dotenv-checked-under-off/$x" "$ROUTE_SWITCH" '[ "$runtime" = codex ] && check_codex_dotenv
+'"$ROUTE_SWITCH" off_codex_dotenv "$x"
+  rc_kill "S703/kill/dotenv-checked-before-the-opt-in/$x" "$TOP_LINE" "${DOTENV_BEFORE_OPT_IN}${TOP_LINE}" not_yes_codex_dotenv "$x"
+done
 rc_kill "S703/kill/not-yes-runs-the-Codex-checks" "$OPT_IN" \
   'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
   [ "$runtime" = codex ] && case " $* " in *" --profile "*) exit 4 ;; esac

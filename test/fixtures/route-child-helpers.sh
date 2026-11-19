@@ -260,6 +260,46 @@ $hk = { \"x-a\" = \"b\" }" ;;
   return 0
 }
 
+# --- Codex .env variants (S702 round 5, reused by S703 and S704) -------------
+# rc_codex_dotenv <variant> [<dir>]: writes <dir>/.env (default the fixture
+# CODEX_HOME, $RC/codexhome); the stub codex never loads it. Every file but
+# xc2 starts with FOO=1, so the line under test is not the first line.
+#   x1  NO_PROXY=tok-7f3a
+#   x2  no_proxy=            (empty value)
+#   x3  export NO_PROXY = "tok-7f3a"
+#   x4  the x1 file with mode 000 (unreadable)
+#   xc1 HTTP_PROXY=http://corp:3128 and FOO=1 only
+#   xc2 only the comment line # NO_PROXY=x
+rc_codex_dotenv() {
+  local d="${2:-$RC/codexhome}" f
+  f="$d/.env"
+  mkdir -p "$d"
+  [ -e "$f" ] && chmod 600 "$f"
+  rm -f "$f"
+  case "$1" in
+    x1|x4) printf 'FOO=1\nNO_PROXY=tok-7f3a\n' >"$f" ;;
+    x2) printf 'FOO=1\nno_proxy=\n' >"$f" ;;
+    x3) printf 'FOO=1\nexport NO_PROXY = "tok-7f3a"\n' >"$f" ;;
+    xc1) printf 'FOO=1\nHTTP_PROXY=http://corp:3128\n' >"$f" ;;
+    xc2) printf '# NO_PROXY=x\n' >"$f" ;;
+    *) echo "rc_codex_dotenv: unknown variant $1" >&2; return 1 ;;
+  esac
+  [ "$1" = x4 ] && chmod 000 "$f"
+  return 0
+}
+
+# rc_dotenv_clear: removes every fixture .env (CODEX_HOME, $HOME/.codex and
+# $RC/elsewhere) and the $HOME/.codex config copy.
+rc_dotenv_clear() {
+  local d
+  for d in "$RC/codexhome" "$RC/home/.codex" "$RC/elsewhere"; do
+    [ -e "$d/.env" ] && chmod 600 "$d/.env"
+    rm -f "$d/.env"
+  done
+  rm -rf "$RC/home/.codex"
+  rm -f "$RC/elsewhere/config.toml"
+}
+
 # rc_run <wrapper args...>: runs the wrapper; sets rc_status, rc_out, rc_err,
 # rc_started (1 when the stub child started) and rc_probe_calls.
 rc_run() {

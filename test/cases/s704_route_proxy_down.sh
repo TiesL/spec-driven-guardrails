@@ -98,6 +98,8 @@ order_case() {
     settings-headers) echo '{"env": {"ANTHROPIC_CUSTOM_HEADERS": "x-a: 1"}}' >"$RC/cfg/settings.json" ;;
     inherited-header) rc_env_set "ANTHROPIC_CUSTOM_HEADERS=x-cave-transforms: caveman.compress.v1" ;;
     codex-config) rc_codex_config openai ;;
+    codex-dotenv-x1) rc_codex_dotenv x1 ;;
+    codex-dotenv-x4) rc_codex_dotenv x4 ;;
   esac
   case "$3" in
     codex-argument) rc_run codex -- "$RC/bin/codex" exec --oss x ;;
@@ -106,6 +108,7 @@ order_case() {
   esac
   [ "$rc_status" = 4 ] && [ "$rc_probe_calls" = 0 ] || fail "S704/order/$label — exit $rc_status with $rc_probe_calls probe calls, expected 4 with none"
   rm -f "$RC/cfg/settings.json" "$RC/probe.exit"
+  rc_dotenv_clear
   rc_codex_config valid
   rc_env_reset
 }
@@ -116,6 +119,10 @@ order_case inherited-header claude inherited-header
 order_case codex-config codex codex-config
 order_case codex-argument codex codex-argument
 order_case codex-ignore-user-config codex codex-ignore-user-config
+# Round 5: the valid config with a Codex .env that sets NO_PROXY (x1), or that
+# cannot be read (x4).
+order_case codex-dotenv-x1 codex codex-dotenv-x1
+order_case codex-dotenv-x4 codex codex-dotenv-x4
 
 # --- no deadline helpers ---------------------------------------------------------
 for s in timeout gtimeout nc; do
@@ -251,6 +258,11 @@ rc_kill "S704/kill/probe-before-checks/settings-key" "$CHECKS_START" "${probe_fi
 rc_kill "S704/kill/probe-before-checks/inherited-header" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case inherited-header claude inherited-header
 rc_kill "S704/kill/probe-before-checks/codex-argument" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case codex-argument codex codex-argument
 rc_kill "S704/kill/probe-before-checks/ignore-user-config" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case codex-ignore-user-config codex codex-ignore-user-config
+# Round 5: the .env check after the probe.
+DOTENV_CALL='  check_codex_dotenv
+fi'
+rc_kill "S704/kill/dotenv-check-after-the-probe/x1" "$DOTENV_CALL" "${probe_first}${DOTENV_CALL}" order_case codex-dotenv-x1 codex codex-dotenv-x1
+rc_kill "S704/kill/dotenv-check-after-the-probe/x4" "$DOTENV_CALL" "${probe_first}${DOTENV_CALL}" order_case codex-dotenv-x4 codex codex-dotenv-x4
 
 # Round 4 (Architect report 8): the loopback exclusion before the probe.
 LB_NP='NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"'

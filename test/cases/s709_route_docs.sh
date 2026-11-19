@@ -73,6 +73,7 @@ pass-through-header|x-cave-transforms: caveman.pass-through.v1|byte-identical
 first-segment|key|first|segment
 attached-form|attached|-p|-c
 codex-env|Codex child|=NO_PROXY|=no_proxy|127.0.0.1,localhost OR loopback|!ANTHROPIC_BASE_URL|!_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL|!ANTHROPIC_CUSTOM_HEADERS
+codex-dotenv|.env|=NO_PROXY|=no_proxy|refuse OR refusal
 SPEC
 miss="$(missing_statements "$DOC" "$SANDBOX/spec")"
 [ -z "$miss" ] || fail "S709 — docs/model-routing.md lacks these statements: $(echo $miss)"
@@ -105,6 +106,12 @@ plant_doc codex-env-dropped codex-env '(?i)codex child' 'child'
 plant_doc codex-env-only-NO_PROXY codex-env '(?<![A-Za-z_])no_proxy(?![A-Za-z_])' 'X'
 plant_doc codex-env-only-no_proxy codex-env '(?<![A-Za-z_])NO_PROXY(?![A-Za-z_])' 'X'
 plant_doc codex-env-in-claude-sentence codex-env '(?i)codex child' 'Codex child, like a Claude child with ANTHROPIC_BASE_URL,'
+# Round 5: the .env statement dropped, naming only one of the two variables,
+# or without the refusal.
+plant_doc dotenv-dropped codex-dotenv '\.env(?![A-Za-z_])' ' file'
+plant_doc dotenv-only-NO_PROXY codex-dotenv '(?<![A-Za-z_])no_proxy(?![A-Za-z_])' 'X'
+plant_doc dotenv-only-no_proxy codex-dotenv '(?<![A-Za-z_])NO_PROXY(?![A-Za-z_])' 'X'
+plant_doc dotenv-without-refusal codex-dotenv '(?i)refus[a-z]*' 'stops'
 
 # --- the lists equal the wrapper's single list definitions ---------------------------
 block() { # <file> <name> -> lines between the BEGIN/END <name> markers, trimmed, no comment prefix

@@ -231,6 +231,97 @@ rc_run codex -- "$codex" exec x
 rm -f "$RC/cfg/settings.json"
 rc_env_reset
 
+# --- round 5: the Codex .env (Architect report 9) --------------------------------
+# dotenv_setup <variant>: the valid config, inherited environment e1, and the
+# .env of the variant in the place it names; sets DOTENV_DIR (the directory
+# holding the .env under test) and DOTENV_WORD (what the message must name
+# besides .env: the key, or that the file cannot be read).
+#   x1-x4, xc1, xc2  the .env in the fixture CODEX_HOME
+#   x5               CODEX_HOME elsewhere (valid config, the x1 .env), none
+#                    in $HOME/.codex
+#   x5-default       CODEX_HOME unset: the valid config and the x1 .env in
+#                    $HOME/.codex
+#   xc3              no .env
+#   xc4              CODEX_HOME the fixture (valid config, no .env), the x1
+#                    .env only in $HOME/.codex
+dotenv_setup() {
+  rc_env_reset
+  rc_proxy_env e1
+  rc_dotenv_clear
+  rc_codex_config valid
+  DOTENV_DIR="$RC/codexhome"
+  DOTENV_WORD=NO_PROXY
+  case "$1" in
+    x1|x3) rc_codex_dotenv "$1" ;;
+    x2) rc_codex_dotenv x2; DOTENV_WORD=no_proxy ;;
+    x4) rc_codex_dotenv x4; DOTENV_WORD="cannot be read" ;;
+    x5)
+      DOTENV_DIR="$RC/elsewhere"
+      cp "$RC/codexhome/config.toml" "$DOTENV_DIR/config.toml"
+      rc_codex_dotenv x1 "$DOTENV_DIR"
+      rc_env_set "CODEX_HOME=$DOTENV_DIR" ;;
+    x5-default)
+      DOTENV_DIR="$RC/home/.codex"
+      mkdir -p "$DOTENV_DIR"
+      cp "$RC/codexhome/config.toml" "$DOTENV_DIR/config.toml"
+      rc_codex_dotenv x1 "$DOTENV_DIR"
+      rc_env_del CODEX_HOME ;;
+    xc1|xc2) rc_codex_dotenv "$1" ;;
+    xc3) ;;
+    xc4) mkdir -p "$RC/home/.codex"; rc_codex_dotenv x1 "$RC/home/.codex" ;;
+    *) echo "dotenv_setup: unknown variant $1" >&2; return 1 ;;
+  esac
+}
+
+# refused_dotenv <variant>: exit 4, no child, no probe, stdout empty, a
+# message naming .env and DOTENV_WORD and never the value; the directory
+# holding the .env and config.toml unchanged.
+refused_dotenv() {
+  local label="S702/dotenv/$1" h1
+  dotenv_setup "$1"
+  if [ "$1" = x4 ] && [ -r "$RC/codexhome/.env" ]; then
+    fail "$label — the mode-000 fixture .env is still readable (running as root?), so this case cannot show an unreadable file"
+    rc_dotenv_clear
+    return
+  fi
+  h1="$(rc_tree_hash "$DOTENV_DIR")"
+  rc_run codex -- "$codex" exec --ephemeral "$prompt"
+  [ "$rc_status" = 4 ] || fail "$label — exit $rc_status, expected 4 (stderr: $rc_err)"
+  [ "$rc_started" = 0 ] || fail "$label — the child was started"
+  [ "$rc_probe_calls" = 0 ] || fail "$label — the probe ran before the .env check refused"
+  [ -z "$rc_out" ] || fail "$label — stdout is not empty: $rc_out"
+  case "$rc_err" in *.env*) ;; *) fail "$label — the message does not name .env: $rc_err" ;; esac
+  case "$rc_err" in *"$DOTENV_WORD"*) ;; *) fail "$label — the message does not name '$DOTENV_WORD': $rc_err" ;; esac
+  case "$rc_err" in *"$TOK"*) fail "$label — the message prints the value: $rc_err" ;; esac
+  [ "$h1" = "$(rc_tree_hash "$DOTENV_DIR")" ] || fail "$label — .env or config.toml was written"
+  rc_dotenv_clear
+}
+
+# routed_dotenv <variant>: routes as the valid config does (the same arguments
+# and the round-4 environment e1), one probe call, every .env unchanged.
+routed_dotenv() {
+  local label="S702/dotenv/$1" h1
+  dotenv_setup "$1"
+  h1="$(rc_tree_hash "$RC/codexhome" "$RC/home")"
+  rc_direct "$codex" exec --ephemeral "$prompt"
+  rc_run codex -- "$codex" exec --ephemeral "$prompt"
+  if [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ]; then
+    rc_args_file exec -c "$RC_CODEX_HEADER_OVERRIDE" --ephemeral "$prompt"
+    cmp -s "$RC/expected.args" "$RC/child.args" \
+      || fail "$label — arguments are not: exec, -c, the header override, then the original rest"
+    [ "$(rc_env_diff)" = "$(rc_expected_loopback_diff)" ] \
+      || fail "$label — the environment does not differ from a direct run in exactly NO_PROXY and no_proxy: $(rc_env_diff)"
+    [ "$rc_probe_calls" = 1 ] || fail "$label — the probe ran $rc_probe_calls times, expected once"
+  else
+    fail "$label — not routed: exit $rc_status, started $rc_started, stderr: $rc_err"
+  fi
+  [ "$h1" = "$(rc_tree_hash "$RC/codexhome" "$RC/home")" ] || fail "$label — a .env or config.toml was written"
+  rc_dotenv_clear
+}
+for x in x1 x2 x3 x4 x5 x5-default; do refused_dotenv "$x"; done
+for x in xc1 xc2 xc3 xc4; do routed_dotenv "$x"; done
+rc_env_reset
+
 # --- usage errors exit 2 in every mode ---------------------------------------
 usage_case() { # <label> <wrapper args...>
   local label="$1"
@@ -395,6 +486,28 @@ rc_kill "S702/kill/extra-variable-custom-headers" "$EXEC_LINE" \
   'ANTHROPIC_CUSTOM_HEADERS="$TRANSFORM_HEADER"; export ANTHROPIC_CUSTOM_HEADERS; '"$EXEC_LINE" proxy_env_routes e1
 rc_kill "S702/kill/all-five-Claude-additions" "$EXEC_LINE" \
   'export ANTHROPIC_BASE_URL="$CLAUDE_ROUTE_URL" _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1 ANTHROPIC_CUSTOM_HEADERS="$TRANSFORM_HEADER"; '"$EXEC_LINE" proxy_env_routes e1
+# Round 5 (Architect report 9): the Codex .env check.
+DOTENV_KEYS="CODEX_CHILD_VARS='NO_PROXY no_proxy'"
+DOTENV_PATH='dotenv="${CODEX_HOME:-$HOME/.codex}/.env"'
+DOTENV_EXISTS='if not os.path.lexists(path):'
+DOTENV_RE='assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=")'
+rc_kill "S702/kill/dotenv-uppercase-key-only" "$DOTENV_KEYS" "CODEX_CHILD_VARS='NO_PROXY'" refused_dotenv x2
+rc_kill "S702/kill/dotenv-lowercase-key-only" "$DOTENV_KEYS" "CODEX_CHILD_VARS='no_proxy'" refused_dotenv x1
+rc_kill "S702/kill/dotenv-HOME-instead-of-CODEX_HOME" "$DOTENV_PATH" 'dotenv="$HOME/.codex/.env"' refused_dotenv x5
+rc_kill "S702/kill/dotenv-HOME-instead-of-CODEX_HOME/xc4" "$DOTENV_PATH" 'dotenv="$HOME/.codex/.env"' routed_dotenv xc4
+for x in x1 x3 x5; do
+  rc_kill "S702/kill/dotenv-value-in-message/$x" '% (path, key))' '% (path, line.decode("utf-8", "replace")))' refused_dotenv "$x"
+done
+rc_kill "S702/kill/dotenv-export-form-missed" '(?:export\s+)?' '' refused_dotenv x3
+rc_kill "S702/kill/dotenv-spaces-around-equals-missed" '([A-Za-z_][A-Za-z0-9_.]*)\s*=' '([A-Za-z_][A-Za-z0-9_.]*)=' refused_dotenv x3
+rc_kill "S702/kill/dotenv-empty-value-passed" "$DOTENV_RE" \
+  'assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=\s*\S")' refused_dotenv x2
+rc_kill "S702/kill/dotenv-unreadable-as-absent" "$DOTENV_EXISTS" 'if not os.access(path, os.R_OK):' refused_dotenv x4
+rc_kill "S702/kill/dotenv-first-line-only" 'for line in lines:' 'for line in lines[:1]:' refused_dotenv x1
+rc_kill "S702/kill/dotenv-comment-line-counted" 'rb"\s*(?:export' 'rb"[\s#]*(?:export' routed_dotenv xc2
+rc_kill "S702/kill/dotenv-any-proxy-key" "$DOTENV_KEYS" \
+  "CODEX_CHILD_VARS='NO_PROXY no_proxy HTTP_PROXY http_proxy HTTPS_PROXY https_proxy'" routed_dotenv xc1
+rc_kill "S702/kill/dotenv-missing-file-refused" "$DOTENV_EXISTS" 'if False:' routed_dotenv xc3
 rc_kill "S702/kill/usage-after-checks" \
   '[ "$#" -ge 3 ] || usage' '[ "${1:-}" = codex ] && grep -q openai "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null && exit 4
 [ "$#" -ge 3 ] || usage' usage_mode yes-refusing
