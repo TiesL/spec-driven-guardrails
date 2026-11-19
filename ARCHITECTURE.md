@@ -4044,11 +4044,21 @@ decision.
     `prep/<slug>/`); `TEST-SCENARIOS.md` 1930 (S153), 2051 and 2053 (S155 title
     and Given), 2096 (S158), 2668 (S192), 3748 (S240);
     `skills/role-contracts/SKILL.md` 29 (provenance) and 694
-    (`prep/<slug>/<ROLE>-REPORT.md`); `skills/pre-merge-review/SKILL.md` 62;
+    (`prep/<slug>/<ROLE>-REPORT.md`);
     `skills/codebase-design/README.md` 23; `skills/grilling/README.md` 13;
     `check-no-dutch.sh` 77 (the permanent exclusion names a moved file: without
-    the change the check fails); comments in `classify-review-depth.sh` 4 and
-    `hooks/git-guardrails` 783.
+    the change the check fails); the comment in `classify-review-depth.sh` 4.
+  - Held, byte-protected (maintainer decision): `skills/pre-merge-review/SKILL.md`
+    62 and the comment in `hooks/git-guardrails` 783 are live pointers, but S593
+    (`test/fixtures/temporary-panel-645.py`, `preservation_checks`) pins every
+    byte under `hooks/` and `skills/pre-merge-review/` to merge base `b22b476`
+    (A54 D6). [V] Changing either line fails S593 ("unchanged
+    hooks/git-guardrails", "unchanged skills/pre-merge-review/SKILL.md").
+    Default in this design: leave both lines as they are, so they point at a
+    path that no longer exists, and record them as known stale pointers in the
+    PR and CHANGELOG entry. The alternative, re-pointing them and moving S593's
+    recorded baseline, edits a temporary-panel protection that A54 reserves to
+    the maintainer; this design does not choose it.
   - Change, test pins: `test/cases/s155_role_contracts_installed.sh` (2, 7, 8,
     18, 20, 25); `s158_role_contracts_pointers_resolve.sh` 6 and 32 (the
     `clone_only` pattern becomes `prep/multi-agent-development`, otherwise a
@@ -4079,9 +4089,12 @@ decision.
 - **Dry run.** [V] In a scratch clone of this branch: the move alone makes
   `check-no-dutch.sh` and S192 fail and leaves S155, S158 and S164 passing
   (S155 vacuously: `rm -rf "$clone/wip"` removes nothing). With every "Change"
-  above applied, `check-no-dutch.sh`, S153, S155, S158, S164, S192, S238, S240,
-  S309, S317, S318, S321, S708 and S713 pass, and `git grep -nw wip` outside
-  `prep/`, `CHANGELOG.md` and the corpus prints exactly the "Keep" lines.
+  above applied (the two "Held" lines included), `check-no-dutch.sh`, S153, S155,
+  S158, S164, S192, S238, S240, S309, S317, S318, S321, S708 and S713 pass, and
+  the full `./check` passes 513 of 514 cases: only S593 fails, on the two
+  "Held" lines. Leaving those two lines as they are removes that failure.
+  `git grep -nw wip` outside `prep/`, `CHANGELOG.md` and the corpus then prints
+  exactly the "Keep" and "Held" lines.
 - **Test pins (red before green).** [A] The one changed oracle is S155's Given:
   before removing the directory, assert that the sandbox clone has
   `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` as a file, then
@@ -4097,7 +4110,11 @@ decision.
   `wip/` mentions there (a widening, recommended because the A6 sources in
   `prep/multi-agent-development/` win over `role-contracts` in this repo, so
   they must name the same directory as the skill). AC4 does not name the two
-  `codex-*.py` fixtures; this design adds them. No AC is contradicted.
+  `codex-*.py` fixtures; this design adds them. AC2 ("every remaining match
+  outside `prep/` is a history quote or a branch name") is contradicted by the
+  two "Held" lines under this design's default; which way that resolves is the
+  maintainer's call (keep them stale and narrow AC2, or re-point them and move
+  S593's baseline).
 - **Release carry-over (#607).** [V] The carry-over comment on #607 matches
   this inventory at `892dec5`: `policy/merge-autonomy.json` 54,
   `test/fixtures/merge-risk-646.py` 43, `s627_...` 40 (a tar exclude), and
@@ -4117,6 +4134,7 @@ decision.
   an existing `wip/<slug>/` folder.
 - **Violated when:** a tracked file exists under `wip/`; a line outside
   `prep/`, `CHANGELOG.md` and `test/fixtures/marker-corpus.jsonl` names `wip/`
-  or the word `wip` as this directory, other than the "Keep" lines above;
+  or the word `wip` as this directory, other than the "Keep" lines and, while
+  the maintainer has not decided otherwise, the two "Held" lines above;
   inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
   `prep/`; a generated file changes in this work item.
