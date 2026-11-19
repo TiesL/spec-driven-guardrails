@@ -65,8 +65,10 @@ child goes directly to OpenAI, also while the proxy is down. A profile that the
 user's config selects, or the command's own arguments, would beat that override
 and route the child anyway, so under `off` the wrapper first refuses with exit 4
 when the command has an argument of the Codex selection list below, when
-`config.toml` exists but cannot be parsed, or when its top-level `profile` names
-a profile that is missing or sets a `model_provider` other than `openai`. A
+`config.toml` exists but cannot be parsed, when its top-level `profile` names
+a profile that is missing or sets a `model_provider` other than `openai`, or
+when it sets `openai_base_url` or `chatgpt_base_url` at the top level or in the
+selected profile (the message names the file and the key, not the value). A
 missing `config.toml` passes. `off` never probes.
 
 ## What a routed child gets
@@ -176,28 +178,37 @@ depth). The Codex route itself lives in the user's own Codex config, written by
 the Caveman installer, which SDG reads but never writes.
 
 It also refuses a Codex command whose own arguments after `exec`, up to a lone
-`--`, select a provider or profile or change a provider table, because an
-argument placed after the wrapper's `-c` wins. The message names the argument,
-never its value. The list, kept once in the wrapper (`CODEX_SELECTION`) and here:
+`--`, select a provider, profile or endpoint, change a provider table or skip
+the user config, because an argument placed after the wrapper's `-c` wins. The
+message names the argument, never its value. The list, closed and kept once in
+the wrapper (`CODEX_SELECTION`) and here:
 
 <!-- BEGIN codex-selection -->
 ```
 --profile
 -p
 --oss
+--local-provider
+--ignore-user-config
 -c|--config model_provider
+-c|--config model_providers
 -c|--config profile
--c|--config profiles.*
--c|--config model_providers*
+-c|--config profiles
+-c|--config openai_base_url
+-c|--config chatgpt_base_url
 ```
 <!-- END codex-selection -->
 
 A line without a key is an option that refuses by itself, as `--opt value` or
 `--opt=value`. A line with a key is `-c` or `--config` (value separate or after
-`=`) whose key, the text before its first `=` with whitespace and quotes trimmed,
-equals that key or, with a trailing `*`, starts with it. This list follows the
-Codex CLI options documented for this version; it has not been probed against
-every Codex version.
+`=`) whose key matches when its first dotted segment, the text before the first
+`.` of the key (itself the text before the first `=`), with whitespace and quotes
+trimmed, equals that key: `profiles.x.model_provider`, `profiles` as a whole
+table and `"profiles" .x` all match `profiles`, while `model_providers_x` matches
+nothing. The one-letter options `-p` and `-c` also count in their attached form
+(`-px`, `-cmodel_provider="x"`, `-c=k=v`), and an argument that may be the value
+of an option the list does not know is still read (`-o --oss` refuses). This
+list is pinned to codex-cli 0.166.0; other Codex versions are not verified.
 
 Two test seams exist, `SDG_ROUTE_PROBE` (an executable used instead of `curl`,
 with the same arguments) and `SDG_ROUTE_MANAGED_SETTINGS` (a non-empty path that

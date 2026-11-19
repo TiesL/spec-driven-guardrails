@@ -22,7 +22,8 @@
 #      SDG_MODEL_ROUTE=off (exact, lowercase) switches routing off for this
 #      run: Claude runs unchanged; Codex gets `-c model_provider="openai"`
 #      after `exec` and goes direct, after a check (exit 4) that no command
-#      argument or selected profile would route it anyway. Any other non-empty
+#      argument, selected profile or base-URL key in config.toml would route
+#      it anyway. Any other non-empty
 #      value is ignored with one stderr line. Nothing else switches routing on.
 #   3. Checks (exit 4). Claude: the inherited ANTHROPIC_BASE_URL must be unset
 #      or exactly the first-party URL; the inherited ANTHROPIC_CUSTOM_HEADERS
@@ -83,19 +84,26 @@ MANAGED_DIR_DARWIN="/Library/Application Support/ClaudeCode"
 MANAGED_DIR_LINUX="/etc/claude-code"
 
 # The Codex command arguments (after `exec`, up to a lone `--`) that select a
-# provider or profile or change a provider table, kept once here and once in
-# docs/model-routing.md (S709 compares them). "<options> [<key>]": options
-# separated by `|`, each also in its `=` form; without a key the option itself
-# refuses; with a key, a -c/--config value whose key (before its first `=`,
-# whitespace and quotes trimmed) equals it, or starts with it before a
-# trailing `*`, refuses.
+# provider, profile or endpoint or skip the user config, kept once here and
+# once in docs/model-routing.md (S709 compares them). Closed, pinned to
+# codex-cli 0.166.0 (A61). A line with one field is an option that refuses by
+# itself. A line "<options> <key>" names the -c/--config options (separated
+# by `|`) and a key: such a value refuses when the first dotted segment of
+# its key (the text before its first `=`; each segment trimmed of whitespace
+# and quotes) equals the key. Every option counts in its separate and `=`
+# form, and a one-letter option (-p, -c) also in its attached form (-px,
+# -ck=v).
 CODEX_SELECTION='--profile
 -p
 --oss
+--local-provider
+--ignore-user-config
 -c|--config model_provider
+-c|--config model_providers
 -c|--config profile
--c|--config profiles.*
--c|--config model_providers*'
+-c|--config profiles
+-c|--config openai_base_url
+-c|--config chatgpt_base_url'
 
 usage() {
   echo "usage: route-child.sh <claude|codex> -- <command> [args...]  (codex: <command> is codex exec ...)" >&2
@@ -144,8 +152,10 @@ fi
 # command's own arguments (CODEX_SELECTION) or the user's config.toml would
 # decide the route instead of the wrapper. routed: the effective provider must
 # be caveman and leave its headers to the wrapper; a missing or unparsable
-# file refuses. off: a missing file passes; an unparsable file, or a selected
-# profile that is missing or sets a provider other than openai, refuses.
+# file refuses. off: a missing file passes; an unparsable file, a selected
+# profile that is missing or sets a provider other than openai, or
+# openai_base_url or chatgpt_base_url at the top level or in the selected
+# profile (named by key, never by value), refuses.
 check_codex() {
   local mode="$1" config problem status
   shift 3
@@ -162,39 +172,56 @@ def stop(message):
     sys.exit(1)
 
 # --- the arguments of the command ------------------------------------------
-items = []
+refusing, config_options, keys = set(), set(), set()
 for line in selection.split("\n"):
     fields = line.split()
-    if fields:
-        items.append((fields[0].split("|"), fields[1] if len(fields) > 1 else None))
+    if len(fields) == 1:
+        refusing.add(fields[0])
+    elif len(fields) == 2:
+        config_options.update(fields[0].split("|"))
+        keys.add(fields[1])
 
-def trimmed_key(text):
+def segments(text):
     key = text.split("=", 1)[0]
-    return ".".join(part.strip().strip("\"\x27").strip() for part in key.split("."))
+    return [part.strip().strip("\"\x27").strip() for part in key.split(".")]
 
-def key_matches(key, pattern):
-    if pattern.endswith("*"):
-        return key.startswith(pattern[:-1])
-    return key == pattern
+def first_segment(text):
+    return segments(text)[0]
 
+def option_of(arg, names):
+    """(option, attached value or None) when arg is one of names in its
+    separate, `=` or (a one-letter option) attached form; else (None, None).
+    Case-sensitive: -C is not -c."""
+    if arg.startswith("--"):
+        name, eq, value = arg.partition("=")
+        if name in names:
+            return name, (value if eq else None)
+    elif arg[:2] in names:
+        value = arg[2:]
+        if not value:
+            return arg, None
+        return arg[:2], (value[1:] if value.startswith("=") else value)
+    return None, None
+
+# Every argument is read, also one that may be the value of an option the
+# list does not know (-o --oss refuses): over-refusing is the safe direction.
 i = 0
 while i < len(args):
     arg = args[i]
     if arg == "--":
         break
-    name, eq, inline = arg.partition("=") if arg.startswith("-") else (arg, "", "")
-    takes_value = False
-    for options, pattern in items:
-        if name not in options:
-            continue
-        if pattern is None:
-            stop("the argument %s of the command selects a Codex profile or provider, which would decide the route instead of the wrapper; remove it" % name)
-        takes_value = True
-        value = inline if eq else (args[i + 1] if i + 1 < len(args) else "")
-        key = trimmed_key(value)
-        if key_matches(key, pattern):
-            stop("the argument %s of the command with the key %s selects a Codex profile or provider or changes a provider table, which would decide the route instead of the wrapper; remove it" % (name, key))
-    i += 2 if (takes_value and not eq) else 1
+    name, value = option_of(arg, refusing)
+    if name:
+        stop("the argument %s of the command selects a Codex profile or provider or skips the user config, which would decide the route instead of the wrapper; remove it" % name)
+    name, value = option_of(arg, config_options)
+    if name:
+        if value is None:
+            i += 1
+            value = args[i] if i < len(args) else ""
+        if first_segment(value) in keys:
+            stop("the argument %s of the command with the key %s selects a Codex profile, provider or endpoint or changes a provider table, which would decide the route instead of the wrapper; remove it"
+                 % (name, ".".join(segments(value))))
+    i += 1
 
 # --- config.toml --------------------------------------------------------------
 if not os.path.lexists(config):
@@ -426,6 +453,12 @@ if mode == "off":
     if selected is not None and "model_provider" in selected and selected["model_provider"] != "openai":
         stop("%s selects the profile %s with model_provider %s, which would route this child while SDG_MODEL_ROUTE=off promises it goes direct"
              % (named, profile, selected["model_provider"]))
+    for key in ("openai_base_url", "chatgpt_base_url"):
+        if key in data:
+            stop("%s sets %s at the top level, which would send this child to another endpoint while SDG_MODEL_ROUTE=off promises it goes direct" % (named, key))
+        if selected is not None and key in selected:
+            stop("%s selects the profile %s, which sets %s, which would send this child to another endpoint while SDG_MODEL_ROUTE=off promises it goes direct"
+                 % (named, profile, key))
     sys.exit(0)
 
 if selected is not None and "model_provider" in selected:
