@@ -261,8 +261,8 @@ rc_kill "S706/kill/value-in-message" '"sets env.%s, which outranks the value the
   '"sets env.%s, which outranks the value the wrapper gives the child" % (key + "=" + str(env[key]))' key_refused no_proxy user tok
 rc_kill "S706/kill/settings-equals-form-missed" '"$file="*) specs+=(argument "${arg#"$file="}") ;;' '"$file="*) ;;' settings_arg equals route
 rc_kill "S706/kill/inline-form-missed" '    if kind == "argument" and value.lstrip().startswith("{"):' '    if False:' inline_refused '{"env":{"ANTHROPIC_BASE_URL":"http://x"}}'
-rc_kill "S706/kill/sixth-child-variable" 'done
-exec "$@"' 'done
+rc_kill "S706/kill/sixth-child-variable" 'export $CLAUDE_CHILD_VARS
+exec "$@"' 'export $CLAUDE_CHILD_VARS
 export HTTP_PROXY=
 exec "$@"' added_five
 

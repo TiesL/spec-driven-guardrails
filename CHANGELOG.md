@@ -17,8 +17,10 @@ point.
   (`claude -p`, `codex exec`) through the local Caveman proxy with a
   pass-through header (metered, text uncut), opted in per project through the
   new `process-model-routing` row and switched off per run with
-  `SDG_MODEL_ROUTE=off`; it refuses instead of falling back (exit 3 proxy down,
-  exit 4 routed parent, routing settings file or non-Caveman Codex config). The
+  `SDG_MODEL_ROUTE=off`; it refuses instead of falling back (exit 3 proxy down;
+  exit 4 routed parent, an inherited transform header, a settings file that
+  sets any of the five child variables, or a Codex config, profile or command
+  argument that would not take the Caveman provider, also under `off`). The
   Orchestrator session, in-session subagents and the behavior runner stay
   direct; the runner now refuses an inherited non-first-party
   `ANTHROPIC_BASE_URL`, and the Claude session start warns once when the main

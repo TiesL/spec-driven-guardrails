@@ -210,8 +210,8 @@ EXEC_LINE='exec "$cmd" exec -c "$CODEX_HEADER_OVERRIDE" "$@"'
 rc_kill "S702/kill/insert-before-exec" "$EXEC_LINE" 'exec "$cmd" -c "$CODEX_HEADER_OVERRIDE" exec "$@"' routes valid valid x
 rc_kill "S702/kill/append-at-end" "$EXEC_LINE" 'exec "$cmd" exec "$@" -c "$CODEX_HEADER_OVERRIDE"' routes valid valid x
 rc_kill "S702/kill/whole-file-grep-http_headers/e" \
-  'caveman = get(data, "model_providers", "caveman")' \
-  'caveman = get(data, "model_providers", "caveman")
+  'provider_table = get(data, "model_providers", "caveman")' \
+  'provider_table = get(data, "model_providers", "caveman")
 if "http_headers" in open(config).read():
     stop("%s has http_headers" % named)' routes e header-other x
 rc_kill "S702/kill/comment-blind-provider" \
@@ -229,14 +229,14 @@ rc_kill "S702/kill/top-level-only-provider/j" \
 rc_kill "S702/kill/profile-ignored-when-table-missing" \
   '    if not isinstance(selected, dict):' '    if False:' refused_config profile-missing missing profile
 rc_kill "S702/kill/inline-tables-unresolved" \
-  'caveman = get(data, "model_providers", "caveman")' \
-  'caveman = get(data, "model_providers", "caveman")
-caveman = None if isinstance(caveman, Inline) or isinstance(get(data, "model_providers"), Inline) else caveman' \
+  'provider_table = get(data, "model_providers", "caveman")' \
+  'provider_table = get(data, "model_providers", "caveman")
+provider_table = None if isinstance(provider_table, Inline) or isinstance(get(data, "model_providers"), Inline) else provider_table' \
   refused_config inline-provider http_headers
 rc_kill "S702/kill/inline-tables-unresolved/p" \
-  'caveman = get(data, "model_providers", "caveman")' \
-  'caveman = get(data, "model_providers", "caveman")
-caveman = None if isinstance(caveman, Inline) else caveman' \
+  'provider_table = get(data, "model_providers", "caveman")' \
+  'provider_table = get(data, "model_providers", "caveman")
+provider_table = None if isinstance(provider_table, Inline) else provider_table' \
   refused_config providers-table http_headers
 rc_kill "S702/kill/profile-inline-unresolved" \
   '    selected = get(data, "profiles", profile) if isinstance(profile, str) else None' \
@@ -244,7 +244,7 @@ rc_kill "S702/kill/profile-inline-unresolved" \
     selected = {} if isinstance(get(data, "profiles"), Inline) else selected' \
   refused_config profile-inline profile caveman
 rc_kill "S702/kill/sub-table-missed" \
-  'if isinstance(caveman, dict) and key in caveman:' 'if isinstance(caveman, dict) and key in caveman and not type(caveman[key]) is dict:' \
+  'if isinstance(provider_table, dict) and key in provider_table:' 'if isinstance(provider_table, dict) and key in provider_table and not type(provider_table[key]) is dict:' \
   refused_config header-subtable http_headers
 rc_kill "S702/kill/env_http_headers-unchecked" \
   'for key in ("http_headers", "env_http_headers"):' 'for key in ("http_headers",):' refused_config header-env env_http_headers

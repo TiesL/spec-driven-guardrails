@@ -15,9 +15,10 @@ Three kinds of model traffic, three answers.
   a direct session. SDG never sets `ANTHROPIC_BASE_URL` in a parent process, a
   settings file or an adopted project.
 - **Children launched as a process.** A pipeline stage launched as a separate
-  model process (`claude -p ...`, `codex exec ...`) goes through the local
-  Caveman proxy only when it is started through `route-child.sh`. The wrapper
-  sets the route on that child only.
+  model process (`claude -p ...`, `codex exec ...`) is routed through the local
+  Caveman proxy by SDG only when it is started through `route-child.sh`. The
+  wrapper sets the route on that child only. A Codex child can also reach the
+  proxy through the user's own Codex config, which SDG does not own (see below).
 - **In-session subagents.** In-session subagents (the Claude Agent tool, Codex
   `spawn_agent`) share their parent's endpoint, so they stay direct and are not
   routable.
@@ -48,24 +49,40 @@ read through `answered_yes` on the git top level of the child's working
 directory. The row is offered only to projects that answered
 `process-multi-agent-roles` yes (`Applies if: uses-multi-agent-roles`) and has
 `Default: question`. With any other answer, or outside a git repository, the
-wrapper runs the command unchanged, without a probe or a check.
+wrapper does nothing: it runs the command unchanged, without a probe or a check.
+Answering `process-model-routing` `no` therefore switches the wrapper off, not
+compression; a Codex child that the user's own Codex config routes through the
+proxy still runs there compressed, without the pass-through header, and a Claude
+child runs with whatever its own environment and settings give it. Only
+`SDG_MODEL_ROUTE=off` under a yes answer sends one Codex child past the proxy.
 
 `SDG_MODEL_ROUTE=off` (exact and lowercase) only switches routing off for one
 run and never switches it on. Any other non-empty value is ignored, and the
 wrapper then prints one line on stderr saying that only `off` switches off.
 Under `SDG_MODEL_ROUTE=off` a Claude child runs unchanged. Under the same switch
 a Codex child gets `-c 'model_provider="openai"'` right after `exec`, so that one
-child goes directly to OpenAI, also while the proxy is down.
+child goes directly to OpenAI, also while the proxy is down. A profile that the
+user's config selects, or the command's own arguments, would beat that override
+and route the child anyway, so under `off` the wrapper first refuses with exit 4
+when the command has an argument of the Codex selection list below, when
+`config.toml` exists but cannot be parsed, or when its top-level `profile` names
+a profile that is missing or sets a `model_provider` other than `openai`. A
+missing `config.toml` passes. `off` never probes.
 
 ## What a routed child gets
 
-A Claude child gets four variables on its own environment, nothing else:
+A Claude child gets five variables on its own environment, nothing else:
 `ANTHROPIC_BASE_URL` set to the proxy's `/w/claude` route,
 `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1` (without it Claude Code shrinks the
-context window for a non-first-party URL), `NO_PROXY` with
-`127.0.0.1,localhost` appended to any inherited value, and
-`ANTHROPIC_CUSTOM_HEADERS` with the pass-through header appended on a new line to
-any inherited value. A Codex child gets the same header as
+context window for a non-first-party URL), `NO_PROXY` and `no_proxy`, each with
+`127.0.0.1,localhost` appended to its own inherited value (the loopback alone
+when that one is unset or empty), and `ANTHROPIC_CUSTOM_HEADERS` with the
+pass-through header appended on a new line to any inherited value. Both
+spellings carry the loopback because HTTP stacks differ in which one they read
+first; with both set, the routed request never goes to an inherited
+`http_proxy` or `HTTPS_PROXY`. The wrapper keeps the five names in one list
+(`CLAUDE_CHILD_VARS`), which the settings check below also uses. A Codex child
+gets the same header as
 `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
 right after `exec`. The route itself is defined once, in `route-child.sh`.
 
@@ -79,6 +96,18 @@ the rest of that conversation, and a child can only recover it by calling the
 decision by TiesL and a test that children recover cut text; it then means
 removing that one header constant from the wrapper.
 
+## Credentials and the listener
+
+A routed child sends its own credential, the subscription OAuth bearer token or
+an API key, over plain HTTP to whatever process answers on 127.0.0.1:8787, the
+probe (a bare request without a credential) does not identify the listener as
+Caveman, and the maintainer accepted that risk (decision M1, option A, in #707). An accidental listener on that port, such as a development
+server, or another local user's process on a free port would receive it. The
+exposure equals the one that existed when a whole session was routed through a
+settings file. The wrapper does not verify the listener's identity.
+
+## Never `--bare`
+
 Never start a Claude child with `--bare` on a subscription login, because under
 `--bare` Claude Code reads no OAuth credentials and the child cannot
 authenticate. The wrapper never adds `--bare`, `--setting-sources` or
@@ -88,19 +117,30 @@ authenticate. The wrapper never adds `--bare`, `--setting-sources` or
 
 When the proxy does not answer, the wrapper stops with exit 3 without starting
 the child and prints one line naming `http://127.0.0.1:8787`, the probe's exit
-status, `SDG_MODEL_ROUTE=off` and the opt-out (answer `process-model-routing`
-no). The probe is `curl -s -o /dev/null --connect-timeout 2 --max-time 3`
+status and `SDG_MODEL_ROUTE=off` as the way to run that one child without the
+route. The line names answering `process-model-routing` `no` only as switching
+the wrapper off; for Codex it adds that the user's own Codex config still routes
+a Codex child through the proxy, compressed, under a `no` answer, and that only
+`SDG_MODEL_ROUTE=off` sends it direct. The probe is `curl -s -o /dev/null --connect-timeout 2 --max-time 3`
 against the proxy; only exit 0, any HTTP answer, means up. There is no silent
 fallback to a direct launch.
 
 With exit 4 it refuses a Claude child when the parent is already routed, that
 is when the inherited `ANTHROPIC_BASE_URL` is set and is not exactly
 `https://api.anthropic.com` (an empty value and a trailing slash count as
-routed). A settings file that sets `env.ANTHROPIC_BASE_URL` outranks the value
-the wrapper puts on the child, so the wrapper refuses (exit 4) and names the file
-instead of starting a child that would silently go elsewhere. It refuses the
-same way for any value of that key, the first-party URL included, and for a
-checked file that exists but is unreadable, empty, not valid JSON, not a JSON
+routed). It also refuses when the inherited `ANTHROPIC_CUSTOM_HEADERS` already
+has an `x-cave-transforms` header (the name compared in any case), because the
+wrapper never replaces a header the user set; the message names the variable,
+not its value.
+
+A settings file whose `env` sets any of the five variables the wrapper adds
+(`ANTHROPIC_BASE_URL`, `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL`, `NO_PROXY`,
+`no_proxy`, `ANTHROPIC_CUSTOM_HEADERS`) outranks the value the wrapper puts on the
+child, so the wrapper refuses (exit 4) and names the file and the key, never the
+value, instead of starting a child that would silently go around the proxy, lose
+the pass-through header or the first-party flag, or send the loopback request
+through an outside proxy. It refuses the same way for any value of those keys,
+the first-party URL included, and for a checked file that exists but is unreadable, empty, not valid JSON, not a JSON
 object, or has an `env` that is not an object. The checked locations, kept once
 in the wrapper (`SETTINGS_LOCATIONS`) and here:
 
@@ -126,10 +166,38 @@ with exit 4. This list follows Claude Code's documented settings scopes; it has
 not been probed against every Claude Code version.
 
 A Codex child is refused with exit 4 when `${CODEX_HOME:-$HOME/.codex}/config.toml`
-is missing or cannot be parsed, when its top-level `model_provider` is not
-`caveman`, or when its `[model_providers.caveman]` table already has
-`http_headers`. The Codex route itself lives in the user's own Codex config,
-written by the Caveman installer, which SDG reads but never writes.
+is missing or cannot be parsed, when its effective provider is not `caveman`,
+when its top-level `profile` names no profile table, or when the `caveman`
+provider already has `http_headers` or `env_http_headers`. The effective provider
+is the `model_provider` of the profile that the top-level `profile` key selects,
+when that profile sets one, and otherwise the top-level `model_provider`. Keys
+count in every TOML form (table headers, dotted keys, inline tables at any
+depth). The Codex route itself lives in the user's own Codex config, written by
+the Caveman installer, which SDG reads but never writes.
+
+It also refuses a Codex command whose own arguments after `exec`, up to a lone
+`--`, select a provider or profile or change a provider table, because an
+argument placed after the wrapper's `-c` wins. The message names the argument,
+never its value. The list, kept once in the wrapper (`CODEX_SELECTION`) and here:
+
+<!-- BEGIN codex-selection -->
+```
+--profile
+-p
+--oss
+-c|--config model_provider
+-c|--config profile
+-c|--config profiles.*
+-c|--config model_providers*
+```
+<!-- END codex-selection -->
+
+A line without a key is an option that refuses by itself, as `--opt value` or
+`--opt=value`. A line with a key is `-c` or `--config` (value separate or after
+`=`) whose key, the text before its first `=` with whitespace and quotes trimmed,
+equals that key or, with a trailing `*`, starts with it. This list follows the
+Codex CLI options documented for this version; it has not been probed against
+every Codex version.
 
 Two test seams exist, `SDG_ROUTE_PROBE` (an executable used instead of `curl`,
 with the same arguments) and `SDG_ROUTE_MANAGED_SETTINGS` (a non-empty path that
@@ -169,6 +237,9 @@ and Claude sessions did too while a user settings file pointed at the proxy. Som
 of them may have worked on contract text that was cut, and cut text stays cut for
 the rest of a conversation. Whether that changed any role's decision cannot be
 established from the metadata SDG may read; this change does not remediate it.
+After this change the same holds for a Codex child under a `no` answer whose
+user's own Codex config routes it through the proxy: it still runs there
+compressed.
 
 ## Live check
 

@@ -166,28 +166,28 @@ assert_exit_status
 assert_parent_untouched
 
 # --- planted mutants: each must turn its assertion red --------------------------
-END_EXEC='done
+END_EXEC='export $CLAUDE_CHILD_VARS
 exec "$@"'
 rc_kill "S701/kill/overwrite-NO_PROXY" \
-  'NO_PROXY|no_proxy) printf' 'NO_PROXY) printf "%s" "$LOOPBACK_NO_PROXY" ;; no_proxy) printf' routed_b
+  'NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"' 'NO_PROXY="$LOOPBACK_NO_PROXY"' routed_b
 rc_kill "S701/kill/overwrite-no_proxy" \
-  'NO_PROXY|no_proxy) printf' 'no_proxy) printf "%s" "$LOOPBACK_NO_PROXY" ;; NO_PROXY) printf' routed_b
+  'no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"' 'no_proxy="$LOOPBACK_NO_PROXY"' routed_b
 rc_kill "S701/kill/overwrite-headers" \
-  '"${inherited:+$inherited$'"'"'\n'"'"'}$TRANSFORM_HEADER"' '"$TRANSFORM_HEADER"' routed_b
+  'ANTHROPIC_CUSTOM_HEADERS="${ANTHROPIC_CUSTOM_HEADERS:+' 'ANTHROPIC_CUSTOM_HEADERS="$TRANSFORM_HEADER" #' routed_b
 rc_kill "S701/kill/uppercase-only-NO_PROXY" \
-  ' NO_PROXY no_proxy ' ' NO_PROXY ' routed_c
+  'no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"' ':' routed_c
 rc_kill "S701/kill/no_proxy-from-NO_PROXY" \
-  'local inherited="${!1:-}"' 'local inherited="${!1:-}"; [ "$1" = no_proxy ] && inherited="${NO_PROXY:-}"' routed_c
-rc_kill "S701/kill/extra-variable" "$END_EXEC" 'done
+  'no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"' 'no_proxy="$NO_PROXY"' routed_c
+rc_kill "S701/kill/extra-variable" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 export SDG_EXTRA=1
 exec "$@"' routed_a
 rc_kill "S701/kill/missing-first-party-flag" \
   ' _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL ' ' ' routed_a
-rc_kill "S701/kill/bare-injected" "$END_EXEC" 'done
+rc_kill "S701/kill/bare-injected" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 exec "$@" --bare' routed_a
-rc_kill "S701/kill/setting-sources-injected" "$END_EXEC" 'done
+rc_kill "S701/kill/setting-sources-injected" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 exec "$@" --setting-sources ""' routed_a
-rc_kill "S701/kill/argument-resplitting" "$END_EXEC" 'done
+rc_kill "S701/kill/argument-resplitting" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 exec $*' routed_a
 rc_kill "S701/kill/header-check-case-sensitive" \
   " | tr '[:upper:]' '[:lower:]')\"" ')"' refused_one "${conflicts[0]}" up
@@ -205,16 +205,16 @@ rc_kill "S701/kill/header-check-after-probe" \
   if inherited_transform_header; then' refused_one "${conflicts[0]}" down
 rc_kill "S701/kill/settings-write" \
   '  user_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"' '  user_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"; : >"$user_dir/settings.json.sdg"' assert_parent_untouched
-rc_kill "S701/kill/zshrc-export" "$END_EXEC" 'done
+rc_kill "S701/kill/zshrc-export" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 echo "export ANTHROPIC_BASE_URL=$CLAUDE_ROUTE_URL" >>"$HOME/.zshrc"
 exec "$@"' assert_parent_untouched
-rc_kill "S701/kill/home-claude-settings-env" "$END_EXEC" 'done
+rc_kill "S701/kill/home-claude-settings-env" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 echo "{\"env\":{\"ANTHROPIC_BASE_URL\":\"$CLAUDE_ROUTE_URL\"}}" >"$HOME/.claude/settings.json"
 exec "$@"' assert_parent_untouched
-rc_kill "S701/kill/envrc-in-cwd" "$END_EXEC" 'done
+rc_kill "S701/kill/envrc-in-cwd" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 echo "export ANTHROPIC_BASE_URL=$CLAUDE_ROUTE_URL" >.envrc
 exec "$@"' assert_parent_untouched
-rc_kill "S701/kill/exit-status-remapped" "$END_EXEC" 'done
+rc_kill "S701/kill/exit-status-remapped" "$END_EXEC" 'export $CLAUDE_CHILD_VARS
 "$@"; exit 0' assert_exit_status
 
 test_done
