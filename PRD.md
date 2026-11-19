@@ -2454,6 +2454,51 @@ or sandbox exception and cannot prove independence, capability or obedience.
 Local structural checks cannot establish that every historical decision was
 recorded; reconcile available issue/PR artifacts and report missing evidence.
 
+### F75 — Route process-launched model children through the Caveman proxy (issue #707)
+
+**Serves:** #707 AC1–AC12.
+One wrapper, `route-child.sh <claude|codex> -- <command> [args...]`, owns
+routing for a pipeline stage launched as a separate model process. The
+Orchestrator session, the behavior runner, and in-session Agent-tool and
+`spawn_agent` subagents (which share their parent's endpoint and are not
+routable) stay direct. The wrapper owns the route URLs, the opt-in, the
+off switch, the checks, the proxy probe and the pass-through header; no other
+tracked SDG file assigns `ANTHROPIC_BASE_URL`, contains the proxy address
+or a transform header, or writes user-level or adopted-project settings.
+
+Usage checks run first, in every mode: the first word must match the
+runtime and, for Codex, the second word must be exactly `exec`; otherwise exit
+2. Routing is on only when the project's adoption answer for
+`process-model-routing` is yes (read through `answered_yes`; the row is
+offered where `uses-multi-agent-roles` holds, `Reaches session: none`). The
+environment variable `SDG_MODEL_ROUTE=off` (exact, lowercase) can only turn
+routing off for one run, any other value being ignored with one stderr line: a
+Claude child then gets no routing variable, a Codex child goes directly to
+OpenAI through a per-run `-c 'model_provider="openai"'` override placed after
+`exec`. With routing on, the wrapper refuses (exit 4, naming the cause) when
+the inherited `ANTHROPIC_BASE_URL` is set to anything but exactly
+`https://api.anthropic.com` (empty and trailing slash included), when a
+settings file the child would load has the key `env.ANTHROPIC_BASE_URL` with
+any value or is unreadable, empty or not a JSON object, when the platform is
+neither macOS nor Linux, or
+when the Codex config does not route through Caveman or already sets
+`http_headers`; it refuses with exit 3 and a clear message when the proxy probe
+does not exit 0 (only an answer counts as up). There is no silent direct fallback.
+
+Every routed child, Claude and Codex, carries the pass-through header
+`x-cave-transforms: caveman.pass-through.v1`, so it is metered but its text
+arrives uncut; allowing compression for children needs a later explicit
+decision by the maintainer. For the Claude runtime only, `session-context.sh`
+prints one fixed warning line (at most 160 characters, no path or value) when
+the main session looks routed, reading the environment and the user and
+project settings files directly, failing open. No session text tells the
+Orchestrator to use the wrapper; that instruction is handed to #640. The behavior
+runner refuses an inherited non-first-party `ANTHROPIC_BASE_URL`. A note in
+`docs/model-routing.md` (not `ORCHESTRATOR.md` or `WORKFLOW.md`) states the
+limits. The wrapper runs on macOS `/bin/bash` 3.2 without a `timeout`
+binary and reads JSON with `python3 -I`. A live smoke test through the real
+proxy (AC12) is separate from the offline tests.
+
 ## Non-functional characteristics
 
 ### Security

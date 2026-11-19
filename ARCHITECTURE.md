@@ -3581,3 +3581,149 @@ rule is introduced.
 - **Effect of this update.** Documentation only, no scenario or code change:
   S594-S603 and `release_signal` at d89c017 already implement these decisions (S598/d
   covers the fork case). The Rule (d) bullet was not removed, only superseded.
+
+### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
+
+- **Decision.** [A] The Orchestrator session talks to its provider directly. A
+  pipeline stage launched as a separate model process starts through
+  `route-child.sh <claude|codex> -- <command> [args...]` at the repo root (resolved
+  through `$SPEC_DRIVEN_GUARDRAILS_DIR`). That script is the one Module that owns
+  routing. Its Interface hides the opt-in, the off switch, the parent check, the
+  settings and config checks, the proxy probe, the route URL, the transform header
+  and the per-runtime way to apply them. Deletion test: without it, every launch
+  (by hand, by #640's launch rules, by #513 W3's launcher) rebuilds the same checks.
+  The two adapters, `claude` and `codex`, are both real. Exit codes: the child's own
+  (the wrapper `exec`s it), 2 usage, 3 proxy down, 4 refused.
+- **Boundary.** [V, probes in #707 Architect report 4] In-session Agent-tool and
+  `spawn_agent` subagents share their parent's endpoint and are not routable; they
+  stay direct, like the Orchestrator. The behavior runner
+  (`test/behavior/orchestrator_diff.py`) stays direct by design and refuses to
+  start when the inherited `ANTHROPIC_BASE_URL` is set and not first-party. SDG
+  never sets `ANTHROPIC_BASE_URL` in a parent process, a settings file or an adopted
+  project, and never writes `~/.codex/config.toml`.
+- **Opt-in and off switch.** [A] Routing is on only when the project's
+  `process-model-routing` answer is yes, read through `answered_yes`
+  (`lib/changes.sh`) on the git top level of the child's working directory. A
+  missing repository or answer means off. `SDG_MODEL_ROUTE=off`, exact and
+  case-sensitive, is the only per-run input and only switches off. When routing is
+  on, any other non-empty value is ignored with one stderr line saying that only
+  `off` switches off. The `CHANGES.md` row is `Default: question`,
+  `Applies if: uses-multi-agent-roles`, a new `predicate_true` arm equal to
+  `answered_yes "$project_dir" process-multi-agent-roles`. Only a project that runs
+  the staged pipeline launches stage processes, so no other project is asked. The
+  row has `Reaches session: none`; see the hand-off bullet.
+- **Order inside the wrapper.** [A] Usage first, in every mode: a known runtime, the
+  `--`, a non-empty command; for `codex`, first word `codex` and second word exactly
+  `exec` (no alias, no option before `exec`), else exit 2. Then the opt-in: off
+  means `exec "$@"` unchanged, with no probe and no checks (Codex under `off` gets
+  only its per-run direct override). Then the checks (exit 4), then the probe
+  (exit 3), then `exec`.
+- **Claude adapter.** [A] Refuse when the inherited `ANTHROPIC_BASE_URL` is set and
+  not exactly `https://api.anthropic.com`. Set-but-empty and a trailing slash count
+  as not first-party. Refuse when any checked settings file has the key
+  `env.ANTHROPIC_BASE_URL` with any value, the first-party value included, because
+  settings `env` outranks the child's inline value [V] and would send the child
+  around the proxy. Also refuse when a checked file exists but cannot be read, is
+  empty or whitespace-only, is not valid JSON, is not a JSON object, or has an `env`
+  that is not an object. The checked list, kept once in the wrapper and once in
+  `docs/model-routing.md`: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`;
+  `.claude/settings.json` and `.claude/settings.local.json` in the child's working
+  directory and in its git top level; the managed-settings file; each `--settings`
+  argument (`--settings <file>`, `--settings=<file>`, inline JSON). The managed path
+  is `/Library/Application Support/ClaudeCode/managed-settings.json` when
+  `uname -s` is `Darwin` and `/etc/claude-code/managed-settings.json` when it is
+  `Linux`. Any other platform refuses (exit 4), because the location is unknown. The
+  test-only variable `SDG_ROUTE_MANAGED_SETTINGS`, when non-empty, replaces that one
+  path and nothing else. It cannot switch routing on, skip another location or
+  change the platform rule for the other files. Empty means unset. It is documented
+  next to `SDG_ROUTE_PROBE` and is not a security boundary: the operator who can
+  set it can also set `SDG_MODEL_ROUTE=off`. Tests always set it, so they never read
+  the real managed path. JSON is read with `python3 -I`. After the checks and the
+  probe, `exec env` adds exactly four variables on the child only:
+  `ANTHROPIC_BASE_URL=http://127.0.0.1:8787/w/claude`,
+  `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1`, `NO_PROXY` with `127.0.0.1,localhost`
+  appended comma-separated to any inherited value, and `ANTHROPIC_CUSTOM_HEADERS`
+  with `x-cave-transforms: caveman.pass-through.v1` appended newline-separated to any
+  inherited value. Arguments pass byte for byte. Never `--bare`, `--setting-sources`
+  or `--settings` injection.
+- **Codex adapter.** [V placement after `exec`; A the rest] With routing on, it reads
+  `${CODEX_HOME:-$HOME/.codex}/config.toml` read-only. It refuses (exit 4, naming the
+  file and the cause) when the file is missing or unparsable, when the top-level
+  `model_provider` is not `caveman`, or when the `[model_providers.caveman]` table
+  already has `http_headers`. It probes and then inserts
+  `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
+  directly after `exec`. Under `off` it inserts `-c 'model_provider="openai"'` directly
+  after `exec`, without a probe or checks: that one child goes direct. The Codex
+  adapter adds no environment variable and does not read Claude settings.
+- **Probe.** [A] `curl -s -o /dev/null --connect-timeout 2 --max-time 3
+  http://127.0.0.1:8787/`, or the executable named by `SDG_ROUTE_PROBE` with the same
+  arguments. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
+  is down, not only 7 and 28: 52, 56 or 127 (no `curl`) also means no answer was
+  seen, and refusing is the only behavior that never routes into a broken proxy or
+  falls back to direct. Down means exit 3 and one stderr message. It names
+  `http://127.0.0.1:8787`, the probe's exit status, `SDG_MODEL_ROUTE=off` and the
+  opt-out (answer `process-model-routing` `no`). For Codex it adds that Codex itself
+  is routed by the user's own config. No `timeout`, `gtimeout` or `nc`, and no bash 4
+  feature (macOS `/bin/bash` 3.2).
+- **Pass-through by default.** [V, one paired probe per runtime] Every routed child
+  carries the pass-through header, so it is metered but its text arrives uncut.
+  Allowing compression for children later means removing that one constant, after a
+  recorded maintainer decision and a test that children recover cut text.
+- **Single definition.** [A] `127.0.0.1:8787`, `ANTHROPIC_BASE_URL` assignments,
+  `x-cave-transforms` and `model_provider` overrides occur in `route-child.sh` only,
+  besides docs and tests. `adopt.sh` writes no `env` key into any `settings.json`.
+  "Docs" means every tracked `*.md` file outside `templates/` and `skills/`. That
+  includes the spec files (`PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`,
+  `CHANGELOG.md`), which must name these strings to specify them. "Tests" means
+  every file under `test/`. A non-Markdown file under `docs/`, such as a script, is
+  not allowed. `templates/` and `skills/` are excluded because `adopt.sh` installs
+  them into adopted projects. `WORKFLOW.md` is a doc but stays free of routing text
+  (AC10).
+  The first-party URL `https://api.anthropic.com` is a fact about the provider, not
+  a route, and appears in three readers: the wrapper, `session-context.sh` and the
+  behavior runner. Each uses exact string equality, and each has its own scenario
+  (S705, S708, S710) to keep them equal. A shared library for one comparison across
+  bash and Python would not be deep enough to pay for itself.
+- **Session-start warning.** [A] `session-context.sh --runtime claude` prints one
+  fixed line when the inherited environment, the user settings file
+  (`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`) or the project's
+  `.claude/settings.json` or `.claude/settings.local.json`, read directly, sets a
+  `ANTHROPIC_BASE_URL` that is not first-party. The line has no path and no value,
+  is at most 160 characters, and is printed once whatever the number of sources. It
+  sits in the Claude branch, so in slot 1. An unreadable or unparsable file adds
+  nothing (fail open; a hook never blocks). The managed file is not read there. That
+  keeps every existing session-context test independent of the machine, and an
+  admin-managed URL is not the installer-rewrite incident this warning exists for.
+  The Codex runtime prints nothing extra: its main session is routed by the user's
+  own `config.toml`, which SDG does not own. Budget, measured on `main` c7afb6d with
+  S318's worst-case fixture: slot 1 is 8,668 characters, so the line leaves at least
+  170 under `CONTEXT_BUDGET_CHARS` (9,000). On `release/607-panel-mechanisms`, slot 1
+  is 8,467.
+- **Hand-off (#640, #513 W3).** [A] The instruction "launch every process-delegated
+  Claude or Codex stage as `"$SPEC_DRIVEN_GUARDRAILS_DIR/route-child.sh" <claude|codex>
+  -- <command>`" is a launch rule. Per the confirmed decision 7 it belongs to #640's
+  launch rules, which with #513 W3's launcher must call the wrapper rather than
+  reimplement any part of it. They must treat exit 3 and 4 as a halt to report,
+  never as a cue to retry without the wrapper. This item injects no session text,
+  for a measured reason: on `main` slot 2 is 8,499 characters, so it already sits at
+  the 500-character headroom floor and the 8,500 fallback line of S318. Slot 1 is
+  8,668, and with the warning line plus a roughly 200-character instruction it would
+  pass 9,000. Making room means editing the stamped `ORCHESTRATOR.md` (a behavior
+  run) or a third slot (A41: more than two parts needs a redesign). Both are outside
+  #707. Until #640 lands, a stage launched without the wrapper runs unrouted, which
+  is today's state (decision 8).
+- **Disclosed risk.** [A, not verifiable] Before this change, Codex role children ran
+  through the proxy in `compress` mode. Some of them may have worked on contract text
+  cut by about nine tenths (Claude children: about half), and cut text stays cut for
+  the rest of a conversation. Whether that changed any role's decision cannot be
+  established from the metadata SDG may read. This item does not remediate it.
+- **Violated when:** a tracked SDG file other than `route-child.sh`, docs and tests
+  assigns `ANTHROPIC_BASE_URL`, or contains the proxy address, a transform header or
+  a `model_provider` override; anything other than the adoption answer switches
+  routing on; the wrapper starts a child while the parent is routed, a checked
+  settings file sets or cannot be read for the base URL, the Codex config is not on
+  the Caveman provider, or the probe exits non-zero; a routed child runs without
+  the pass-through header or with `--bare`; the wrapper writes any settings or
+  config file; a #640 or #513 launcher routes a child by its own means or falls back
+  to direct after exit 3 or 4; routing text appears in `ORCHESTRATOR.md` or
+  `WORKFLOW.md`.
