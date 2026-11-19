@@ -3702,12 +3702,37 @@ rule is introduced.
   lone `--`, select a provider or profile or change a provider table, because a
   user argument placed after the wrapper's `-c` wins and would make the wrapper
   report a route the child does not take. The closed list, kept once in the
-  wrapper and once in `docs/model-routing.md` like the settings locations:
-  `--profile` and `-p` (separate value or `=` form), `--oss`, and `-c`/`--config`
-  (separate value or `=` form) whose key, the text before its first `=` with
-  whitespace and quotes trimmed, is `model_provider` or `profile` or starts with
-  `profiles.` or `model_providers`. [U, accepted like AC8's list] the list follows
-  the Codex CLI options documented for this version. With checks passed it probes
+  wrapper and once in `docs/model-routing.md` like the settings locations
+  (widened in review round 2, `codex-selection-profiles-key` and its siblings):
+  - options that refuse by themselves: `--profile` and `-p`, `--oss`,
+    `--local-provider`, `--ignore-user-config` (Codex then skips `config.toml`
+    and runs the built-in `openai` provider direct while the wrapper reports a
+    route [V codex-cli 0.166.0: `provider: openai`]);
+  - `-c`/`--config` whose key's first dotted segment, with whitespace and quotes
+    trimmed from each segment, is one of `model_provider`, `model_providers`,
+    `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`. Matching is
+    by first segment, not by text prefix, so `profiles` alone (a whole-table
+    `-c 'profiles={x={...}}'`) refuses like `profiles.x.model_provider`.
+    `openai_base_url` redirects the built-in `openai` provider [V 0.166.0: a
+    `-c openai_base_url=...` child sent `GET /q/responses` to that URL], which is
+    the provider `off` selects; `chatgpt_base_url` is listed on the same
+    reasoning [U whether model traffic under a ChatGPT login follows it; the
+    refusal is the cheap error].
+  Every option counts in all the forms the Codex argument parser accepts: the
+  value as the next argument, after `=` (`--profile=x`, `-c=k=v`), and, for the
+  short options `-p` and `-c`, attached (`-px`, `-cmodel_provider="x"`) [V 0.166.0:
+  both attached forms changed the provider]. Long options are not abbreviated by
+  that parser [V 0.166.0: `--prof`, `--conf` and `--ignore-user` are errors], so
+  only the full names are listed. An argument that is the value of an option the
+  list does not know (for example `-o --oss`) still refuses: over-refusal is the
+  safe direction. [U, accepted like AC8's list] the list follows the options of
+  codex-cli 0.166.0. Two facts of that version, recorded, not acted on: a
+  top-level `profile` key is a Codex error there ("legacy `profile` config is no
+  longer supported"), so the profile-table resolution above matters only for
+  older Codex versions, and `-p` there layers `$CODEX_HOME/<name>.config.toml`;
+  a project-local `.codex/config.toml` has `model_provider`, `model_providers`,
+  `profiles`, `openai_base_url` and `chatgpt_base_url` ignored by Codex, so it
+  needs no check [V 0.166.0]. With checks passed it probes
   and then inserts
   `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
   directly after `exec`.
@@ -3717,7 +3742,11 @@ rule is introduced.
   compressed, while `off` promises direct, it first refuses (exit 4) when the
   command's arguments contain an item of the list above, or when `config.toml`
   exists and is unparsable, or its top-level `profile` names a profile that sets
-  a `model_provider` other than `openai` (or names no profile table). A missing
+  a `model_provider` other than `openai` (or names no profile table), or it sets
+  `openai_base_url` or `chatgpt_base_url` at top level or in the selected profile
+  table, with any value (the
+  message names the file and the key, not the value): either would send the
+  `openai` child somewhere other than direct. A missing
   `config.toml` passes: Codex then has no route to override. This is the one
   check `off` runs; it reads only that file and needs no proxy. The Codex adapter
   adds no environment variable and does not read Claude settings.
