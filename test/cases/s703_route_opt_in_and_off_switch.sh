@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# S703 — Only the adoption answer switches routing on; the environment variable only switches it off (#707; AC4)
+# S703 — Only the adoption answer switches routing on; the environment variable only switches it off; `off` refuses a Codex command it cannot send direct (#707; AC4)
 # Covers: F75
 #
 # Seam: the decision matrix through the wrapper's process Interface; the probe
-# log and the direct-run comparison (environment and arguments). One fixture
-# project whose answer file is rewritten per row, so the working directory
-# (and PWD) is the same for the direct and the wrapped run.
+# log, the config hash and the direct-run comparison (environment and
+# arguments). One fixture project whose answer file is rewritten per row, so
+# the working directory (and PWD) is the same for the direct and the wrapped
+# run. Each assertion is a function, run against the real wrapper and then
+# against planted mutants that must turn it red (rc_kill).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -22,16 +24,21 @@ rc_init
 
 claude="$RC/bin/claude"
 codex="$RC/bin/codex"
+TOK=tok-7f3a
+mkdir -p "$RC_TOP/.claude"
 
-# Hostile fixture: everything that would refuse or route if routing were on.
+# Hostile fixture: everything that would refuse if routing were on, and a
+# user Codex config that routes Codex through the proxy.
 hostile() {
   rc_env_set "ANTHROPIC_BASE_URL=http://127.0.0.1:9/elsewhere"
+  rc_env_set "ANTHROPIC_CUSTOM_HEADERS=X-Cave-Transforms: $TOK"
   echo '{"env": {"ANTHROPIC_BASE_URL": "http://127.0.0.1:9/dead"}}' >"$RC/cfg/settings.json"
-  rc_codex_config openai
+  echo '{"env": {"NO_PROXY": "corp.example"}}' >"$RC_TOP/.claude/settings.json"
+  rc_codex_config valid
   echo 7 >"$RC/probe.exit"
 }
 clean() {
-  rm -f "$RC/cfg/settings.json" "$RC/probe.exit"
+  rm -f "$RC/cfg/settings.json" "$RC_TOP/.claude/settings.json" "$RC/probe.exit"
   rc_codex_config valid
 }
 
@@ -42,35 +49,43 @@ set_route() {
 }
 
 # --- (1) answer not yes: a pure pass-through for every value ---------------
+# unchanged_run <label> <runtime> <command...>: same environment and
+# arguments as a direct run, no stderr, no probe.
+unchanged_run() {
+  local label="$1" rt="$2"
+  shift 2
+  rc_direct "$@"
+  rc_run "$rt" -- "$@"
+  [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || { fail "$label — not run unchanged: exit $rc_status, started $rc_started, stderr: $rc_err"; return; }
+  [ -z "$(rc_env_diff)" ] || fail "$label — environment changed: $(rc_env_diff)"
+  rc_args_equal_direct || fail "$label — arguments changed (no header override and no direct override may be added)"
+  [ -z "$rc_err" ] || fail "$label — stderr is not empty: $rc_err"
+  [ "$rc_probe_calls" = 0 ] || fail "$label — the probe ran"
+}
+not_yes_case() { # <answer> <value|UNSET>
+  local answer="$1" value="$2" label="S703/1/$1/[$2]"
+  rc_answer "$answer"
+  rc_env_reset; hostile; set_route "$value"
+  unchanged_run "$label/claude" claude "$claude" -p 'x y'
+  unchanged_run "$label/codex" codex "$codex" exec --ephemeral 'x y'
+  unchanged_run "$label/codex-listed-argument" codex "$codex" exec --profile x 'x y'
+  clean
+  rc_answer yes
+}
 values="UNSET|off|on|1|true|route||OFF|Off| off"
 for answer in nofile absent no pending notes prefixed; do
-  rc_answer "$answer"
   old_ifs="$IFS"; IFS='|'
-  for value in $values; do
-    IFS="$old_ifs"
-    rc_env_reset; hostile; set_route "$value"
-    for rt in claude codex; do
-      if [ "$rt" = claude ]; then cmd=("$claude" -p 'x y'); else cmd=("$codex" exec --ephemeral 'x y'); fi
-      rc_direct "${cmd[@]}"
-      rc_run "$rt" -- "${cmd[@]}"
-      label="S703/1/$answer/[$value]/$rt"
-      [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "$label — not run unchanged: exit $rc_status, started $rc_started, stderr: $rc_err"
-      [ -z "$(rc_env_diff)" ] || fail "$label — environment changed: $(rc_env_diff)"
-      rc_args_equal_direct || fail "$label — arguments changed"
-      [ -z "$rc_err" ] || fail "$label — stderr is not empty: $rc_err"
-      [ "$rc_probe_calls" = 0 ] || fail "$label — the probe ran"
-    done
-    IFS='|'
-  done
+  # shellcheck disable=SC2086
+  set -- $values
   IFS="$old_ifs"
-  clean
+  for value in "$@"; do not_yes_case "$answer" "$value"; done
 done
 
 # --- (2) answer yes ---------------------------------------------------------------
-rc_answer yes
-for value in UNSET '' on 1 OFF Off ' off'; do
+yes_value_case() { # <value|UNSET>
+  local value="$1" label="S703/2/yes/[$1]" claude_err codex_err e
+  rc_answer yes
   rc_env_reset; clean; set_route "$value"
-  label="S703/2/yes/[$value]"
   rc_direct "$claude" -p x
   rc_run claude -- "$claude" -p x
   [ "$rc_started" = 1 ] || fail "$label/claude — not started: exit $rc_status, stderr: $rc_err"
@@ -91,72 +106,205 @@ for value in UNSET '' on 1 OFF Off ' off'; do
         grep -q 'SDG_MODEL_ROUTE' <<<"$e" || fail "$label — the stderr line does not name SDG_MODEL_ROUTE: $e"
       done ;;
   esac
-done
+  rc_env_reset
+}
+for value in UNSET '' on 1 OFF Off ' off'; do yes_value_case "$value"; done
 
-# Exact off: no routing, no probe, no checks, Codex goes direct.
-rc_env_reset; hostile; set_route off
-rc_direct "$claude" -p x
-rc_run claude -- "$claude" -p x
-[ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "S703/2/off/claude — not run: exit $rc_status, stderr: $rc_err"
-[ -z "$(rc_env_diff)" ] || fail "S703/2/off/claude — a routing variable was added: $(rc_env_diff)"
-rc_args_equal_direct || fail "S703/2/off/claude — arguments changed"
-[ "$rc_probe_calls" = 0 ] || fail "S703/2/off/claude — the probe ran"
-[ -z "$rc_err" ] || fail "S703/2/off/claude — stderr: $rc_err"
-rc_env_set "NO_PROXY=corp.example"
-rc_env_set "ANTHROPIC_CUSTOM_HEADERS=x-keep: 1"
-rc_direct "$claude" -p x
-rc_run claude -- "$claude" -p x
-[ -z "$(rc_env_diff)" ] || fail "S703/2/off/claude — inherited NO_PROXY or headers changed: $(rc_env_diff)"
-rc_direct "$codex" exec --ephemeral 'x y'
-rc_run codex -- "$codex" exec --ephemeral 'x y'
-[ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "S703/2/off/codex — not run: exit $rc_status, stderr: $rc_err"
-rc_args_file exec -c "$RC_CODEX_DIRECT_OVERRIDE" --ephemeral 'x y'
-cmp -s "$RC/expected.args" "$RC/child.args" || fail "S703/2/off/codex — arguments are not exec, -c, model_provider=\"openai\", rest"
-[ -z "$(rc_env_diff)" ] || fail "S703/2/off/codex — environment changed: $(rc_env_diff)"
-[ "$rc_probe_calls" = 0 ] || fail "S703/2/off/codex — the probe ran"
+# Exact off, Claude: none of the five variables, no check, no probe.
+off_claude() {
+  rc_answer yes
+  rc_env_reset; hostile; set_route off
+  rc_env_set "NO_PROXY=corp.example"
+  rc_env_set "no_proxy=corp.internal"
+  unchanged_run "S703/2/off/claude" claude "$claude" -p x
+  clean
+  rc_env_reset
+}
+off_claude
+
+# Exact off, Codex: the direct override after exec, no probe, unless the
+# command or the config would route the child anyway (exit 4).
+off_codex_direct() { # <config variant> <args after exec...>
+  local v="$1" label="S703/2/off/codex/$1"
+  shift
+  rc_answer yes
+  rc_env_reset; set_route off
+  rc_codex_config "$v"
+  echo 7 >"$RC/probe.exit"
+  rc_run codex -- "$codex" exec "$@"
+  rm -f "$RC/probe.exit"
+  [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || { fail "$label [$*] — not run: exit $rc_status, stderr: $rc_err"; rc_codex_config valid; return; }
+  rc_args_file exec -c "$RC_CODEX_DIRECT_OVERRIDE" "$@"
+  cmp -s "$RC/expected.args" "$RC/child.args" || fail "$label [$*] — arguments are not exec, -c, model_provider=\"openai\", rest"
+  [ "$rc_probe_calls" = 0 ] || fail "$label [$*] — the probe ran"
+  [ -z "$rc_err" ] || fail "$label [$*] — stderr: $rc_err"
+  rc_codex_config valid
+  rc_env_reset
+}
+off_codex_refused() { # <config variant> <word> <args after exec...>
+  local v="$1" word="$2" label="S703/2/off/codex-refused/$1" h1
+  shift 2
+  rc_answer yes
+  rc_env_reset; set_route off
+  rc_codex_config "$v"
+  h1="$(rc_tree_hash "$RC/codexhome")"
+  rc_run codex -- "$codex" exec "$@"
+  [ "$rc_status" = 4 ] || fail "$label [$*] — exit $rc_status, expected 4 (stderr: $rc_err)"
+  [ "$rc_started" = 0 ] || fail "$label [$*] — the child was started"
+  [ "$rc_probe_calls" = 0 ] || fail "$label [$*] — the probe ran"
+  grep -qi -- "$word" <<<"$rc_err" || fail "$label [$*] — the message does not name '$word': $rc_err"
+  case "$rc_err" in *"$TOK"*) fail "$label [$*] — the message prints a value: $rc_err" ;; esac
+  [ "$h1" = "$(rc_tree_hash "$RC/codexhome")" ] || fail "$label [$*] — config.toml was written"
+  rc_codex_config valid
+  rc_env_reset
+}
+off_codex_direct valid --ephemeral 'x y'
+off_codex_direct missing --ephemeral 'x y'
+off_codex_direct profile-direct x
+off_codex_direct profile-noprovider x
+off_codex_direct valid -- --profile x
+off_codex_refused unparsable config.toml x
+off_codex_refused unparsable pars x
+off_codex_refused off-profile-caveman config.toml x
+off_codex_refused off-profile-caveman caveman x
+off_codex_refused off-profile-inline caveman x
+off_codex_refused profile-missing missing x
+off_codex_refused valid --profile --profile "$TOK" x
+off_codex_refused valid --profile "--profile=$TOK" x
+off_codex_refused valid -p -p "$TOK" x
+off_codex_refused valid --oss --oss x
+off_codex_refused valid model_provider -c "model_provider=\"$TOK\"" x
+off_codex_refused valid profile "--config=profile=$TOK" x
+off_codex_refused valid profiles.x.model_provider -c "profiles.x.model_provider=\"$TOK\"" x
+off_codex_refused valid model_providers.caveman.base_url -c "model_providers.caveman.base_url=\"http://$TOK\"" x
 clean
 
 # --- (3) launch paths: subdirectory, symlink outside the repo, $SPEC_DRIVEN_GUARDRAILS_DIR
-rc_env_reset
 ln -s "$RC_ROUTE" "$RC/elsewhere/rc-abs"
 ln -s ../elsewhere/rc-abs "$RC/elsewhere/rc-rel" 2>/dev/null || ln -s rc-abs "$RC/elsewhere/rc-rel"
 ln -s "$TEST_REPO_ROOT" "$SANDBOX/workflow"
-for launch in "$RC/elsewhere/rc-abs" "$RC/elsewhere/rc-rel" "$SANDBOX/workflow/route-child.sh" "$RC_ROUTE"; do
-  for how in bash shebang; do
-    if [ "$how" = bash ]; then RC_LAUNCH=(/bin/bash "$launch"); else RC_LAUNCH=("$launch"); fi
+launch_paths() {
+  local launch how saved=("${RC_LAUNCH[@]}")
+  rc_answer yes
+  rc_env_reset
+  for launch in "$RC/elsewhere/rc-abs" "$RC/elsewhere/rc-rel" "$SANDBOX/workflow/route-child.sh" "$RC_ROUTE"; do
+    for how in bash shebang; do
+      if [ "$how" = bash ]; then RC_LAUNCH=(/bin/bash "$launch"); else RC_LAUNCH=("$launch"); fi
+      rc_direct "$claude" -p x
+      rc_run claude -- "$claude" -p x
+      [ "$(rc_env_diff)" = "$(rc_expected_claude_diff)" ] || fail "S703/3/$how/$launch — not routed (exit $rc_status, stderr: $rc_err)"
+    done
+  done
+  RC_LAUNCH=("${saved[@]}")
+}
+launch_paths
+# From the subdirectory and from the top level, with the launcher under test.
+from_sub_and_top() {
+  local where
+  rc_answer yes
+  rc_env_reset
+  for where in "$RC_TOP/sub/dir" "$RC_TOP"; do
+    RC_CWD="$where"
     rc_direct "$claude" -p x
     rc_run claude -- "$claude" -p x
-    [ "$(rc_env_diff)" = "$(rc_expected_claude_diff)" ] || fail "S703/3/$how/$launch — not routed (exit $rc_status, stderr: $rc_err)"
+    [ "$(rc_env_diff)" = "$(rc_expected_claude_diff)" ] || fail "S703/3/cwd=${where#"$RC"/} — not routed (exit $rc_status, stderr: $rc_err)"
   done
-done
-RC_LAUNCH=(/bin/bash "$RC_ROUTE")
-# From the top level as well as from the subdirectory.
-RC_CWD="$RC_TOP"
-rc_direct "$claude" -p x
-rc_run claude -- "$claude" -p x
-[ "$(rc_env_diff)" = "$(rc_expected_claude_diff)" ] || fail "S703/3/top — not routed from the top level"
-RC_CWD="$RC_TOP/sub/dir"
+  RC_CWD="$RC_TOP/sub/dir"
+}
+from_sub_and_top
 
 # --- (4) the answer is the working directory's project, never another one --
 # The wrapper's own repository and $HOME both answer yes.
 wrepo="$RC/wrapper-repo"
-mkdir -p "$wrepo/lib"
-cp "$RC_ROUTE" "$wrepo/route-child.sh"
+mkdir -p "$wrepo/lib" "$RC/nogit"
 cp "$TEST_REPO_ROOT/lib/changes.sh" "$wrepo/lib/changes.sh"
 git -C "$wrepo" init -q -b main
 cp "$RC_TOP/WORKFLOW-ADOPTION.md" "$wrepo/WORKFLOW-ADOPTION.md"
 git -C "$RC/home" init -q -b main
 cp "$RC_TOP/WORKFLOW-ADOPTION.md" "$RC/home/WORKFLOW-ADOPTION.md"
-RC_LAUNCH=(/bin/bash "$wrepo/route-child.sh")
-mkdir -p "$RC/nogit"
-for where in nogit project-no; do
-  rc_env_reset; hostile
-  if [ "$where" = nogit ]; then RC_CWD="$RC/nogit"; else RC_CWD="$RC_TOP/sub/dir"; rc_answer no; fi
-  rc_direct "$claude" -p x
-  rc_run claude -- "$claude" -p x
-  [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "S703/4/$where — not run unchanged: exit $rc_status, stderr: $rc_err"
-  [ -z "$(rc_env_diff)" ] || fail "S703/4/$where — routed from another project's answer: $(rc_env_diff)"
-  [ "$rc_probe_calls" = 0 ] || fail "S703/4/$where — the probe ran"
-done
+other_project() {
+  local where saved=("${RC_LAUNCH[@]}")
+  # The wrapper under test (the real one or a planted mutant), placed in a
+  # repository that answers yes.
+  cp "${RC_LAUNCH[$((${#RC_LAUNCH[@]} - 1))]}" "$wrepo/route-child.sh"
+  RC_LAUNCH=(/bin/bash "$wrepo/route-child.sh")
+  for where in nogit project-no; do
+    rc_env_reset; hostile
+    if [ "$where" = nogit ]; then RC_CWD="$RC/nogit"; else RC_CWD="$RC_TOP/sub/dir"; rc_answer no; fi
+    rc_direct "$claude" -p x
+    rc_run claude -- "$claude" -p x
+    [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "S703/4/$where — not run unchanged: exit $rc_status, stderr: $rc_err"
+    [ -z "$(rc_env_diff)" ] || fail "S703/4/$where — routed from another project's answer: $(rc_env_diff)"
+    [ "$rc_probe_calls" = 0 ] || fail "S703/4/$where — the probe ran"
+    clean
+  done
+  RC_CWD="$RC_TOP/sub/dir"
+  rc_answer yes
+  RC_LAUNCH=("${saved[@]}")
+}
+other_project
+
+# --- planted mutants: each must turn its assertion red --------------------------
+OPT_IN='if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
+  exec "$@"
+fi'
+OFF_IF='if [ "$route_switch" = off ]; then'
+rc_kill "S703/kill/always-route" "$OPT_IN" 'if false; then exec "$@"; fi' not_yes_case no UNSET
+rc_kill "S703/kill/route-on-env-value" "$OPT_IN" \
+  'if [ -z "$top" ] || { ! answered_yes "$top" "$OPT_IN_ID" && [ "${SDG_MODEL_ROUTE:-}" != on ]; }; then
+  exec "$@"
+fi' not_yes_case no on
+rc_kill "S703/kill/off-that-still-probes" "$OFF_IF" "$OFF_IF"'
+  "${SDG_ROUTE_PROBE:-curl}" -s -o /dev/null "$PROXY_ORIGIN/" >/dev/null 2>&1' off_claude
+rc_kill "S703/kill/off-for-Codex-still-proxied" \
+  'exec "$cmd" exec -c "$CODEX_DIRECT_OVERRIDE" "$@"' 'exec "$cmd" exec -c "$CODEX_HEADER_OVERRIDE" "$@"' off_codex_direct valid x
+rc_kill "S703/kill/off-without-the-Codex-selection-check" \
+  '    check_codex off "$@"' '    :' off_codex_refused valid --profile --profile x x
+rc_kill "S703/kill/off-without-the-Codex-selection-check/config" \
+  '    check_codex off "$@"' '    :' off_codex_refused off-profile-caveman caveman x
+rc_kill "S703/kill/off-check-that-refuses-a-missing-config" \
+  '    if mode == "off":
+        sys.exit(0)' '    if False:
+        sys.exit(0)' off_codex_direct missing x
+rc_kill "S703/kill/off-check-that-refuses-an-openai-profile" \
+  'selected["model_provider"] != "openai"' 'selected["model_provider"] != "nobody"' off_codex_direct profile-direct x
+rc_kill "S703/kill/off-check-that-reads-only-the-top-level-key" \
+  'if selected is not None and "model_provider" in selected and selected["model_provider"] != "openai":' 'if False:' \
+  off_codex_refused off-profile-caveman caveman x
+rc_kill "S703/kill/off-check-without-inline-tables" \
+  '    selected = get(data, "profiles", profile) if isinstance(profile, str) else None' \
+  '    selected = get(data, "profiles", profile) if isinstance(profile, str) else None
+    selected = {} if isinstance(get(data, "profiles"), Inline) else selected' \
+  off_codex_refused off-profile-inline caveman x
+rc_kill "S703/kill/not-yes-runs-the-Codex-checks" "$OPT_IN" \
+  'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
+  [ "$runtime" = codex ] && case " $* " in *" --profile "*) exit 4 ;; esac
+  exec "$@"
+fi' not_yes_case no UNSET
+rc_kill "S703/kill/not-yes-adds-the-header" "$OPT_IN" \
+  'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
+  [ "$runtime" = codex ] && exec "$1" exec -c "$CODEX_HEADER_OVERRIDE" "${@:3}"
+  exec "$@"
+fi' not_yes_case no UNSET
+rc_kill "S703/kill/case-insensitive-off" "$OFF_IF" \
+  'if [ "$(printf %s "$route_switch" | tr A-Z a-z)" = off ]; then' yes_value_case OFF
+rc_kill "S703/kill/trim-then-off" "$OFF_IF" \
+  'if [ "$(printf %s "$route_switch" | tr -d " ")" = off ]; then' yes_value_case ' off'
+rc_kill "S703/kill/silent-ignore" 'if [ -n "$route_switch" ]; then' 'if false; then' yes_value_case on
+rc_kill "S703/kill/line-when-routing-off" "$OPT_IN" \
+  'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
+  [ -n "${SDG_MODEL_ROUTE:-}" ] && echo "route-child: SDG_MODEL_ROUTE is ignored" >&2
+  exec "$@"
+fi' not_yes_case no on
+rc_kill "S703/kill/cwd-instead-of-top-level" \
+  'top="$(git rev-parse --show-toplevel 2>/dev/null)" || top=""' 'top="$PWD"' from_sub_and_top
+rc_kill "S703/kill/repository-of-the-wrapper-instead-of-project" \
+  'top="$(git rev-parse --show-toplevel 2>/dev/null)" || top=""' 'top="$script_dir"' other_project
+rc_kill "S703/kill/notes-column-counts" '! answered_yes "$top" "$OPT_IN_ID"' \
+  '! grep -qE "^\| process-model-routing \|.*yes" "$top/WORKFLOW-ADOPTION.md"' not_yes_case notes UNSET
+rc_kill "S703/kill/id-prefix-counts" '! answered_yes "$top" "$OPT_IN_ID"' \
+  '! grep -qE "^\| process-model-routing[^|]* \| yes" "$top/WORKFLOW-ADOPTION.md"' not_yes_case prefixed UNSET
+rc_kill "S703/kill/reimplemented-parser" '! answered_yes "$top" "$OPT_IN_ID"' \
+  '! grep -q "process-model-routing.*yes" "$top/WORKFLOW-ADOPTION.md"' not_yes_case notes UNSET
 
 test_done

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# S713 — The opt-in row exists, asks only projects that run the multi-agent roles, and injects no session text (#707; Scope: opt-in, AC10 second half)
+# S713 — The opt-in row exists, asks only projects that run the multi-agent roles, says what `no` leaves compressed, and injects no session text (#707; Scope: opt-in, AC4, AC10 second half)
 # Covers: F75
 #
 # Seam: CHANGES.md through lib/changes.sh (predicate_true, the parser
 # adopt.sh and pending-changes.sh share), pending-changes.sh, adopt.sh and
-# session-context.sh on fixture projects, whole outputs compared byte for byte.
+# session-context.sh on fixture projects, whole outputs compared byte for byte;
+# the shared not-yes wording checker on the row text. Planted row texts and
+# planted copies of lib/changes.sh must turn their assertions red.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -16,6 +18,8 @@ set -uo pipefail
 . "$TEST_REPO_ROOT/lib/changes.sh"
 # shellcheck source=../../lib/context-budget.sh
 . "$TEST_REPO_ROOT/lib/context-budget.sh"
+# shellcheck source=../fixtures/route-child-helpers.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/route-child-helpers.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -39,16 +43,73 @@ grep -qF 'route-child.sh' <<<"$yes_means" || fail "S713 — Yes means does not s
 grep -qiF 'session-context' <<<"$yes_means" && fail "S713 — Yes means promises session text"
 grep -qE '127\.0\.0\.1:8787|ANTHROPIC_BASE_URL|x-cave-transforms' <<<"$entry" && fail "S713 — the entry names the route URL, the base-URL variable or the header"
 
+# --- the row text: not-yes wording, both loopback spellings ----------------------
+row_ok() { # <file holding the row text>
+  rc_not_yes_ok "S713/row" "$1" codex
+  if grep -q 'NO_PROXY' "$1" && ! grep -q 'no_proxy' "$1"; then
+    fail "S713/row — the row names NO_PROXY but not no_proxy"
+  fi
+}
+printf '%s\n' "$entry" >"$SANDBOX/row.md"
+row_ok "$SANDBOX/row.md"
+# Planted row texts, each must fail.
+cat >"$SANDBOX/row-d51ba0d.md" <<'OLD'
+- **Question:** Should model children that this project's pipeline launches as separate processes through `route-child.sh` go through the local Caveman proxy, metered but with their text passed through uncut?
+- **Default:** question
+- **Applies if:** uses-multi-agent-roles
+- **Yes means:** `route-child.sh <claude|codex> -- <command>` reads this
+  answer (through `answered_yes`, on the git top level of the child's working
+  directory) and routes the children started through it: a Claude child gets
+  the proxy route, the first-party flag, the loopback `NO_PROXY` and the
+  pass-through header on its own environment only; a Codex child gets the
+  pass-through header as a per-run `-c` override. The wrapper refuses instead
+  of falling back: exit 3 when the proxy does not answer, exit 4 when the
+  parent session is already routed, a settings file would route the child
+  elsewhere, or the Codex config is not on the Caveman provider.
+  `SDG_MODEL_ROUTE=off` switches routing off for one run (Codex then goes
+  direct); nothing but this answer switches it on. On `no` the wrapper runs
+  the command unchanged. The Orchestrator session, in-session subagents and
+  the behavior runner stay direct either way. Nothing is printed into a
+  session: launching a stage through the wrapper is a launch rule for #640.
+  Needs the proxy running on each machine that launches routed children; see
+  `docs/model-routing.md`.
+OLD
+rc_expect_red "S713/neg/d51ba0d-row" row_ok "$SANDBOX/row-d51ba0d.md"
+{ cat "$SANDBOX/row.md"; echo "Answer process-model-routing no to run children direct."; } >"$SANDBOX/row-direct.md"
+rc_expect_red "S713/neg/planted-no-means-direct" row_ok "$SANDBOX/row-direct.md"
+sed 's/no_proxy/NO_PROXY/g' "$SANDBOX/row.md" >"$SANDBOX/row-upper.md"
+rc_expect_red "S713/neg/row-names-NO_PROXY-only" row_ok "$SANDBOX/row-upper.md"
+
 # --- the predicate ---------------------------------------------------------------
 grep -qE '^[[:space:]]+uses-multi-agent-roles\)' "$R/lib/changes.sh" || fail "S713 — predicate_true has no 'uses-multi-agent-roles)' arm"
 pa="$SANDBOX/a"; pb="$SANDBOX/b"; pc="$SANDBOX/c"
 for p in "$pa" "$pb" "$pc"; do mkdir -p "$p"; git -C "$p" init -q -b main; done
 write_adoption "$pa/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
 write_adoption "$pb/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
-predicate_true uses-multi-agent-roles "$pa" || fail "S713 — the predicate is false for a project that answered the roles yes"
-predicate_true uses-multi-agent-roles "$pb" && fail "S713 — the predicate is true for a project that answered the roles no"
-predicate_true uses-multi-agent-roles "$pc" && fail "S713 — the predicate is true for a project without an answer file"
-predicate_true uses-multi-agent-role "$pa" && fail "S713 — a misspelled predicate evaluated true"
+predicate_ok() { # <lib/changes.sh to use>
+  ( . "$1"; predicate_true uses-multi-agent-roles "$pa" ) || fail "S713 — the predicate is false for a project that answered the roles yes"
+  ( . "$1"; predicate_true uses-multi-agent-roles "$pb" ) && fail "S713 — the predicate is true for a project that answered the roles no"
+  ( . "$1"; predicate_true uses-multi-agent-roles "$pc" ) && fail "S713 — the predicate is true for a project without an answer file"
+  ( . "$1"; predicate_true uses-multi-agent-role "$pa" ) && fail "S713 — a misspelled predicate evaluated true"
+  return 0
+}
+predicate_ok "$R/lib/changes.sh"
+# Planted copies of lib/changes.sh, each must fail.
+plant_lib() { # <label> <old> <new>
+  python3 -I - "$R/lib/changes.sh" "$SANDBOX/changes-mutant.sh" "$2" "$3" <<'PY' || { fail "$1 — test defect: anchor not found once"; return 0; }
+import sys
+src, dst, old, new = sys.argv[1:5]
+text = open(src, encoding="utf-8").read()
+if text.count(old) != 1:
+    sys.exit(1)
+open(dst, "w", encoding="utf-8").write(text.replace(old, new))
+PY
+  rc_expect_red "$1" predicate_ok "$SANDBOX/changes-mutant.sh"
+}
+ARM_BODY='      answered_yes "$project_dir" process-multi-agent-roles ;;'
+plant_lib "S713/kill/always-true-predicate" "$ARM_BODY" '      true ;;'
+plant_lib "S713/kill/always-false-predicate" "$ARM_BODY" '      false ;;'
+plant_lib "S713/kill/wrong-predicate-name" '    uses-multi-agent-roles)' '    uses-multi-agent-role)'
 
 # --- pending-changes.sh and adopt.sh ----------------------------------------------
 grep -qx "$id" <<<"$(pending_ids "$pa")" || fail "S713 — pending-changes.sh does not list $id for a roles-yes project"
