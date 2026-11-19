@@ -13,6 +13,17 @@ point.
 
 ## Unreleased
 
+- #707: `route-child.sh` routes a model child launched as a separate process
+  (`claude -p`, `codex exec`) through the local Caveman proxy with a
+  pass-through header (metered, text uncut), opted in per project through the
+  new `process-model-routing` row and switched off per run with
+  `SDG_MODEL_ROUTE=off`; it refuses instead of falling back (exit 3 proxy down,
+  exit 4 routed parent, routing settings file or non-Caveman Codex config). The
+  Orchestrator session, in-session subagents and the behavior runner stay
+  direct; the runner now refuses an inherited non-first-party
+  `ANTHROPIC_BASE_URL`, and the Claude session start warns once when the main
+  session looks routed. See `docs/model-routing.md`; the live smoke test is
+  UNRUN.
 - #645: Document the temporary-decision panel proposal, allow-list, independent
   model-floor evidence, issue-home records and grouped merge-approval disclosure;
   decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any

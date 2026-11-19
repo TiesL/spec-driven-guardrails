@@ -663,6 +663,30 @@ the shared parser warns if it has no `Applies if`.
 - **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/540
 
+## process-model-routing
+
+- **Question:** Should model children that this project's pipeline launches as separate processes through `route-child.sh` go through the local Caveman proxy, metered but with their text passed through uncut?
+- **Default:** question
+- **Applies if:** uses-multi-agent-roles
+- **Yes means:** `route-child.sh <claude|codex> -- <command>` reads this
+  answer (through `answered_yes`, on the git top level of the child's working
+  directory) and routes the children started through it: a Claude child gets
+  the proxy route, the first-party flag, the loopback `NO_PROXY` and the
+  pass-through header on its own environment only; a Codex child gets the
+  pass-through header as a per-run `-c` override. The wrapper refuses instead
+  of falling back: exit 3 when the proxy does not answer, exit 4 when the
+  parent session is already routed, a settings file would route the child
+  elsewhere, or the Codex config is not on the Caveman provider.
+  `SDG_MODEL_ROUTE=off` switches routing off for one run (Codex then goes
+  direct); nothing but this answer switches it on. On `no` the wrapper runs
+  the command unchanged. The Orchestrator session, in-session subagents and
+  the behavior runner stay direct either way. Nothing is printed into a
+  session: launching a stage through the wrapper is a launch rule for #640.
+  Needs the proxy running on each machine that launches routed children; see
+  `docs/model-routing.md`.
+- **Reaches session:** none
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/708
+
 ---
 
 ### Non-functional characteristics (NFRs)

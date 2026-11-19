@@ -109,7 +109,7 @@ rc_init
 real_python="$(command -v python3)"
 cat >"$RC/bin/python3" <<SHIM
 #!/bin/sh
-printf '%s\n' "\$*" >>"$RC/log/python3.log"
+printf '%s\n' "\${1:-}" >>"$RC/log/python3.log"
 exec "$real_python" "\$@"
 SHIM
 chmod +x "$RC/bin/python3"
