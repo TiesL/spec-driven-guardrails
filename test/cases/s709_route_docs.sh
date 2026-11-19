@@ -104,7 +104,7 @@ plant_doc attached-dropped attached-form '(?i)attached' 'joined'
 plant_doc codex-env-dropped codex-env '(?i)codex child' 'child'
 plant_doc codex-env-only-NO_PROXY codex-env '(?<![A-Za-z_])no_proxy(?![A-Za-z_])' 'X'
 plant_doc codex-env-only-no_proxy codex-env '(?<![A-Za-z_])NO_PROXY(?![A-Za-z_])' 'X'
-plant_doc codex-env-in-claude-sentence codex-env '(?i)(codex child)' '\1, like a Claude child with ANTHROPIC_BASE_URL,'
+plant_doc codex-env-in-claude-sentence codex-env '(?i)codex child' 'Codex child, like a Claude child with ANTHROPIC_BASE_URL,'
 
 # --- the lists equal the wrapper's single list definitions ---------------------------
 block() { # <file> <name> -> lines between the BEGIN/END <name> markers, trimmed, no comment prefix
