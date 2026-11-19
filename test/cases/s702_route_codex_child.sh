@@ -63,11 +63,12 @@ refused_config() {
   [ "$h1" = "$(rc_tree_hash "$RC/codexhome")" ] || fail "S702/$v — config.toml was written"
 }
 
-# refused_arg <name> <up|down> <args after exec...>: with the valid config,
-# exit 4, no child, no probe, a message naming the argument <name> and not
-# the value token.
+# refused_arg <name[,name...]> <up|down> <args after exec...>: with the valid
+# config, exit 4, no child, no probe, a message naming each <name> (the
+# option, and for -c/--config the key or its first segment) and not the
+# value token.
 refused_arg() {
-  local name="$1" probe="$2" label
+  local names="$1" probe="$2" label name
   shift 2
   label="S702/arg/$probe/[$*]"
   rc_env_reset
@@ -78,7 +79,14 @@ refused_arg() {
   [ "$rc_status" = 4 ] || fail "$label — exit $rc_status, expected 4 (stderr: $rc_err)"
   [ "$rc_started" = 0 ] || fail "$label — the child was started"
   [ "$rc_probe_calls" = 0 ] || fail "$label — the probe ran before the argument check"
-  case "$rc_err" in *"$name"*) ;; *) fail "$label — the message does not name '$name': $rc_err" ;; esac
+  local old_ifs="$IFS"
+  IFS=,
+  # shellcheck disable=SC2086
+  set -- $names
+  IFS="$old_ifs"
+  for name in "$@"; do
+    case "$rc_err" in *"$name"*) ;; *) fail "$label — the message does not name '$name': $rc_err" ;; esac
+  done
   case "$rc_err" in *"$TOK"*) fail "$label — the message prints the value: $rc_err" ;; esac
 }
 
@@ -128,6 +136,27 @@ selection_args() { # one line per case: <name>|<args, NUL-free, separated by \t>
     "model_providers|-c	model_providers={}" \
     "model_provider|-c	 model_provider = \"$TOK\"" \
     "model_provider|-c	\"model_provider\"=\"$TOK\""
+  round3_args
+}
+# Round 3 (Architect report 7): attached forms, whole-table and quoted first
+# segments, the two new options, the two base-URL keys, the value of an
+# option the list does not know.
+round3_args() {
+  printf '%s\n' \
+    "-p|-p$TOK" \
+    "-c,model_provider|-cmodel_provider=\"$TOK\"" \
+    "-c,profile|-c\"profile\"=\"$TOK\"" \
+    "-c,profiles|-c	profiles={$TOK={}}" \
+    "--config,profiles|--config=profiles={$TOK={}}" \
+    "-c,profiles|-c	 \"profiles\" .x.model_provider=\"$TOK\"" \
+    "--ignore-user-config|--ignore-user-config" \
+    "--local-provider|--local-provider	$TOK" \
+    "--local-provider|--local-provider=$TOK" \
+    "-c,openai_base_url|-c	openai_base_url=\"http://$TOK\"" \
+    "--config,openai_base_url|--config=openai_base_url=http://$TOK" \
+    "-c,chatgpt_base_url|-c	chatgpt_base_url=\"http://$TOK\"" \
+    "-c,chatgpt_base_url|-cchatgpt_base_url=http://$TOK" \
+    "--oss|-o	--oss"
 }
 refused_line() { # <line> <up|down>
   local name="${1%%|*}" rest="${1#*|}" parts=()
@@ -147,7 +176,22 @@ routed_args() {
   routes arg-prompt-mentions valid "use -p and --oss carefully"
   routes arg-after-dashes valid -- --profile x
   routes arg-after-dashes-oss valid --ephemeral -- --oss
+  # Round 3: a first segment not in the list, and -C (not -c). The -C value
+  # is a directory whose first dotted segment is a listed key, so reading -C
+  # as -c would refuse it.
+  routes arg-model_providers_x valid -c 'model_providers_x=1' "$prompt"
+  routes arg-profiles_x valid -c 'profiles_x=1' "$prompt"
+  routes arg-capital-C valid -C profiles.d "$prompt"
+  local line rest parts n=0
+  while IFS= read -r line; do
+    rest="${line#*|}"
+    parts=()
+    IFS=$'\t' read -r -a parts <<<"$rest"
+    n=$((n + 1))
+    routes "arg-round3-after-dashes-$n" valid --ephemeral -- "${parts[@]}"
+  done <<<"$(round3_args)"
 }
+mkdir -p "$RC_CWD/profiles.d"
 routed_args
 
 # --- the Codex adapter ignores Claude routing state ---------------------------
@@ -255,22 +299,56 @@ rc_kill "S702/kill/overwrite-header" \
   'for key in ("http_headers", "env_http_headers"):' 'for key in ():' refused_config header http_headers
 rc_kill "S702/kill/no-argument-check" 'while i < len(args):' 'while False:' refused_arg --profile up --profile "$TOK"
 rc_kill "S702/kill/no-equals-forms" \
-  'name, eq, inline = arg.partition("=") if arg.startswith("-") else (arg, "", "")' 'name, eq, inline = arg, "", ""' \
+  '        name, eq, value = arg.partition("=")' '        name, eq, value = arg, "", ""' \
   refused_arg --profile up "--profile=$TOK"
 rc_kill "S702/kill/no-equals-forms/c" \
-  'name, eq, inline = arg.partition("=") if arg.startswith("-") else (arg, "", "")' 'name, eq, inline = arg, "", ""' \
+  '(value[1:] if value.startswith("=") else value)' 'value' \
   refused_arg model_provider up "-c=model_provider=$TOK"
 rc_kill "S702/kill/not-stopping-at-dashes" \
   '    if arg == "--":
         break' '    if arg == "--":
         pass' routes after-dashes valid -- --profile x
-rc_kill "S702/kill/substring-key-match" '    return key == pattern' '    return pattern in key' \
+FIRST_SEGMENT_MATCH='        if first_segment(value) in keys:'
+rc_kill "S702/kill/substring-key-match" "$FIRST_SEGMENT_MATCH" \
+  '        if any(k in ".".join(segments(value)) for k in keys):' \
   routes profile_name valid -c 'profile_name="x"' x
-rc_kill "S702/kill/untrimmed-key" '    return ".".join(' '    return key
-    return ".".join(' refused_arg model_provider up -c " model_provider = \"$TOK\""
+rc_kill "S702/kill/untrimmed-key" \
+  '    return [part.strip().strip("\"\x27").strip() for part in key.split(".")]' '    return key.split(".")' \
+  refused_arg model_provider up -c " model_provider = \"$TOK\""
+rc_kill "S702/kill/untrimmed-key/quoted-segment" \
+  '    return [part.strip().strip("\"\x27").strip() for part in key.split(".")]' '    return key.split(".")' \
+  refused_arg -c,profiles up -c " \"profiles\" .x.model_provider=\"$TOK\""
+# Round 3 (Architect report 7).
+rc_kill "S702/kill/text-prefix-instead-of-first-segment" "$FIRST_SEGMENT_MATCH" \
+  '        if any(".".join(segments(value)).startswith(k) for k in keys):' \
+  routes model_providers_x valid -c 'model_providers_x=1' x
+ATTACHED='    elif arg[:2] in names:'
+rc_kill "S702/kill/attached-forms-not-parsed/p" "$ATTACHED" '    elif arg in names:' refused_arg -p up "-p$TOK"
+rc_kill "S702/kill/attached-forms-not-parsed/c" "$ATTACHED" '    elif arg in names:' \
+  refused_arg -c,model_provider up "-cmodel_provider=\"$TOK\""
+rc_kill "S702/kill/attached-match-case-insensitive" "$ATTACHED" '    elif arg[:2].lower() in names:' \
+  routes capital-C valid -C profiles.d x
+rc_kill "S702/kill/ignore-user-config-dropped" '
+--ignore-user-config
+' '
+' refused_arg --ignore-user-config up --ignore-user-config
+rc_kill "S702/kill/local-provider-dropped" '
+--local-provider
+' '
+' refused_arg --local-provider up --local-provider "$TOK"
+rc_kill "S702/kill/openai_base_url-dropped" '
+-c|--config openai_base_url
+' '
+' refused_arg -c,openai_base_url up -c "openai_base_url=\"http://$TOK\""
+rc_kill "S702/kill/chatgpt_base_url-dropped" "
+-c|--config chatgpt_base_url'" "'" refused_arg -c,chatgpt_base_url up -c "chatgpt_base_url=\"http://$TOK\""
+rc_kill "S702/kill/unknown-option-value-skipped" '    name, value = option_of(arg, refusing)' \
+  '    if arg.startswith("-") and "=" not in arg and option_of(arg, refusing | config_options)[0] is None:
+        i += 2
+        continue
+    name, value = option_of(arg, refusing)' refused_arg --oss up -o --oss
 rc_kill "S702/kill/value-in-message" \
-  'which would decide the route instead of the wrapper; remove it" % (name, key))' \
-  'which would decide the route instead of the wrapper; remove it" % (name, value))' \
+  '% (name, ".".join(segments(value))))' '% (name, value))' \
   refused_arg model_provider up -c "model_provider=\"$TOK\""
 rc_kill "S702/kill/argument-check-after-probe" \
   '  check_codex routed "$@"' '  "${SDG_ROUTE_PROBE:-curl}" -s -o /dev/null "$PROXY_ORIGIN/" >/dev/null 2>&1 || exit 3

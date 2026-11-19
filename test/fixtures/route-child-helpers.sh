@@ -200,6 +200,23 @@ model_provider = "caveman"' ;;
     off-profile-inline) top="$valid_top
 profile = \"c\"
 profiles = { c = { model_provider = \"caveman\" } }" ;;
+    # S703 (o9)-(o13): a base-URL key at top level, in the selected profile,
+    # or (control) only in a profile that nothing selects.
+    off-base-url-top|off-chatgpt-url-top)
+      local bk=openai_base_url
+      [ "$v" = off-chatgpt-url-top ] && bk=chatgpt_base_url
+      top="$valid_top
+$bk = \"http://tok-7f3a\"" ;;
+    off-base-url-profile|off-chatgpt-url-profile)
+      local pk=openai_base_url
+      [ "$v" = off-chatgpt-url-profile ] && pk=chatgpt_base_url
+      top="$valid_top
+profile = \"b\""; tables="[profiles.b]
+model_provider = \"openai\"
+$pk = \"http://tok-7f3a\"" ;;
+    off-base-url-unselected) top="$valid_top"; tables='[profiles.other]
+openai_base_url = "http://tok-7f3a"
+chatgpt_base_url = "http://tok-7f3a"' ;;
     header) top='model_provider = "caveman"'; caveman_table="$caveman_table
 $hk = { \"x-a\" = \"b\" }" ;;
     inline-provider)

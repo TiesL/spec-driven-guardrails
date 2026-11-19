@@ -177,6 +177,29 @@ off_codex_refused valid model_provider -c "model_provider=\"$TOK\"" x
 off_codex_refused valid profile "--config=profile=$TOK" x
 off_codex_refused valid profiles.x.model_provider -c "profiles.x.model_provider=\"$TOK\"" x
 off_codex_refused valid model_providers.caveman.base_url -c "model_providers.caveman.base_url=\"http://$TOK\"" x
+# Round 3 (Architect report 7): base-URL keys in config.toml, top level and
+# in the selected profile (o9)-(o12); (o13) only in an unselected profile.
+off_codex_base_url() {
+  off_codex_refused off-base-url-top openai_base_url x
+  off_codex_refused off-base-url-top config.toml x
+  off_codex_refused off-chatgpt-url-top chatgpt_base_url x
+  off_codex_refused off-base-url-profile openai_base_url x
+  off_codex_refused off-base-url-profile 'profile b' x
+  off_codex_refused off-chatgpt-url-profile chatgpt_base_url x
+  off_codex_refused off-chatgpt-url-profile config.toml x
+}
+off_codex_base_url
+off_codex_direct off-base-url-unselected x
+# The round-3 arguments refuse under off; the controls get the override.
+off_codex_refused valid -p "-p$TOK" x
+off_codex_refused valid model_provider "-cmodel_provider=\"caveman\"" x
+off_codex_refused valid profiles -c "profiles={$TOK={}}" x
+off_codex_refused valid --ignore-user-config --ignore-user-config x
+off_codex_refused valid --local-provider --local-provider ollama x
+off_codex_refused valid openai_base_url -c "openai_base_url=\"http://$TOK\"" x
+off_codex_refused valid chatgpt_base_url -c "chatgpt_base_url=\"http://$TOK\"" x
+off_codex_direct valid -- --ignore-user-config x
+off_codex_direct valid -c 'model_providers_x=1' x
 clean
 
 # --- (3) launch paths: subdirectory, symlink outside the repo, $SPEC_DRIVEN_GUARDRAILS_DIR
@@ -276,6 +299,19 @@ rc_kill "S703/kill/off-check-without-inline-tables" \
   '    selected = get(data, "profiles", profile) if isinstance(profile, str) else None
     selected = {} if isinstance(get(data, "profiles"), Inline) else selected' \
   off_codex_refused off-profile-inline caveman x
+BASE_URL_LOOP='    for key in ("openai_base_url", "chatgpt_base_url"):'
+SELECTED_BASE_URL='        if selected is not None and key in selected:'
+rc_kill "S703/kill/off-without-the-base-URL-check" "$BASE_URL_LOOP" '    for key in ():' off_codex_base_url
+rc_kill "S703/kill/off-base-URL-check-top-level-only" "$SELECTED_BASE_URL" '        if False:' \
+  off_codex_refused off-base-url-profile openai_base_url x
+rc_kill "S703/kill/off-base-URL-check-in-every-profile" "$SELECTED_BASE_URL" \
+  '        if any(isinstance(p, dict) and key in p for p in (get(data, "profiles") or {}).values()):' \
+  off_codex_direct off-base-url-unselected x
+TOP_URL_MSG='at the top level, which would send this child to another endpoint while SDG_MODEL_ROUTE=off promises it goes direct" % (named, key))'
+rc_kill "S703/kill/base-URL-value-in-message" "$TOP_URL_MSG" "${TOP_URL_MSG%"% (named, key))"}% (named, data[key]))" \
+  off_codex_refused off-base-url-top openai_base_url x
+rc_kill "S703/kill/base-URL-value-in-message/profile" '% (named, profile, key))' '% (named, profile, selected[key]))' \
+  off_codex_refused off-base-url-profile openai_base_url x
 rc_kill "S703/kill/not-yes-runs-the-Codex-checks" "$OPT_IN" \
   'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
   [ "$runtime" = codex ] && case " $* " in *" --profile "*) exit 4 ;; esac

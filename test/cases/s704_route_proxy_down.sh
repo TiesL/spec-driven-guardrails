@@ -99,8 +99,11 @@ order_case() {
     inherited-header) rc_env_set "ANTHROPIC_CUSTOM_HEADERS=x-cave-transforms: caveman.compress.v1" ;;
     codex-config) rc_codex_config openai ;;
   esac
-  if [ "$3" = codex-argument ]; then rc_run codex -- "$RC/bin/codex" exec --oss x
-  else run_rt "$rt"; fi
+  case "$3" in
+    codex-argument) rc_run codex -- "$RC/bin/codex" exec --oss x ;;
+    codex-ignore-user-config) rc_run codex -- "$RC/bin/codex" exec --ignore-user-config x ;;
+    *) run_rt "$rt" ;;
+  esac
   [ "$rc_status" = 4 ] && [ "$rc_probe_calls" = 0 ] || fail "S704/order/$label — exit $rc_status with $rc_probe_calls probe calls, expected 4 with none"
   rm -f "$RC/cfg/settings.json" "$RC/probe.exit"
   rc_codex_config valid
@@ -112,6 +115,7 @@ order_case settings-headers claude settings-headers
 order_case inherited-header claude inherited-header
 order_case codex-config codex codex-config
 order_case codex-argument codex codex-argument
+order_case codex-ignore-user-config codex codex-ignore-user-config
 
 # --- no deadline helpers ---------------------------------------------------------
 for s in timeout gtimeout nc; do
@@ -161,5 +165,6 @@ CHECKS_START='if [ "$runtime" = claude ]; then
 rc_kill "S704/kill/probe-before-checks/settings-key" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case settings-headers claude settings-headers
 rc_kill "S704/kill/probe-before-checks/inherited-header" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case inherited-header claude inherited-header
 rc_kill "S704/kill/probe-before-checks/codex-argument" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case codex-argument codex codex-argument
+rc_kill "S704/kill/probe-before-checks/ignore-user-config" "$CHECKS_START" "${probe_first}${CHECKS_START}" order_case codex-ignore-user-config codex codex-ignore-user-config
 
 test_done

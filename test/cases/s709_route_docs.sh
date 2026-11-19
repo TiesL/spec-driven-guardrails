@@ -64,6 +64,8 @@ unknown-platform|other platform|refuses
 managed-paths|/Library/Application Support/ClaudeCode/managed-settings.json|/etc/claude-code/managed-settings.json
 proxy-down|exit 3|SDG_MODEL_ROUTE=off
 pass-through-header|x-cave-transforms: caveman.pass-through.v1|byte-identical
+first-segment|key|first|segment
+attached-form|attached|-p|-c
 SPEC
 miss="$(missing_statements "$DOC" "$SANDBOX/spec")"
 [ -z "$miss" ] || fail "S709 — docs/model-routing.md lacks these statements: $(echo $miss)"
@@ -88,6 +90,8 @@ plant_doc credential-without-bearer credential-flow '(?i)bearer' 'token'
 plant_doc credential-without-api-key credential-flow '(?i)API key' 'key'
 plant_doc credential-without-identify credential-flow '(?i)identify' 'check'
 plant_doc credential-without-accept credential-flow '(?i)accept' 'note'
+plant_doc first-segment-dropped first-segment '(?i)segment' 'part'
+plant_doc attached-dropped attached-form '(?i)attached' 'joined'
 
 # --- the lists equal the wrapper's single list definitions ---------------------------
 block() { # <file> <name> -> lines between the BEGIN/END <name> markers, trimmed, no comment prefix
@@ -110,8 +114,42 @@ $d"
 }
 lists_equal list "$R/route-child.sh" "$DOC" SETTINGS_LOCATIONS settings-locations
 lists_equal codex-list "$R/route-child.sh" "$DOC" CODEX_SELECTION codex-selection
-# Planted drift on either side.
-python3 -I - "$DOC" "$SANDBOX/drift.md" <<'PY'
+# The item set is exactly the five options and the six -c/--config
+# first-segment keys of Architect report 7 (no trailing `*`).
+EXPECTED_ITEMS='key chatgpt_base_url
+key model_provider
+key model_providers
+key openai_base_url
+key profile
+key profiles
+option --ignore-user-config
+option --local-provider
+option --oss
+option --profile
+option -p'
+selection_items_ok() { # <label> <wrapper file>
+  local got
+  got="$(wrapper_list "$2" CODEX_SELECTION | python3 -I -c '
+import sys
+out = []
+for line in sys.stdin.read().split("\n"):
+    f = line.split()
+    if len(f) == 1:
+        out.append("option " + f[0])
+    elif len(f) == 2 and f[0] == "-c|--config":
+        out.append("key " + f[1])
+    elif f:
+        out.append("malformed " + line)
+print("\n".join(sorted(out)))
+')"
+  [ "$got" = "$EXPECTED_ITEMS" ] || fail "S709/$1 — CODEX_SELECTION is not exactly the five options and six first-segment keys:
+$got"
+}
+selection_items_ok codex-items "$R/route-child.sh"
+
+# Planted drift on either side, and the same drift on both.
+drop_doc_item() { # <src doc> <dst doc> <item line>
+  python3 -I - "$1" "$2" "$3" <<'PY2'
 import sys
 lines = open(sys.argv[1], encoding="utf-8").read().split("\n")
 out, inside, dropped = [], False, False
@@ -120,16 +158,34 @@ for line in lines:
         inside = True
     elif "END codex-selection" in line:
         inside = False
-    elif inside and line.strip() == "--oss" and not dropped:
+    elif inside and line.strip() == sys.argv[3] and not dropped:
         dropped = True
         continue
     out.append(line)
 open(sys.argv[2], "w", encoding="utf-8").write("\n".join(out))
-PY
+PY2
+}
+drop_doc_item "$DOC" "$SANDBOX/drift.md" --oss
 rc_expect_red "S709/neg/codex-list-item-dropped-from-doc" lists_equal neg "$R/route-child.sh" "$SANDBOX/drift.md" CODEX_SELECTION codex-selection
+drop_doc_item "$DOC" "$SANDBOX/drift-iuc.md" --ignore-user-config
+rc_expect_red "S709/neg/ignore-user-config-dropped-from-doc" lists_equal neg "$R/route-child.sh" "$SANDBOX/drift-iuc.md" CODEX_SELECTION codex-selection
 sed "s/^CODEX_SELECTION='--profile$/CODEX_SELECTION='--profile\\
 --model/" "$R/route-child.sh" >"$SANDBOX/drift.sh"
 rc_expect_red "S709/neg/codex-list-item-added-to-wrapper" lists_equal neg "$SANDBOX/drift.sh" "$DOC" CODEX_SELECTION codex-selection
+sed "s/^CODEX_SELECTION='--profile$/CODEX_SELECTION='--profile\\
+-c|--config openai_base_url/" "$R/route-child.sh" >"$SANDBOX/drift-url.sh"
+rc_expect_red "S709/neg/openai_base_url-added-to-wrapper" lists_equal neg "$SANDBOX/drift-url.sh" "$DOC" CODEX_SELECTION codex-selection
+# The same drop on both sides passes the comparison but not the item set.
+grep -vx -- '--ignore-user-config' "$R/route-child.sh" >"$SANDBOX/both.sh"
+lists_equal both-dropped "$SANDBOX/both.sh" "$SANDBOX/drift-iuc.md" CODEX_SELECTION codex-selection
+rc_expect_red "S709/neg/same-drop-on-both-sides" selection_items_ok neg "$SANDBOX/both.sh"
+# The 17517e6 prefix items restored on both sides.
+sed -e 's/^-c|--config profiles$/-c|--config profiles.*/' -e 's/^-c|--config model_providers$/-c|--config model_providers*/' \
+  "$R/route-child.sh" >"$SANDBOX/stars.sh"
+sed -e 's/^-c|--config profiles$/-c|--config profiles.*/' -e 's/^-c|--config model_providers$/-c|--config model_providers*/' \
+  "$DOC" >"$SANDBOX/stars.md"
+lists_equal stars "$SANDBOX/stars.sh" "$SANDBOX/stars.md" CODEX_SELECTION codex-selection
+rc_expect_red "S709/neg/17517e6-star-items-restored" selection_items_ok neg "$SANDBOX/stars.sh"
 
 # --- the not-yes wording checker ---------------------------------------------------
 rc_not_yes_ok "S709/not-yes" "$DOC" codex
