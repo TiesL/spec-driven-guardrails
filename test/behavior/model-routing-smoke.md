@@ -1,12 +1,13 @@
 # Model routing live smoke test (#707, AC12, S712)
 
-Status: **UNRUN**. This protocol starts real model children and reads the real
+Status: **PASS**. This protocol starts real model children and reads the real
 Caveman proxy's request store, so it uses subscription usage and needs the
 machine's proxy. It is deliberately not run by `./check` or CI, and no case in
 `test/cases/` starts a real model, Codex or the proxy:
 `test/cases/s712_route_live_smoke_protocol.sh` checks the structure of this file
-only. Until a run is recorded below, the claim "routed children are metered and
-their text arrives uncut" is not established by anything in this repository.
+only. The recorded result below is the run that backs the claim "routed
+children are metered and their text arrives uncut"; the protocol itself is
+not run by `./check` or CI.
 
 The design is A61 in `ARCHITECTURE.md`; the user-facing description is
 `docs/model-routing.md`.
@@ -60,10 +61,10 @@ All must hold; any miss is FAIL.
 ## Recorded result
 
 A run that claims PASS or FAIL fills in every field below; a file that claims
-either without them fails S712. Until then the fields stay `none` and the status
-stays UNRUN.
+either without them, or with an implausible value, fails S712. A file with no
+recorded run keeps every field `none` and Status UNRUN.
 
-- Date: none
-- Head SHA: none
-- Proxy version: none
-- Row ids: none
+- Date: 2026-11-19
+- Head SHA: 4525fc501410075ec14633d90311a512a9515350
+- Proxy version: 4.1.0 (bin-v4.1.0)
+- Row ids: 3708-3713
