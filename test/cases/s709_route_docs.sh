@@ -27,7 +27,9 @@ DOC="$R/docs/model-routing.md"
 [ -f "$DOC" ] || { fail "S709 — docs/model-routing.md does not exist"; test_done; }
 
 # statements <doc> <spec>: spec lines are "label|term|term|..."; prints the
-# label of every statement no single sentence of the doc holds.
+# label of every statement no single sentence of the doc holds. A term
+# starting with `=` matches case-sensitively; a term starting with `!` must be
+# absent from the sentence (case-sensitive); a term "a OR b" matches either.
 missing_statements() {
   python3 -I - "$1" "$2" <<'PY'
 import re, sys
@@ -41,6 +43,10 @@ for line in open(sys.argv[2], encoding="utf-8"):
         continue
     label, *terms = line.split("|")
     def has(t, s):
+        if t.startswith("!"):
+            return t[1:] not in s
+        if " OR " in t:
+            return any(has(a, s) for a in t.split(" OR "))
         return t[1:] in s if t.startswith("=") else t.lower() in s.lower()
     if not any(all(has(t, s) for t in terms) for s in sentences):
         print(label)
@@ -66,6 +72,7 @@ proxy-down|exit 3|SDG_MODEL_ROUTE=off
 pass-through-header|x-cave-transforms: caveman.pass-through.v1|byte-identical
 first-segment|key|first|segment
 attached-form|attached|-p|-c
+codex-env|Codex child|=NO_PROXY|=no_proxy|127.0.0.1,localhost OR loopback|!ANTHROPIC_BASE_URL|!_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL|!ANTHROPIC_CUSTOM_HEADERS
 SPEC
 miss="$(missing_statements "$DOC" "$SANDBOX/spec")"
 [ -z "$miss" ] || fail "S709 — docs/model-routing.md lacks these statements: $(echo $miss)"
@@ -92,6 +99,12 @@ plant_doc credential-without-identify credential-flow '(?i)identify' 'check'
 plant_doc credential-without-accept credential-flow '(?i)accept' 'note'
 plant_doc first-segment-dropped first-segment '(?i)segment' 'part'
 plant_doc attached-dropped attached-form '(?i)attached' 'joined'
+# Round 4: the Codex environment statement dropped, naming only one of the
+# two variables, or moved into the Claude sentence.
+plant_doc codex-env-dropped codex-env '(?i)codex child' 'child'
+plant_doc codex-env-only-NO_PROXY codex-env '(?<![A-Za-z_])no_proxy(?![A-Za-z_])' 'X'
+plant_doc codex-env-only-no_proxy codex-env '(?<![A-Za-z_])NO_PROXY(?![A-Za-z_])' 'X'
+plant_doc codex-env-in-claude-sentence codex-env '(?i)(codex child)' '\1, like a Claude child with ANTHROPIC_BASE_URL,'
 
 # --- the lists equal the wrapper's single list definitions ---------------------------
 block() { # <file> <name> -> lines between the BEGIN/END <name> markers, trimmed, no comment prefix

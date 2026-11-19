@@ -46,11 +46,21 @@ STUB
   chmod +x "$RC/bin/claude"
   cp "$RC/bin/claude" "$RC/bin/codex"
   cp "$RC/bin/claude" "$RC/bin/codexx"
-  # Probe stub: argv to log/probe.log, exit status from probe.exit (default 0).
+  # Probe stub: argv to log/probe.log, exit status from probe.exit (default 0);
+  # with probe.recenv present, also its environment (NUL-separated, sorted,
+  # as the stub child records it) to log/probe.env (S704 round 4, r1).
   cat >"$RC/probe/probe" <<'PROBE'
 #!/usr/bin/env bash
 d="$(cd "$(dirname "$0")/.." && pwd)"
 printf '%s\n' "$*" >>"$d/log/probe.log"
+if [ -e "$d/probe.recenv" ]; then
+  python3 -I -c '
+import os, sys
+with open(sys.argv[1], "wb") as f:
+    for k in sorted(os.environb):
+        f.write(k + b"=" + os.environb[k] + b"\0")
+' "$d/log/probe.env"
+fi
 s="$(cat "$d/probe.exit" 2>/dev/null)"
 exit "${s:-0}"
 PROBE
@@ -276,11 +286,12 @@ rc_direct() {
   rm -f "$RC/child.started"
 }
 
-# rc_env_diff: the child's environment against the direct run's, one line
-# per difference, sorted: "+NAME=value" (added or changed; a newline in the
-# value is shown as \n) or "-NAME" (removed). Empty when identical.
+# rc_env_diff [<base env file> <other env file>]: the child's environment
+# against the direct run's (by default), one line per difference, sorted:
+# "+NAME=value" (added or changed; a newline in the value is shown as \n) or
+# "-NAME" (removed). Empty when identical.
 rc_env_diff() {
-  python3 -I - "$RC/direct.env" "$RC/child.env" <<'PY'
+  python3 -I - "${1:-$RC/direct.env}" "${2:-$RC/child.env}" <<'PY'
 import sys
 def load(p):
     d = {}
@@ -363,6 +374,151 @@ rc_expected_claude_diff() {
 # against the direct run (rc_env_diff "+" lines), one per line.
 rc_added_names() {
   rc_env_diff | sed -n 's/^+\([^=]*\)=.*/\1/p'
+}
+
+# --- inherited proxy environments (S702 round 4, reused by S703 and S704) -----
+# rc_proxy_env <e1|e2|e3|e4|e5>: sets the inherited proxy variables of one
+# environment on the run environment (after rc_env_reset) and records the
+# inherited NO_PROXY and no_proxy in RC_INH_NP and RC_INH_LNP for
+# rc_expected_loopback_diff.
+#   e1 clean (none of the proxy variables)
+#   e2 http_proxy and HTTPS_PROXY, only the lowercase no_proxy=corp.internal
+#   e3 the same proxies, only the uppercase NO_PROXY=corp.example
+#   e4 NO_PROXY and no_proxy set but empty
+#   e5 NO_PROXY=corp.example and no_proxy=corp.internal
+RC_PROXY_ENVS="e1 e2 e3 e4 e5"
+rc_proxy_env() {
+  local n
+  for n in http_proxy HTTP_PROXY https_proxy HTTPS_PROXY NO_PROXY no_proxy ALL_PROXY all_proxy; do
+    rc_env_del "$n"
+  done
+  RC_INH_NP=""
+  RC_INH_LNP=""
+  case "$1" in
+    e1) ;;
+    e2) rc_env_set "http_proxy=http://corp:3128"; rc_env_set "HTTPS_PROXY=http://corp:3128"
+        rc_env_set "no_proxy=corp.internal"; RC_INH_LNP=corp.internal ;;
+    e3) rc_env_set "http_proxy=http://corp:3128"; rc_env_set "HTTPS_PROXY=http://corp:3128"
+        rc_env_set "NO_PROXY=corp.example"; RC_INH_NP=corp.example ;;
+    e4) rc_env_set "NO_PROXY="; rc_env_set "no_proxy=" ;;
+    e5) rc_env_set "NO_PROXY=corp.example"; rc_env_set "no_proxy=corp.internal"
+        RC_INH_NP=corp.example; RC_INH_LNP=corp.internal ;;
+    *) echo "rc_proxy_env: unknown environment $1" >&2; return 1 ;;
+  esac
+}
+
+# rc_expected_loopback_diff: the exactly two differences a routed Codex child
+# (and the probe) must show against a direct run, in rc_env_diff form, for the
+# environment rc_proxy_env set last: each spelling its own inherited value,
+# one comma, then 127.0.0.1,localhost (the loopback alone when unset or empty).
+rc_expected_loopback_diff() {
+  local lb="127.0.0.1,localhost" np lnp
+  np="$lb"; lnp="$lb"
+  [ -n "${RC_INH_NP:-}" ] && np="$RC_INH_NP,$lb"
+  [ -n "${RC_INH_LNP:-}" ] && lnp="$RC_INH_LNP,$lb"
+  printf '+NO_PROXY=%s\n+no_proxy=%s\n' "$np" "$lnp"
+}
+
+# rc_probe_direct <args...>: the probe stub run directly (a bash child, like
+# the wrapper's own call), same environment and directory, recording its
+# environment as $RC/probe-direct.env; the probe log is left empty.
+rc_probe_direct() {
+  rm -f "$RC/log/probe.env" "$RC/probe-direct.env"
+  : >"$RC/probe.recenv"
+  (cd "$RC_CWD" && exec env -i "${RC_ENV[@]}" /bin/bash -c '"$@"; exit $?' bash "$RC/probe/probe" "$@") >/dev/null 2>&1
+  mv "$RC/log/probe.env" "$RC/probe-direct.env" 2>/dev/null
+  : >"$RC/log/probe.log"
+}
+
+# --- the real curl against an inherited proxy (S704 round 4, r2) -------------------
+# rc_real_curl: prints the absolute path of a real `curl` from the test's own
+# PATH (never the fixture fake); empty when there is none.
+rc_real_curl() {
+  local d
+  local IFS=:
+  for d in $PATH; do
+    case "$d" in "$RC"/*|"$RC") continue ;; esac
+    [ -x "$d/curl" ] && { printf '%s\n' "$d/curl"; return 0; }
+  done
+  return 0
+}
+
+# rc_free_port: a free loopback port, bound and released.
+rc_free_port() {
+  python3 -I -c '
+import socket
+s = socket.socket()
+s.bind(("127.0.0.1", 0))
+print(s.getsockname()[1])
+s.close()'
+}
+
+# rc_listener_start: a scratch HTTP listener (python3 -I) on 127.0.0.1 at a
+# free port, answering any request with HTTP 200 and logging its request
+# line to $RC/log/listener.log; sets RC_LISTENER_PORT and RC_LISTENER_PID.
+# Returns 1 when it does not come up.
+rc_listener_start() {
+  cat >"$RC/listener.py" <<'PY'
+import http.server, sys
+log, ready = sys.argv[1], sys.argv[2]
+class Handler(http.server.BaseHTTPRequestHandler):
+    def answer(self):
+        with open(log, "a") as f:
+            f.write(self.requestline + "\n")
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+    do_GET = do_HEAD = do_POST = do_PUT = do_CONNECT = answer
+    def log_message(self, *args):
+        pass
+server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+with open(ready + ".tmp", "w") as f:
+    f.write(str(server.server_address[1]))
+import os
+os.rename(ready + ".tmp", ready)
+server.serve_forever()
+PY
+  rm -f "$RC/listener.ready"
+  : >"$RC/log/listener.log"
+  python3 -I "$RC/listener.py" "$RC/log/listener.log" "$RC/listener.ready" >/dev/null 2>&1 &
+  RC_LISTENER_PID=$!
+  local n=0
+  while [ ! -s "$RC/listener.ready" ] && [ "$n" -lt 100 ]; do
+    sleep 0.1
+    n=$((n + 1))
+  done
+  [ -s "$RC/listener.ready" ] || return 1
+  RC_LISTENER_PORT="$(cat "$RC/listener.ready")"
+}
+
+# rc_listener_stop: stops the listener, if any.
+rc_listener_stop() {
+  if [ -n "${RC_LISTENER_PID:-}" ]; then
+    kill "$RC_LISTENER_PID" 2>/dev/null
+    wait "$RC_LISTENER_PID" 2>/dev/null
+  fi
+  RC_LISTENER_PID=""
+  return 0
+}
+
+# rc_curl_shim <real curl> <port P>: writes $RC/probe/curlshim, a probe for
+# SDG_ROUTE_PROBE that logs its argv to log/probe.log, then execs the real
+# curl with the same argv except `:8787` replaced by `:P`, its environment
+# untouched. The existing probe seam: the wrapper keeps its fixed URL.
+rc_curl_shim() {
+  printf '%s\n' "$1" >"$RC/real-curl"
+  printf '%s\n' "$2" >"$RC/shim.port"
+  cat >"$RC/probe/curlshim" <<'SHIM'
+#!/usr/bin/env bash
+d="$(cd "$(dirname "$0")/.." && pwd)"
+printf '%s\n' "$*" >>"$d/log/probe.log"
+real="$(cat "$d/real-curl")"
+port="$(cat "$d/shim.port")"
+args=()
+for a in "$@"; do args+=("${a//:8787/:$port}"); done
+exec "$real" "${args[@]}"
+SHIM
+  chmod +x "$RC/probe/curlshim"
 }
 
 # --- planted mutants (shared seam, review round 1) -----------------------------

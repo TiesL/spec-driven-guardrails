@@ -202,6 +202,36 @@ off_codex_direct valid -- --ignore-user-config x
 off_codex_direct valid -c 'model_providers_x=1' x
 clean
 
+# Round 4 (Architect report 8): under off (with (o1)) and without a yes
+# answer (with the routing user config), the Codex child's environment is
+# byte-identical to a direct run's in each inherited proxy environment
+# (e1)-(e5): no loopback added, an inherited NO_PROXY/no_proxy kept as it was.
+off_codex_env() { # <e>
+  local label="S703/2/off/codex-env/$1"
+  rc_answer yes
+  rc_env_reset; rc_proxy_env "$1"; set_route off
+  rc_codex_config valid
+  echo 7 >"$RC/probe.exit"
+  rc_direct "$codex" exec x
+  rc_run codex -- "$codex" exec x
+  rm -f "$RC/probe.exit"
+  [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || { fail "$label — not run: exit $rc_status, stderr: $rc_err"; rc_env_reset; return; }
+  [ -z "$(rc_env_diff)" ] || fail "$label — the environment differs from a direct run: $(rc_env_diff)"
+  rc_env_reset
+}
+not_yes_codex_env() { # <e>
+  rc_answer no
+  rc_env_reset; rc_proxy_env "$1"
+  rc_codex_config valid
+  unchanged_run "S703/1/no/codex-env/$1" codex "$codex" exec --ephemeral 'x y'
+  rc_answer yes
+  rc_env_reset
+}
+for e in $RC_PROXY_ENVS; do
+  off_codex_env "$e"
+  not_yes_codex_env "$e"
+done
+
 # --- (3) launch paths: subdirectory, symlink outside the repo, $SPEC_DRIVEN_GUARDRAILS_DIR
 ln -s "$RC_ROUTE" "$RC/elsewhere/rc-abs"
 ln -s ../elsewhere/rc-abs "$RC/elsewhere/rc-rel" 2>/dev/null || ln -s rc-abs "$RC/elsewhere/rc-rel"
@@ -312,6 +342,16 @@ rc_kill "S703/kill/base-URL-value-in-message" "$TOP_URL_MSG" "${TOP_URL_MSG%"% (
   off_codex_refused off-base-url-top openai_base_url x
 rc_kill "S703/kill/base-URL-value-in-message/profile" '% (named, profile, key))' '% (named, profile, selected[key]))' \
   off_codex_refused off-base-url-profile openai_base_url x
+LOOPBACK_BLOCK='NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"
+no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"
+export NO_PROXY no_proxy
+'
+ROUTE_SWITCH='route_switch="${SDG_MODEL_ROUTE:-}"'
+TOP_LINE='top="$(git rev-parse --show-toplevel 2>/dev/null)" || top=""'
+rc_kill "S703/kill/loopback-extended-under-off" "$ROUTE_SWITCH" "${LOOPBACK_BLOCK}${ROUTE_SWITCH}" off_codex_env e2
+rc_kill "S703/kill/loopback-extended-under-off/e5" "$ROUTE_SWITCH" "${LOOPBACK_BLOCK}${ROUTE_SWITCH}" off_codex_env e5
+rc_kill "S703/kill/loopback-extended-before-the-opt-in" "$TOP_LINE" "${LOOPBACK_BLOCK}${TOP_LINE}" not_yes_codex_env e2
+rc_kill "S703/kill/loopback-extended-before-the-opt-in/e1" "$TOP_LINE" "${LOOPBACK_BLOCK}${TOP_LINE}" not_yes_codex_env e1
 rc_kill "S703/kill/not-yes-runs-the-Codex-checks" "$OPT_IN" \
   'if [ -z "$top" ] || ! answered_yes "$top" "$OPT_IN_ID"; then
   [ "$runtime" = codex ] && case " $* " in *" --profile "*) exit 4 ;; esac

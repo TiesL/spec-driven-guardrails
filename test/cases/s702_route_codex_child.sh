@@ -25,12 +25,16 @@ prompt='a prompt with spaces'
 TOK=tok-7f3a
 
 # routes <label> <config variant> <args after exec...>: the child gets exec,
-# -c, the header override, then the original rest byte for byte; no
-# environment change; one probe call; config.toml unchanged.
+# -c, the header override, then the original rest byte for byte; its
+# environment differs from a direct run's in exactly NO_PROXY and no_proxy
+# (round 4), for the inherited proxy environment $PENV (default e1); one
+# probe call; config.toml unchanged.
+PENV=e1
 routes() {
   local label="$1" v="$2" h1
   shift 2
   rc_env_reset
+  rc_proxy_env "$PENV"
   rc_codex_config "$v"
   h1="$(rc_tree_hash "$RC/codexhome")"
   rc_direct "$codex" exec "$@"
@@ -39,7 +43,8 @@ routes() {
   rc_args_file exec -c "$RC_CODEX_HEADER_OVERRIDE" "$@"
   cmp -s "$RC/expected.args" "$RC/child.args" \
     || fail "S702/$label — arguments are not: exec, -c, the header override, then the original rest"
-  [ -z "$(rc_env_diff)" ] || fail "S702/$label — the Codex adapter changed the environment: $(rc_env_diff)"
+  [ "$(rc_env_diff)" = "$(rc_expected_loopback_diff)" ] \
+    || fail "S702/$label/$PENV — the environment does not differ from a direct run in exactly NO_PROXY and no_proxy (the loopback appended): got '$(rc_env_diff)', expected '$(rc_expected_loopback_diff)'"
   [ "$rc_probe_calls" = 1 ] || fail "S702/$label — the probe ran $rc_probe_calls times, expected once"
   [ "$h1" = "$(rc_tree_hash "$RC/codexhome")" ] || fail "S702/$label — config.toml was written"
 }
@@ -194,15 +199,35 @@ routed_args() {
 mkdir -p "$RC_CWD/profiles.d"
 routed_args
 
+# --- round 4: the inherited proxy environments (e1)-(e5) ------------------------
+proxy_envs() {
+  local e
+  for e in $RC_PROXY_ENVS; do
+    PENV="$e"
+    routes "env-$e" valid --ephemeral "$prompt"
+  done
+  PENV=e1
+}
+proxy_envs
+# proxy_env_routes <e>: one environment, as a mutant assertion.
+proxy_env_routes() {
+  PENV="$1"
+  routes "env-$1" valid --ephemeral "$prompt"
+  PENV=e1
+}
+
 # --- the Codex adapter ignores Claude routing state ---------------------------
 rc_env_reset
 rc_codex_config valid
+rc_proxy_env e1
 rc_env_set "ANTHROPIC_BASE_URL=http://127.0.0.1:9/elsewhere"
 echo '{"env": {"ANTHROPIC_BASE_URL": "http://x"}}' >"$RC/cfg/settings.json"
 rc_direct "$codex" exec x
 rc_run codex -- "$codex" exec x
 [ "$rc_status" = 0 ] && [ "$rc_started" = 1 ] || fail "S702/claude-state — the Codex adapter refused over Claude settings or ANTHROPIC_BASE_URL: $rc_err"
-[ -z "$(rc_env_diff)" ] || fail "S702/claude-state — environment changed: $(rc_env_diff)"
+# Round 4: exactly NO_PROXY and no_proxy differ; the inherited
+# ANTHROPIC_BASE_URL arrives unchanged.
+[ "$(rc_env_diff)" = "$(rc_expected_loopback_diff)" ] || fail "S702/claude-state — the environment does not differ in exactly NO_PROXY and no_proxy: $(rc_env_diff)"
 rm -f "$RC/cfg/settings.json"
 rc_env_reset
 
@@ -357,6 +382,19 @@ rc_kill "S702/kill/usage-check-only-when-routing" \
   '  [ "${2:-}" = exec ] || usage' '  :' usage_mode no
 rc_kill "S702/kill/exec-prefix-or-alias" \
   '  [ "${2:-}" = exec ] || usage' '  case "${2:-}" in e|exec*) ;; *) usage ;; esac' usage_mode yes
+# Round 4 (Architect report 8): the loopback on a routed Codex child.
+LB_NP='NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"'
+LB_LNP='no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"'
+rc_kill "S702/kill/NO_PROXY-not-added-for-Codex" "$LB_NP" ':' proxy_env_routes e1
+rc_kill "S702/kill/no_proxy-not-added-for-Codex" "$LB_LNP" ':' proxy_env_routes e1
+rc_kill "S702/kill/NO_PROXY-overwritten" "$LB_NP" 'NO_PROXY="$LOOPBACK_NO_PROXY"' proxy_env_routes e3
+rc_kill "S702/kill/no_proxy-overwritten" "$LB_LNP" 'no_proxy="$LOOPBACK_NO_PROXY"' proxy_env_routes e2
+rc_kill "S702/kill/no_proxy-from-NO_PROXY" "$LB_LNP" 'no_proxy="$NO_PROXY"' proxy_env_routes e2
+rc_kill "S702/kill/leading-comma-on-empty" "$LB_NP" 'NO_PROXY="${NO_PROXY+$NO_PROXY,}$LOOPBACK_NO_PROXY"' proxy_env_routes e4
+rc_kill "S702/kill/extra-variable-custom-headers" "$EXEC_LINE" \
+  'ANTHROPIC_CUSTOM_HEADERS="$TRANSFORM_HEADER"; export ANTHROPIC_CUSTOM_HEADERS; '"$EXEC_LINE" proxy_env_routes e1
+rc_kill "S702/kill/all-five-Claude-additions" "$EXEC_LINE" \
+  'export ANTHROPIC_BASE_URL="$CLAUDE_ROUTE_URL" _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1 ANTHROPIC_CUSTOM_HEADERS="$TRANSFORM_HEADER"; '"$EXEC_LINE" proxy_env_routes e1
 rc_kill "S702/kill/usage-after-checks" \
   '[ "$#" -ge 3 ] || usage' '[ "${1:-}" = codex ] && grep -q openai "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null && exit 4
 [ "$#" -ge 3 ] || usage' usage_mode yes-refusing
