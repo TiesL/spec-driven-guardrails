@@ -2485,6 +2485,19 @@ when the Codex config does not route through Caveman or already sets
 `http_headers`; it refuses with exit 3 and a clear message when the proxy probe
 does not exit 0 (only an answer counts as up). There is no silent direct fallback.
 
+Not-yes means the wrapper does nothing, and the requirement says so in every
+place that mentions opting out. With the answer no, pending or absent the child
+runs unchanged: a Claude child is as direct as its parent environment, and a
+Codex child follows the user's own `config.toml`, so it is routed through the
+proxy in compress mode, without the pass-through header, whenever that config
+selects the Caveman provider. Answering `no` opts out of the wrapper's routing
+and its pass-through header, not out of compression. The exit-3 message, the
+`CHANGES.md` row and `docs/model-routing.md` must not present `no` as sending
+children direct or keeping their text uncut. Only `SDG_MODEL_ROUTE=off` under a
+yes answer sends a Codex child direct (decision 4); making not-yes Codex
+children direct or pass-through is not part of F75 and would need a new
+maintainer decision, since it changes what the opt-in answer controls.
+
 Every routed child, Claude and Codex, carries the pass-through header
 `x-cave-transforms: caveman.pass-through.v1`, so it is metered but its text
 arrives uncut; allowing compression for children needs a later explicit
