@@ -491,7 +491,7 @@ rc_kill "S702/kill/all-five-Claude-additions" "$EXEC_LINE" \
 DOTENV_KEYS="CODEX_CHILD_VARS='NO_PROXY no_proxy'"
 DOTENV_PATH='dotenv="${CODEX_HOME:-$HOME/.codex}/.env"'
 DOTENV_EXISTS='if not os.path.lexists(path):'
-DOTENV_RE='assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=")'
+DOTENV_RE='assignment = re.compile(rf"{space}*(?:export{space}+)?([A-Za-z_][A-Za-z0-9_.]*){space}*=")'
 rc_kill "S702/kill/dotenv-uppercase-key-only" "$DOTENV_KEYS" "CODEX_CHILD_VARS='NO_PROXY'" refused_dotenv x2
 rc_kill "S702/kill/dotenv-lowercase-key-only" "$DOTENV_KEYS" "CODEX_CHILD_VARS='no_proxy'" refused_dotenv x1
 rc_kill "S702/kill/dotenv-HOME-instead-of-CODEX_HOME" "$DOTENV_PATH" 'dotenv="$HOME/.codex/.env"' refused_dotenv x5
@@ -499,13 +499,13 @@ rc_kill "S702/kill/dotenv-HOME-instead-of-CODEX_HOME/xc4" "$DOTENV_PATH" 'dotenv
 for x in x1 x3 x5; do
   rc_kill "S702/kill/dotenv-value-in-message/$x" '% (path, key))' '% (path, line.decode("utf-8", "replace")))' refused_dotenv "$x"
 done
-rc_kill "S702/kill/dotenv-export-form-missed" '(?:export\s+)?' '' refused_dotenv x3
-rc_kill "S702/kill/dotenv-spaces-around-equals-missed" '([A-Za-z_][A-Za-z0-9_.]*)\s*=' '([A-Za-z_][A-Za-z0-9_.]*)=' refused_dotenv x3
+rc_kill "S702/kill/dotenv-export-form-missed" '(?:export{space}+)?' '' refused_dotenv x3
+rc_kill "S702/kill/dotenv-spaces-around-equals-missed" '([A-Za-z_][A-Za-z0-9_.]*){space}*=' '([A-Za-z_][A-Za-z0-9_.]*)=' refused_dotenv x3
 rc_kill "S702/kill/dotenv-empty-value-passed" "$DOTENV_RE" \
-  'assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=\s*\S")' refused_dotenv x2
+  'assignment = re.compile(rf"{space}*(?:export{space}+)?([A-Za-z_][A-Za-z0-9_.]*){space}*={space}*\S")' refused_dotenv x2
 rc_kill "S702/kill/dotenv-unreadable-as-absent" "$DOTENV_EXISTS" 'if not os.access(path, os.R_OK):' refused_dotenv x4
 rc_kill "S702/kill/dotenv-first-line-only" 'for line in lines:' 'for line in lines[:1]:' refused_dotenv x1
-rc_kill "S702/kill/dotenv-comment-line-counted" 'rb"\s*(?:export' 'rb"[\s#]*(?:export' routed_dotenv xc2
+rc_kill "S702/kill/dotenv-comment-line-counted" 'rf"{space}*(?:export' 'rf"(?:{space}|#)*(?:export' routed_dotenv xc2
 rc_kill "S702/kill/dotenv-any-proxy-key" "$DOTENV_KEYS" \
   "CODEX_CHILD_VARS='NO_PROXY no_proxy HTTP_PROXY http_proxy HTTPS_PROXY https_proxy'" routed_dotenv xc1
 rc_kill "S702/kill/dotenv-missing-file-refused" "$DOTENV_EXISTS" 'if False:' routed_dotenv xc3

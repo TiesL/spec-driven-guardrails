@@ -188,7 +188,8 @@ the Caveman installer, which SDG reads but never writes.
 With routing on, the wrapper also refuses a Codex child with exit 4 when
 `${CODEX_HOME:-$HOME/.codex}/.env`, which Codex loads over the inherited
 environment, assigns `NO_PROXY` or `no_proxy` (any value, empty included; an
-`export` prefix and spaces around `=` count, a comment line does not), or exists
+`export` prefix and white space around the key count, Unicode white space such
+as U+00A0 included, as Codex's reader accepts it; a comment line does not), or exists
 but cannot be read, because that file would undo the loopback exclusion the
 wrapper gives the child. The wrapper only reads that file, and only with routing
 on: under `SDG_MODEL_ROUTE=off` or without a yes answer it is not opened. The

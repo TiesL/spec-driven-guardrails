@@ -498,8 +498,12 @@ PY
 # check_codex_dotenv: refuses (exit 4) when ${CODEX_HOME:-$HOME/.codex}/.env
 # assigns a variable of CODEX_CHILD_VARS (any value, empty included; an
 # optional `export ` and white space around `=` count, a comment line does
-# not) or exists but cannot be read. Opens the file read-only; the message
-# names the file and the key, never the value. Called with routing on only.
+# not) or exists but cannot be read. White space is what Codex's .env reader
+# (Rust char::is_whitespace) accepts: ASCII and Unicode (U+0085, U+00A0,
+# U+3000, ...). Lines are split on bytes and decoded with surrogateescape, so
+# a non-UTF-8 file cannot crash the check. Opens the file read-only; the
+# message names the file and the key, never the value. Called with routing on
+# only.
 check_codex_dotenv() {
   local dotenv problem status
   dotenv="${CODEX_HOME:-$HOME/.codex}/.env"
@@ -516,12 +520,14 @@ except OSError as error:
     print("%s (.env) exists but cannot be read (%s), so the wrapper cannot tell whether it sets %s, which Codex would load over the loopback exclusion the wrapper gives the child. Make it readable, or run with SDG_MODEL_ROUTE=off"
           % (path, error.strerror, " or ".join(keys)))
     sys.exit(1)
-assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=")
+space = r"[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]"
+assignment = re.compile(rf"{space}*(?:export{space}+)?([A-Za-z_][A-Za-z0-9_.]*){space}*=")
 for line in lines:
-    match = assignment.match(line)
+    text = line.decode("utf-8", "surrogateescape")
+    match = assignment.match(text)
     if match is None:
         continue
-    key = match.group(1).decode("ascii")
+    key = match.group(1)
     if key in keys:
         print("%s (.env) sets %s, which Codex would load over the loopback exclusion the wrapper gives the child. Move that setting into the environment, or run with SDG_MODEL_ROUTE=off"
               % (path, key))
