@@ -2501,7 +2501,13 @@ as up). There is no silent direct fallback.
 On a routed Claude child the wrapper makes exactly five additions: the base
 URL, the first-party flag, the loopback on `NO_PROXY` and on `no_proxy`, and the
 pass-through header, each of `NO_PROXY`, `no_proxy` and
-`ANTHROPIC_CUSTOM_HEADERS` appended to its own inherited value.
+`ANTHROPIC_CUSTOM_HEADERS` appended to its own inherited value. A routed Codex
+child gets exactly two additions, the loopback on `NO_PROXY` and on `no_proxy`,
+each appended to its own inherited value, so an inherited `http_proxy`,
+`HTTPS_PROXY` or `ALL_PROXY` cannot divert the child's loopback request to an
+outside proxy; under `SDG_MODEL_ROUTE=off` the Codex child gets no environment
+change. The proxy probe runs with the same two values, so an inherited proxy
+variable cannot make a down proxy read as up.
 
 Under `SDG_MODEL_ROUTE=off` a Codex command with an argument of that list, an
 unparsable `config.toml`, a `config.toml` that sets `openai_base_url` or
