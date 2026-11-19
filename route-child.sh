@@ -33,7 +33,10 @@
 #      CLAUDE_CHILD_VARS or be unreadable or not a JSON object. Codex: no
 #      command argument of CODEX_SELECTION; ${CODEX_HOME:-$HOME/.codex}/config.toml
 #      must exist and parse, its effective provider must be "caveman", and that
-#      provider must not have http_headers or env_http_headers.
+#      provider must not have http_headers or env_http_headers; and
+#      ${CODEX_HOME:-$HOME/.codex}/.env, which Codex loads over the inherited
+#      environment, is read (read-only, only here) and must not assign a
+#      variable of CODEX_CHILD_VARS, and must be readable when it exists.
 #   4. Probe (exit 3): NO_PROXY and no_proxy first get the loopback appended
 #      and are exported, so the probe and the routed child (Claude or Codex)
 #      never reach 127.0.0.1 through an inherited http_proxy or HTTPS_PROXY.
@@ -72,6 +75,11 @@ OPT_IN_ID="process-model-routing"
 # these, and the settings check refuses a settings env that sets any of them
 # (settings env outranks the child's own environment).
 CLAUDE_CHILD_VARS='ANTHROPIC_BASE_URL _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL NO_PROXY no_proxy ANTHROPIC_CUSTOM_HEADERS'
+
+# The variables a routed Codex child gets (step 4), kept once: the .env check
+# refuses a Codex .env that assigns any of them (Codex loads that file over
+# the inherited environment, so it would undo the loopback exclusion).
+CODEX_CHILD_VARS='NO_PROXY no_proxy'
 
 # The settings files a Claude child would load, kept once here and once in
 # docs/model-routing.md (S709 compares them). "<base> <file>": user is
@@ -487,6 +495,48 @@ PY
   esac
 }
 
+# check_codex_dotenv: refuses (exit 4) when ${CODEX_HOME:-$HOME/.codex}/.env
+# assigns a variable of CODEX_CHILD_VARS (any value, empty included; an
+# optional `export ` and white space around `=` count, a comment line does
+# not) or exists but cannot be read. Opens the file read-only; the message
+# names the file and the key, never the value. Called with routing on only.
+check_codex_dotenv() {
+  local dotenv problem status
+  dotenv="${CODEX_HOME:-$HOME/.codex}/.env"
+  problem="$(python3 -I - "$dotenv" "$CODEX_CHILD_VARS" <<'PY'
+import os, re, sys
+
+path, keys = sys.argv[1], sys.argv[2].split()
+if not os.path.lexists(path):
+    sys.exit(0)
+try:
+    with open(path, "rb") as handle:
+        lines = handle.read().splitlines()
+except OSError as error:
+    print("%s (.env) exists but cannot be read (%s), so the wrapper cannot tell whether it sets %s, which Codex would load over the loopback exclusion the wrapper gives the child. Make it readable, or run with SDG_MODEL_ROUTE=off"
+          % (path, error.strerror, " or ".join(keys)))
+    sys.exit(1)
+assignment = re.compile(rb"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_.]*)\s*=")
+for line in lines:
+    match = assignment.match(line)
+    if match is None:
+        continue
+    key = match.group(1).decode("ascii")
+    if key in keys:
+        print("%s (.env) sets %s, which Codex would load over the loopback exclusion the wrapper gives the child. Move that setting into the environment, or run with SDG_MODEL_ROUTE=off"
+              % (path, key))
+        sys.exit(1)
+sys.exit(0)
+PY
+)"
+  status=$?
+  case "$status" in
+    0) ;;
+    1) refuse "$problem." ;;
+    *) refuse "$dotenv (.env) could not be checked (checker exit status $status)." ;;
+  esac
+}
+
 route_switch="${SDG_MODEL_ROUTE:-}"
 if [ "$route_switch" = off ]; then
   if [ "$runtime" = codex ]; then
@@ -618,6 +668,7 @@ if [ "$runtime" = claude ]; then
   check_claude_settings "$@"
 else
   check_codex routed "$@"
+  check_codex_dotenv
 fi
 
 # --- 4. probe ------------------------------------------------------------------------

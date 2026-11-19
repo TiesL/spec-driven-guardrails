@@ -185,6 +185,16 @@ count in every TOML form (table headers, dotted keys, inline tables at any
 depth). The Codex route itself lives in the user's own Codex config, written by
 the Caveman installer, which SDG reads but never writes.
 
+With routing on, the wrapper also refuses a Codex child with exit 4 when
+`${CODEX_HOME:-$HOME/.codex}/.env`, which Codex loads over the inherited
+environment, assigns `NO_PROXY` or `no_proxy` (any value, empty included; an
+`export` prefix and spaces around `=` count, a comment line does not), or exists
+but cannot be read, because that file would undo the loopback exclusion the
+wrapper gives the child. The wrapper only reads that file, and only with routing
+on: under `SDG_MODEL_ROUTE=off` or without a yes answer it is not opened. The
+message names the file and the key, never the value; move the setting into the
+environment, or run with `SDG_MODEL_ROUTE=off`.
+
 It also refuses a Codex command whose own arguments after `exec`, up to a lone
 `--`, select a provider, profile or endpoint, change a provider table or skip
 the user config, because an argument placed after the wrapper's `-c` wins. The
