@@ -268,8 +268,15 @@ $hk = { \"x-a\" = \"b\" }" ;;
 #   x2  no_proxy=            (empty value)
 #   x3  export NO_PROXY = "tok-7f3a"
 #   x4  the x1 file with mode 000 (unreadable)
+#   x6  <U+00A0>NO_PROXY=tok-7f3a         (Unicode space before the key)
+#   x7  export<U+00A0>NO_PROXY=tok-7f3a   (between export and the key)
+#   x8  NO_PROXY<U+00A0>=tok-7f3a         (before =)
+#   x9  <U+3000>no_proxy=tok-7f3a
+#   x10 <U+0085>NO_PROXY=                 (empty value)
 #   xc1 HTTP_PROXY=http://corp:3128 and FOO=1 only
 #   xc2 only the comment line # NO_PROXY=x
+#   xc5 FOO=1, <U+00A0>HTTP_PROXY=http://corp:3128, export<U+00A0>BAR=1
+# (<U+xxxx> is that code point's UTF-8 bytes, written as octal escapes.)
 rc_codex_dotenv() {
   local d="${2:-$RC/codexhome}" f
   f="$d/.env"
@@ -280,7 +287,13 @@ rc_codex_dotenv() {
     x1|x4) printf 'FOO=1\nNO_PROXY=tok-7f3a\n' >"$f" ;;
     x2) printf 'FOO=1\nno_proxy=\n' >"$f" ;;
     x3) printf 'FOO=1\nexport NO_PROXY = "tok-7f3a"\n' >"$f" ;;
+    x6) printf 'FOO=1\n\302\240NO_PROXY=tok-7f3a\n' >"$f" ;;
+    x7) printf 'FOO=1\nexport\302\240NO_PROXY=tok-7f3a\n' >"$f" ;;
+    x8) printf 'FOO=1\nNO_PROXY\302\240=tok-7f3a\n' >"$f" ;;
+    x9) printf 'FOO=1\n\343\200\200no_proxy=tok-7f3a\n' >"$f" ;;
+    x10) printf 'FOO=1\n\302\205NO_PROXY=\n' >"$f" ;;
     xc1) printf 'FOO=1\nHTTP_PROXY=http://corp:3128\n' >"$f" ;;
+    xc5) printf 'FOO=1\n\302\240HTTP_PROXY=http://corp:3128\nexport\302\240BAR=1\n' >"$f" ;;
     xc2) printf '# NO_PROXY=x\n' >"$f" ;;
     *) echo "rc_codex_dotenv: unknown variant $1" >&2; return 1 ;;
   esac

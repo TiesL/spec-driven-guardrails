@@ -236,7 +236,8 @@ rc_env_reset
 # .env of the variant in the place it names; sets DOTENV_DIR (the directory
 # holding the .env under test) and DOTENV_WORD (what the message must name
 # besides .env: the key, or that the file cannot be read).
-#   x1-x4, xc1, xc2  the .env in the fixture CODEX_HOME
+#   x1-x4, x6-x10, xc1, xc2, xc5  the .env in the fixture CODEX_HOME
+#                    (x6-x10, xc5: round 6, Unicode whitespace)
 #   x5               CODEX_HOME elsewhere (valid config, the x1 .env), none
 #                    in $HOME/.codex
 #   x5-default       CODEX_HOME unset: the valid config and the x1 .env in
@@ -252,8 +253,8 @@ dotenv_setup() {
   DOTENV_DIR="$RC/codexhome"
   DOTENV_WORD=NO_PROXY
   case "$1" in
-    x1|x3) rc_codex_dotenv "$1" ;;
-    x2) rc_codex_dotenv x2; DOTENV_WORD=no_proxy ;;
+    x1|x3|x6|x7|x8|x10) rc_codex_dotenv "$1" ;;
+    x2|x9) rc_codex_dotenv "$1"; DOTENV_WORD=no_proxy ;;
     x4) rc_codex_dotenv x4; DOTENV_WORD="cannot be read" ;;
     x5)
       DOTENV_DIR="$RC/elsewhere"
@@ -266,7 +267,7 @@ dotenv_setup() {
       cp "$RC/codexhome/config.toml" "$DOTENV_DIR/config.toml"
       rc_codex_dotenv x1 "$DOTENV_DIR"
       rc_env_del CODEX_HOME ;;
-    xc1|xc2) rc_codex_dotenv "$1" ;;
+    xc1|xc2|xc5) rc_codex_dotenv "$1" ;;
     xc3) ;;
     xc4) mkdir -p "$RC/home/.codex"; rc_codex_dotenv x1 "$RC/home/.codex" ;;
     *) echo "dotenv_setup: unknown variant $1" >&2; return 1 ;;
@@ -318,8 +319,8 @@ routed_dotenv() {
   [ "$h1" = "$(rc_tree_hash "$RC/codexhome" "$RC/home")" ] || fail "$label — a .env or config.toml was written"
   rc_dotenv_clear
 }
-for x in x1 x2 x3 x4 x5 x5-default; do refused_dotenv "$x"; done
-for x in xc1 xc2 xc3 xc4; do routed_dotenv "$x"; done
+for x in x1 x2 x3 x4 x5 x5-default x6 x7 x8 x9 x10; do refused_dotenv "$x"; done
+for x in xc1 xc2 xc3 xc4 xc5; do routed_dotenv "$x"; done
 rc_env_reset
 
 # --- usage errors exit 2 in every mode ---------------------------------------
@@ -508,6 +509,21 @@ rc_kill "S702/kill/dotenv-comment-line-counted" 'rb"\s*(?:export' 'rb"[\s#]*(?:e
 rc_kill "S702/kill/dotenv-any-proxy-key" "$DOTENV_KEYS" \
   "CODEX_CHILD_VARS='NO_PROXY no_proxy HTTP_PROXY http_proxy HTTPS_PROXY https_proxy'" routed_dotenv xc1
 rc_kill "S702/kill/dotenv-missing-file-refused" "$DOTENV_EXISTS" 'if False:' routed_dotenv xc3
+# Round 6 (PR #708 review round 4): Unicode whitespace in the .env line, as
+# Codex's reader (Rust char::is_whitespace) accepts it. ASCII_SPACE is the
+# ASCII-only class (the bytes \s of 772f881), planted one position at a time.
+ASCII_SPACE='[\t-\r ]'
+for x in x6 x9 x10; do
+  rc_kill "S702/kill/dotenv-ascii-space-before-key/$x" 'rf"{space}*(?:export' "rf\"$ASCII_SPACE*(?:export" refused_dotenv "$x"
+done
+rc_kill "S702/kill/dotenv-ascii-space-after-export" '(?:export{space}+)?' "(?:export$ASCII_SPACE+)?" refused_dotenv x7
+rc_kill "S702/kill/dotenv-ascii-space-before-equals" '){space}*="' ")$ASCII_SPACE*=\"" refused_dotenv x8
+for x in x9 x10; do
+  rc_kill "S702/kill/dotenv-space-widened-by-nbsp-only/$x" '\x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]"' \
+    '\xa0]"' refused_dotenv "$x"
+done
+rc_kill "S702/kill/dotenv-any-non-ascii-space-line-refused" '    if key in keys:' \
+  '    if key in keys or re.search("[\x85\xa0\u3000]", text):' routed_dotenv xc5
 rc_kill "S702/kill/usage-after-checks" \
   '[ "$#" -ge 3 ] || usage' '[ "${1:-}" = codex ] && grep -q openai "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null && exit 4
 [ "$#" -ge 3 ] || usage' usage_mode yes-refusing
