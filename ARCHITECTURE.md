@@ -3581,3 +3581,428 @@ rule is introduced.
 - **Effect of this update.** Documentation only, no scenario or code change:
   S594-S603 and `release_signal` at d89c017 already implement these decisions (S598/d
   covers the fork case). The Rule (d) bullet was not removed, only superseded.
+
+### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
+
+- **Decision.** [A] The Orchestrator session talks to its provider directly. A
+  pipeline stage launched as a separate model process starts through
+  `route-child.sh <claude|codex> -- <command> [args...]` at the repo root (resolved
+  through `$SPEC_DRIVEN_GUARDRAILS_DIR`). That script is the one Module that owns
+  routing. Its Interface hides the opt-in, the off switch, the parent check, the
+  settings and config checks, the proxy probe, the route URL, the transform header
+  and the per-runtime way to apply them. Deletion test: without it, every launch
+  (by hand, by #640's launch rules, by #513 W3's launcher) rebuilds the same checks.
+  The two adapters, `claude` and `codex`, are both real. Exit codes: the child's own
+  (the wrapper `exec`s it), 2 usage, 3 proxy down, 4 refused.
+- **Boundary.** [V, probes in #707 Architect report 4] In-session Agent-tool and
+  `spawn_agent` subagents share their parent's endpoint and are not routable; they
+  stay direct, like the Orchestrator. The behavior runner
+  (`test/behavior/orchestrator_diff.py`) stays direct by design and refuses to
+  start when the inherited `ANTHROPIC_BASE_URL` is set and not first-party. That
+  guarantee rests on two parts together: the inherited-environment check, and the
+  runner's own `--setting-sources ""`, which keeps user, project and local
+  settings `env` out of its `claude -p` calls. Managed settings still load and are
+  outside the guarantee, as for the session-start warning (review round 1,
+  `runner-ignores-settings-env`). SDG never sets `ANTHROPIC_BASE_URL` in a parent
+  process, a settings file or an adopted project, and never writes
+  `~/.codex/config.toml`.
+- **Opt-in and off switch.** [A] Routing is on only when the project's
+  `process-model-routing` answer is yes, read through `answered_yes`
+  (`lib/changes.sh`) on the git top level of the child's working directory. A
+  missing repository or answer means off. `SDG_MODEL_ROUTE=off`, exact and
+  case-sensitive, is the only per-run input and only switches off. When routing is
+  on, any other non-empty value is ignored with one stderr line saying that only
+  `off` switches off. The `CHANGES.md` row is `Default: question`,
+  `Applies if: uses-multi-agent-roles`, a new `predicate_true` arm equal to
+  `answered_yes "$project_dir" process-multi-agent-roles`. Only a project that runs
+  the staged pipeline launches stage processes, so no other project is asked. The
+  row has `Reaches session: none`; see the hand-off bullet. Not-yes means the
+  wrapper does nothing (decision 6): answering `no` opts out of the wrapper and its
+  pass-through header, not out of compression. A Codex child that the user's own
+  `config.toml` routes through the proxy then still runs there in compress mode.
+  Only `SDG_MODEL_ROUTE=off` under a yes answer sends one Codex child direct. No
+  text the wrapper prints (the exit-3 message included), no `CHANGES.md` row field
+  and no sentence in `docs/model-routing.md` may present `no` as sending children
+  direct or keeping their text uncut (F75, AC4).
+- **Order inside the wrapper.** [A] Usage first, in every mode: a known runtime, the
+  `--`, a non-empty command; for `codex`, first word `codex` and second word exactly
+  `exec` (no alias, no option before `exec`), else exit 2. Then the opt-in: not-yes
+  means `exec "$@"` unchanged, with no probe and no checks. Under `off` a Claude
+  child runs unchanged; a Codex child gets its per-run direct override after the
+  off-mode selection check of the Codex adapter bullet (exit 4), never a probe.
+  Then the checks (exit 4), then the probe (exit 3), then `exec`.
+- **Claude adapter.** [A] Refuse when the inherited `ANTHROPIC_BASE_URL` is set and
+  not exactly `https://api.anthropic.com`. Set-but-empty and a trailing slash count
+  as not first-party. Refuse when any checked settings file has, under `env`, a key
+  equal to any variable the wrapper adds to the child (`ANTHROPIC_BASE_URL`,
+  `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL`, `NO_PROXY`, `no_proxy`,
+  `ANTHROPIC_CUSTOM_HEADERS`), with any value, the first-party URL included.
+  Settings `env` outranks the child's inline value: [V] for `ANTHROPIC_BASE_URL`,
+  [A] for the other four because Claude Code applies settings `env` to its process
+  environment by one mechanism, not per key. A settings value for any of them
+  would silently send the child around the proxy, drop the pass-through header,
+  let the loopback request go through an outside proxy, or drop the first-party
+  flag. The refused key set is by construction the set of added variables, so a
+  variable added later is refused in settings without a second list. The message
+  names the file and the key, never the value (review round 1,
+  `settings-env-strips-pass-through`, `settings-env-custom-headers-drops-passthrough`).
+  Also refuse when the inherited `ANTHROPIC_CUSTOM_HEADERS` already has a line
+  whose header name (text before the first `:`, trimmed, compared
+  case-insensitively as HTTP header names are) is `x-cave-transforms`. The message
+  names the variable and the header name, never the value. Two transform headers
+  leave the proxy's choice unspecified, and the wrapper never removes or
+  overwrites a header the user set (the same rule as Codex `http_headers`; review
+  round 1, `inherited-headers-transform-conflict`). Also refuse when a checked file exists but cannot be read, is
+  empty or whitespace-only, is not valid JSON, is not a JSON object, or has an `env`
+  that is not an object. The checked list, kept once in the wrapper and once in
+  `docs/model-routing.md`: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`;
+  `.claude/settings.json` and `.claude/settings.local.json` in the child's working
+  directory and in its git top level; the managed-settings file; each `--settings`
+  argument (`--settings <file>`, `--settings=<file>`, inline JSON). The managed path
+  is `/Library/Application Support/ClaudeCode/managed-settings.json` when
+  `uname -s` is `Darwin` and `/etc/claude-code/managed-settings.json` when it is
+  `Linux`. Any other platform refuses (exit 4), because the location is unknown. The
+  test-only variable `SDG_ROUTE_MANAGED_SETTINGS`, when non-empty, replaces that one
+  path and nothing else. It cannot switch routing on, skip another location or
+  change the platform rule for the other files. Empty means unset. It is documented
+  next to `SDG_ROUTE_PROBE` and is not a security boundary: the operator who can
+  set it can also set `SDG_MODEL_ROUTE=off`. Tests always set it, so they never read
+  the real managed path. JSON is read with `python3 -I`. After the checks and the
+  probe, `exec env` adds exactly five variables on the child only:
+  `ANTHROPIC_BASE_URL=http://127.0.0.1:8787/w/claude`,
+  `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1`, `NO_PROXY` and `no_proxy`, each with
+  `127.0.0.1,localhost` appended comma-separated to its own inherited value (the
+  loopback alone when that one is unset or empty), and `ANTHROPIC_CUSTOM_HEADERS`
+  with `x-cave-transforms: caveman.pass-through.v1` appended newline-separated to any
+  inherited value. Both spellings carry the loopback because HTTP stacks differ in
+  which one they read first, and which one Claude Code reads is [U]: with both set,
+  the order does not matter, so the routed request, which carries the child's
+  credential, never goes to an inherited `http_proxy` or `HTTPS_PROXY` (review
+  round 1, `lowercase-no-proxy-not-covered`). Arguments pass byte for byte. Never `--bare`, `--setting-sources`
+  or `--settings` injection.
+- **Codex adapter.** [V placement after `exec`; A the rest] With routing on, it reads
+  `${CODEX_HOME:-$HOME/.codex}/config.toml` read-only. It refuses (exit 4, naming the
+  file and the cause) when the file is missing or unparsable, when the effective
+  provider is not `caveman`, or when the `caveman` provider already has
+  `http_headers` or `env_http_headers`. The effective provider is the
+  `model_provider` of the profile named by the top-level `profile` key when that
+  profile sets one, else the top-level `model_provider` [A; that a selected
+  profile's `model_provider` beats the top-level key is [U] and the refusal is
+  the cheap error either way]. A top-level `profile` that names no profile table
+  refuses. The reader resolves key paths before it checks them, in every TOML
+  form: table headers, dotted keys and inline tables at any depth (for example
+  `model_providers = { caveman = { http_headers = { ... } } }` is the same key
+  path as `[model_providers.caveman]` with `http_headers`). Python here is 3.9,
+  so `tomllib` is not available; the small reader stays, and this resolution is
+  its contract (review round 1, `codex-inline-table-http-headers-missed` is a
+  code defect against it).
+  **Command selection check** (review round 1, `codex-profile-or-args-bypass-route`,
+  `codex-command-args-not-checked`): the wrapper also refuses (exit 4, naming the
+  argument, not a value) when the command's own arguments after `exec`, up to a
+  lone `--`, select a provider or profile or change a provider table, because a
+  user argument placed after the wrapper's `-c` wins and would make the wrapper
+  report a route the child does not take. The closed list, kept once in the
+  wrapper and once in `docs/model-routing.md` like the settings locations
+  (widened after review round 1, from #707 Developer report 2 and Architect
+  report 7):
+  - options that refuse by themselves: `--profile` and `-p`, `--oss`,
+    `--local-provider`, `--ignore-user-config` (Codex then skips `config.toml`
+    and runs the built-in `openai` provider direct while the wrapper reports a
+    route [V codex-cli 0.166.0: `provider: openai`]);
+  - `-c`/`--config` whose key's first dotted segment, with whitespace and quotes
+    trimmed from each segment, is one of `model_provider`, `model_providers`,
+    `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`. Matching is
+    by first segment, not by text prefix, so `profiles` alone (a whole-table
+    `-c 'profiles={x={...}}'`) refuses like `profiles.x.model_provider`.
+    `openai_base_url` redirects the built-in `openai` provider [V 0.166.0: a
+    `-c openai_base_url=...` child sent `GET /q/responses` to that URL], which is
+    the provider `off` selects; `chatgpt_base_url` is listed on the same
+    reasoning [U whether model traffic under a ChatGPT login follows it; the
+    refusal is the cheap error].
+  Every option counts in all the forms the Codex argument parser accepts: the
+  value as the next argument, after `=` (`--profile=x`, `-c=k=v`), and, for the
+  short options `-p` and `-c`, attached (`-px`, `-cmodel_provider="x"`) [V 0.166.0:
+  both attached forms changed the provider]. Long options are not abbreviated by
+  that parser [V 0.166.0: `--prof`, `--conf` and `--ignore-user` are errors], so
+  only the full names are listed. An argument that is the value of an option the
+  list does not know (for example `-o --oss`) still refuses: over-refusal is the
+  safe direction. [U, accepted like AC8's list] the list follows the options of
+  codex-cli 0.166.0. Two facts of that version, recorded, not acted on: a
+  top-level `profile` key is a Codex error there ("legacy `profile` config is no
+  longer supported"), so the profile-table resolution above matters only for
+  older Codex versions, and `-p` there layers `$CODEX_HOME/<name>.config.toml`;
+  a project-local `.codex/config.toml` has `model_provider`, `model_providers`,
+  `profiles`, `openai_base_url` and `chatgpt_base_url` ignored by Codex, so it
+  needs no check [V 0.166.0]. With checks passed it probes
+  and then inserts
+  `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
+  directly after `exec`.
+  **Under `off`** it never probes, and inserts `-c 'model_provider="openai"'` directly
+  after `exec` so that one child goes direct (decision 4). Because a selected
+  profile or a later argument would beat that override and route the child,
+  compressed, while `off` promises direct, it first refuses (exit 4) when the
+  command's arguments contain an item of the list above, or when `config.toml`
+  exists and is unparsable, or its top-level `profile` names a profile that sets
+  a `model_provider` other than `openai` (or names no profile table), or it sets
+  `openai_base_url` or `chatgpt_base_url` at top level or in the selected profile
+  table, with any value (the
+  message names the file and the key, not the value): either would send the
+  `openai` child somewhere other than direct. A missing
+  `config.toml` passes: Codex then has no route to override. This is the one
+  check `off` runs; it reads only that file and needs no proxy. Under `off` the
+  Codex adapter adds no environment variable. A routed Codex child gets exactly
+  two: `NO_PROXY` and `no_proxy`, each with the same value a routed Claude child
+  gets (`127.0.0.1,localhost` appended comma-separated to its own inherited
+  value, or the loopback alone when unset or empty), and nothing else. Reason
+  [V source, openai/codex tag `rust-v0.166.0`, not run]: with `respect_system_proxy`
+  off (the default) Codex's model client keeps reqwest's default proxy handling
+  (`OutboundProxyPolicy::ReqwestDefault`; reqwest 0.12.28, hyper-util 0.1.20).
+  That matcher reads `HTTP_PROXY` then `http_proxy`, `HTTPS_PROXY`,
+  `ALL_PROXY`, and `NO_PROXY` then `no_proxy` (the uppercase one wins when set,
+  even empty), and has no implicit loopback exclusion. Without the two variables
+  an inherited `http_proxy` would carry the child's plain-HTTP request to
+  `127.0.0.1:8787`, with its credential, to the outside proxy (review round 2,
+  `codex-child-proxy-env-not-loopback-excluded`). The Codex adapter does not
+  read Claude settings.
+  **`.env` check** (review round 3, `codex-dotenv-overrides-loopback-exclusion`):
+  Codex loads `$CODEX_HOME/.env` (the same home as `config.toml`) at startup and
+  sets every key in it that does not start with `CODEX_` over the environment it
+  inherited [V source `rust-v0.166.0` `codex-rs/arg0/src/lib.rs`,
+  `load_dotenv`/`set_filtered`; V run: `codex sandbox -- /usr/bin/env` with a
+  scratch `CODEX_HOME` printed the `.env` values of `NO_PROXY` and `no_proxy`,
+  not the inherited ones, the `export no_proxy = "v"` form included]. A `.env`
+  value for either variable replaces the wrapper's loopback, so with routing on
+  the wrapper reads that file read-only when it exists, and refuses (exit 4,
+  before the probe) when a line assigns `NO_PROXY` or `no_proxy`, with any value,
+  empty included, or when the file exists and cannot be read. A line assigns a
+  key when, after optional leading whitespace and an optional `export` plus
+  whitespace, it starts with the key, optional whitespace and `=`; a `#` comment
+  line does not. Refusing on such a line inside a multi-line quoted value is
+  over-refusal, the safe direction. The message names the file and the key,
+  never the value, and offers moving the value into the inherited environment
+  (where the wrapper appends the loopback) or `SDG_MODEL_ROUTE=off`. The refused
+  key set is by construction the set of variables the wrapper adds to a Codex
+  child, as for Claude settings `env`. Other `.env` keys pass, proxy variables
+  included: with the loopback in the exclusion variables Codex reads, they cannot
+  divert the loopback request. Under `off` and not-yes the file is not read.
+- **Probe.** [A] `curl -s -o /dev/null --connect-timeout 2 --max-time 3
+  http://127.0.0.1:8787/`, or the executable named by `SDG_ROUTE_PROBE` with the same
+  arguments. It runs in the inherited environment with `NO_PROXY` and `no_proxy`
+  already extended exactly as for the child, so it takes the path the child takes
+  and an inherited `http_proxy` cannot answer in Caveman's place (curl honours
+  both spellings; review round 2, `probe-follows-inherited-proxy`). One known
+  difference: curl also reads its own configuration file (`~/.curlrc` and its
+  other locations), which the child does not, and a file there that sets both
+  `proxy` and `noproxy` makes a down proxy read as up (review round 3,
+  `probe-curlrc-noproxy-reads-up`, deferred; no credential is involved, because
+  the probe sends none and the child keeps the loopback exclusion). Its argv is
+  unchanged. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
+  is down, not only 7 and 28: 52, 56 or 127 (no `curl`) also means no answer was
+  seen, and refusing is the only behavior that never routes into a broken proxy or
+  falls back to direct. Down means exit 3 and one stderr message. It names
+  `http://127.0.0.1:8787`, the probe's exit status, `SDG_MODEL_ROUTE=off` as the way
+  to run this one child without the route, and answering `process-model-routing`
+  `no` only as switching the wrapper off. For Codex it adds that the user's own
+  Codex config still routes Codex through the proxy, compressed, under a `no`
+  answer, and that only `SDG_MODEL_ROUTE=off` sends it direct (opt-in bullet;
+  review round 1, `codex-no-answer-leaves-children-compressed`). The probe itself
+  sends a bare `GET /` with no credential. The routed child then sends its own
+  credential (subscription OAuth bearer or API key) over plain HTTP to whatever
+  process answers on that port; the probe does not identify the listener as
+  Caveman. The maintainer accepted that risk with disclosure in
+  `docs/model-routing.md` (decision 10, M1 option A; review round 1,
+  `probe-sends-credentials-to-any-listener`; #707 Architect report 6), so the
+  wrapper does not identify the listener. The acceptance covers the loopback
+  listener only, not an outside proxy (Codex adapter bullet). No `timeout`,
+  `gtimeout` or `nc`, and no bash 4
+  feature (macOS `/bin/bash` 3.2).
+- **Pass-through by default.** [V, one paired probe per runtime] Every routed child
+  carries the pass-through header, so it is metered but its text arrives uncut.
+  Allowing compression for children later means removing that one constant, after a
+  recorded maintainer decision and a test that children recover cut text.
+- **Single definition.** [A] `127.0.0.1:8787`, `ANTHROPIC_BASE_URL` assignments,
+  `x-cave-transforms` and `model_provider` overrides occur in `route-child.sh` only,
+  besides docs and tests. `adopt.sh` writes no `env` key into any `settings.json`.
+  "Docs" means every tracked `*.md` file outside `templates/` and `skills/`. That
+  includes the spec files (`PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`,
+  `CHANGELOG.md`), which must name these strings to specify them. "Tests" means
+  every file under `test/`. A non-Markdown file under `docs/`, such as a script, is
+  not allowed. `templates/` and `skills/` are excluded because `adopt.sh` installs
+  them into adopted projects. `WORKFLOW.md` is a doc but stays free of routing text
+  (AC10).
+  The first-party URL `https://api.anthropic.com` is a fact about the provider, not
+  a route, and appears in three readers: the wrapper, `session-context.sh` and the
+  behavior runner. Each uses exact string equality, and each has its own scenario
+  (S705, S708, S710) to keep them equal. A shared library for one comparison across
+  bash and Python would not be deep enough to pay for itself.
+- **Session-start warning.** [A] `session-context.sh --runtime claude` prints one
+  fixed line when the inherited environment, the user settings file
+  (`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`) or the project's
+  `.claude/settings.json` or `.claude/settings.local.json`, read directly, sets a
+  `ANTHROPIC_BASE_URL` that is not first-party. The line has no path and no value,
+  is at most 160 characters, and is printed once whatever the number of sources. It
+  sits in the Claude branch, so in slot 1. An unreadable or unparsable file adds
+  nothing (fail open; a hook never blocks). The managed file is not read there. That
+  keeps every existing session-context test independent of the machine, and an
+  admin-managed URL is not the installer-rewrite incident this warning exists for.
+  The Codex runtime prints nothing extra: its main session is routed by the user's
+  own `config.toml`, which SDG does not own. Budget, measured on `main` c7afb6d with
+  S318's worst-case fixture: slot 1 is 8,668 characters, so the line leaves at least
+  170 under `CONTEXT_BUDGET_CHARS` (9,000). On `release/607-panel-mechanisms`, slot 1
+  is 8,467.
+- **Hand-off (#640, #513 W3).** [A] The instruction "launch every process-delegated
+  Claude or Codex stage as `"$SPEC_DRIVEN_GUARDRAILS_DIR/route-child.sh" <claude|codex>
+  -- <command>`" is a launch rule. Per the confirmed decision 7 it belongs to #640's
+  launch rules, which with #513 W3's launcher must call the wrapper rather than
+  reimplement any part of it. They must treat exit 3 and 4 as a halt to report,
+  never as a cue to retry without the wrapper. This item injects no session text,
+  for a measured reason: on `main` slot 2 is 8,499 characters, so it already sits at
+  the 500-character headroom floor and the 8,500 fallback line of S318. Slot 1 is
+  8,668, and with the warning line plus a roughly 200-character instruction it would
+  pass 9,000. Making room means editing the stamped `ORCHESTRATOR.md` (a behavior
+  run) or a third slot (A41: more than two parts needs a redesign). Both are outside
+  #707. Until #640 lands, a stage launched without the wrapper runs unrouted, which
+  is today's state (decision 8).
+- **Disclosed risk.** [A, not verifiable] Before this change, Codex role children ran
+  through the proxy in `compress` mode. Some of them may have worked on contract text
+  cut by about nine tenths (Claude children: about half), and cut text stays cut for
+  the rest of a conversation. Whether that changed any role's decision cannot be
+  established from the metadata SDG may read. This item does not remediate it.
+  After this change the same holds for a Codex child under a not-yes answer whose
+  user config routes it (opt-in bullet).
+- **Review round 1 on PR #708, design dispositions.** [A] Each `design` finding was
+  a real design defect except one; the bullets above carry the new requirement.
+  - `settings-env-strips-pass-through`, `settings-env-custom-headers-drops-passthrough`:
+    defect. Falsified when a checked settings file or inline `--settings` whose
+    `env` sets any of the five added variables makes the wrapper exit 4 naming the
+    file and key, and an unrelated `env` key still routes.
+  - `lowercase-no-proxy-not-covered`: defect. Falsified when, with `http_proxy` and
+    `HTTPS_PROXY` set and an inherited lowercase `no_proxy`, the routed child's
+    `NO_PROXY` and `no_proxy` both end in the loopback.
+  - `inherited-headers-transform-conflict`: defect. Falsified when an inherited
+    header line `X-Cave-Transforms: ...` (any case) makes the wrapper exit 4 with
+    no value in the message, and an unrelated inherited header is still appended to.
+  - `codex-profile-or-args-bypass-route`: defect, in the routed and the `off`
+    branch. Falsified when a selected profile with a non-caveman provider, and each
+    argument of the closed list, exits 4 in routed mode, and a selected profile
+    with a non-`openai` provider or a listed argument exits 4 under `off`.
+  - `codex-command-args-not-checked` (`code`) and `codex-inline-table-http-headers-missed`
+    (`code`): the design now states the requirement (command selection check;
+    key-path resolution in every TOML form). They stay `code`.
+  - `runner-ignores-settings-env`: not a design defect (resolved by the Reviewer).
+    The Boundary bullet now states that the runner's guarantee rests on
+    `--setting-sources ""` and excludes managed settings.
+  - `probe-sends-credentials-to-any-listener`: a security trade-off, decided by
+    the maintainer as decision 10 (M1 option A: disclose and accept; Probe bullet).
+  - Not covered, recorded only: an inherited provider switch such as
+    `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` makes a Claude child
+    ignore the route. Review round 2 raised it, with the settings-`env` form, as
+    `claude-provider-switch-bypasses-route` (deferred, next bullet).
+- **Review round 2 on PR #708, design dispositions.** [A]
+  - `codex-child-proxy-env-not-loopback-excluded` (medium): defect, fixed in this
+    PR (Codex adapter bullet). Falsified when, with `http_proxy`, `HTTPS_PROXY`
+    and an inherited `no_proxy` set and an inherited `NO_PROXY` set or unset, a
+    routed Codex child's `NO_PROXY` and `no_proxy` both end in the loopback, and
+    an `off` Codex child's environment is unchanged.
+  - `probe-follows-inherited-proxy` (also filed as
+    `probe-follows-inherited-http-proxy`): same root as the medium (the loopback
+    exclusion was applied to one consumer of the loopback, not to all), so the
+    same design change closes it (Probe bullet). Falsified when, with
+    `http_proxy` pointing at a listener that answers HTTP and nothing on the
+    probed port, the real `curl` probe makes the wrapper exit 3 and start no
+    child, and a stub probe sees both variables ending in the loopback.
+  - `a61-credential-decision-stale` (also filed as `a61-probe-decision-stale`):
+    fixed by this text.
+  - Deferred, low, `design`, one bundled follow-up (OR40):
+    `claude-off-keeps-settings-route` (an exit-4 text offers `off` as the
+    remedy for a settings route, but a Claude child under `off` keeps that
+    route, compressed), `codex-managed-config-unchecked` (also filed as
+    `codex-managed-config-layers-unchecked`; [V source `rust-v0.166.0`] the
+    system, admin and cloud layers rank below the user `config.toml` and below
+    `-c`, so the routed provider and the wrapper's header win; the open
+    remainder is a lower-layer `openai_base_url` or `chatgpt_base_url` under
+    `off`, a lower-layer `env_http_headers` on `caveman`, and requirements
+    layers), `claude-provider-switch-bypasses-route`, and
+    `codex-caveman-base-url-unchecked`.
+  - `toml-reader-escaped-keys-unresolved`: not a design defect. The contract
+    (key paths resolved in every TOML form) already covers escaped quoted keys;
+    it stays `code`.
+- **Proxy-configuration boundary.** [A] Which sources of proxy configuration the
+  wrapper answers for, so a review round checks against this list instead of
+  finding sources one at a time. The rule: the wrapper answers for every source
+  the child or the probe loads from the user's environment, the user's or
+  project's own configuration, the command line, or the probe's own
+  configuration, when that source can undo what the wrapper sets or relies on
+  (the route, the header, the provider selection, the loopback exclusion). For
+  such a source the wrapper either sets the value or refuses (exit 4, naming
+  source and key, never the value). Status per source:
+  - In the boundary and covered in this PR: the inherited environment (set:
+    loopback on both spellings; checked: `ANTHROPIC_BASE_URL`,
+    `ANTHROPIC_CUSTOM_HEADERS`); the checked Claude settings files and inline
+    `--settings` (`env` keys equal to the added variables); the Codex user
+    `config.toml` (provider, profile, headers, base-URL keys under `off`); the
+    Codex command's own arguments (closed list); `$CODEX_HOME/.env`
+    (`NO_PROXY`, `no_proxy`; `.env` check above).
+  - In the boundary, open, deferred to the bundled follow-up (review round 3
+    bullet): `features.respect_system_proxy` in the Codex user `config.toml` or
+    enabled by the command (`--enable respect_system_proxy`, `-c
+    features.respect_system_proxy=...`), and curl's configuration file for the
+    probe. Also deferred from round 2: the `caveman` provider's `base_url`
+    origin, the provider switch for Claude, and the TOML escaped-key form.
+  - Outside the boundary by this rule, recorded: the operating system's proxy
+    settings and PAC script (they reach Codex only through
+    `respect_system_proxy`, which is in the boundary, and never reach curl or
+    Claude Code [A]); Codex's `system_proxy_fallback` feature (stable, on by
+    default), which retries ChatGPT backend and login GETs through the system
+    proxy and is not used for the provider request [A, from its call sites at
+    `rust-v0.166.0`]; Codex's sandbox `features.network_proxy`, which governs
+    tool commands, not the provider request [A]; which spelling Claude Code
+    reads first [U, both are set].
+  - Administrator-managed layers: the Codex system file
+    (`/etc/codex/config.toml`), MDM, cloud and requirements layers, which can
+    set the keys above (`respect_system_proxy`, `env_http_headers`, base URLs).
+    Open as `codex-managed-config-unchecked` (deferred). Whether the wrapper
+    reads the plain system file like the Claude managed-settings file, and
+    whether the layers it cannot read are accepted with disclosure, is a
+    maintainer decision for the follow-up, not settled by this text.
+  A new source found later is placed in one of these groups by the rule above;
+  only a source the rule puts outside, or an acceptance of an in-boundary
+  source, needs a maintainer decision.
+- **Review round 3 on PR #708, design dispositions.** [A]
+  - `codex-dotenv-overrides-loopback-exclusion` (medium): defect, fixed in this
+    PR (`.env` check, Codex adapter bullet). Falsified when, with routing on and
+    `$CODEX_HOME/.env` assigning `NO_PROXY` or `no_proxy` (any value, empty
+    included, `export` form included) or unreadable, the wrapper exits 4 naming
+    the file and the key without the value and the probe is not called, while a
+    `.env` with only other keys, a comment line, or no `.env` routes, and `off`
+    and not-yes runs do not read the file.
+  - Deferred, low, `design`, into the same bundled follow-up (OR40):
+    `loopback-uppercase-shadows-inherited-no-proxy` (when only one spelling is
+    inherited, the wrapper creates the other with the loopback alone; a client
+    that reads the created spelling first, Codex for `NO_PROXY` [V source],
+    loses the user's own exclusions for its non-loopback traffic, which then
+    goes to the user's proxy; the routed request stays protected. Target rule
+    for the follow-up: each spelling starts from its own inherited value when
+    that spelling is set, even empty, else from the other spelling's inherited
+    value, then gets the loopback; that changes S701 (c)/(d) and S702 (e2)/(e3)
+    and F75's "its own inherited value"); `codex-system-proxy-feature-bypasses-no-proxy`
+    (target: refuse when the feature is on in a source of the boundary);
+    `probe-curlrc-noproxy-reads-up` (target: the probe reads no curl
+    configuration file, which changes the pinned argv of S704).
+- **Violated when:** a tracked SDG file other than `route-child.sh`, docs and tests
+  assigns `ANTHROPIC_BASE_URL`, or contains the proxy address, a transform header or
+  a `model_provider` override; anything other than the adoption answer switches
+  routing on; the wrapper starts a child while the parent is routed, a checked
+  settings file sets any variable the wrapper adds or cannot be read, the
+  inherited headers already carry a transform header, the effective Codex
+  provider is not the Caveman provider, the Codex command selects a provider or
+  profile itself, `$CODEX_HOME/.env` assigns `NO_PROXY` or `no_proxy` or cannot
+  be read, or the probe exits non-zero; a routed Claude or Codex child, or
+  the probe, lacks the loopback in either `NO_PROXY` or `no_proxy`; a Codex child under `off` can be
+  routed by a selected profile or its own arguments; any wrapper text, row field
+  or doc sentence presents a `no` answer as sending children direct or keeping
+  their text uncut; a routed child runs without
+  the pass-through header or with `--bare`; the wrapper writes any settings or
+  config file; a #640 or #513 launcher routes a child by its own means or falls back
+  to direct after exit 3 or 4; routing text appears in `ORCHESTRATOR.md` or
+  `WORKFLOW.md`.

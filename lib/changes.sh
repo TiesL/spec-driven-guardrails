@@ -83,6 +83,11 @@ predicate_true() {
       # alone left a project on a different stack never asked these
       # questions even once CI was actually scaffolded for it.
       [ -x "$project_dir/check" ] ;;
+    uses-multi-agent-roles)
+      # #707: only a project that runs the five-role pipeline launches stage
+      # processes, so only it is asked about routing them (process-model-
+      # routing). answered_yes is defined below; it is resolved at call time.
+      answered_yes "$project_dir" process-multi-agent-roles ;;
     *)
       return 1 ;;
   esac
