@@ -4006,3 +4006,117 @@ rule is introduced.
   config file; a #640 or #513 launcher routes a child by its own means or falls back
   to direct after exit 3 or 4; routing text appears in `ORCHESTRATOR.md` or
   `WORKFLOW.md`.
+
+### A62 — Renaming the tracked `wip/` directory to `prep/`: one move, live pointers re-pointed, history kept, S155 made non-vacuous (#713)
+
+**Decided on 2026-11-20 (Architect, Planning).** The directory `wip/` (48 files,
+five folders) becomes `prep/` so that `wip/` keeps one meaning, the #706 branch
+prefix. Measured on `feature/713-rename-wip-to-prep` at `be25d5d` (= `origin/main`)
+with `git grep -nw wip`, `git grep -n 'wip/'`, case-insensitive variants, and a
+scratch-clone dry run of the whole change (below). Tags: [V] verified, [A] Architect
+decision.
+
+- **Mechanism (Locality).** [A] No new Module, Seam or script; nothing is
+  generated. Order on the work-item branch:
+  1. QA commits the test and scenario edits first (red, see "Test pins").
+  2. The Developer commits `git mv wip prep` alone, with no content change in
+     that commit, so every file is a 100% rename and `git log --follow` and
+     `git diff -M` see renames. [V] In a scratch clone the move alone gives 48
+     `R` entries.
+  3. A second commit replaces `wip/` with `prep/` inside `prep/` (54 lines in
+     21 files; every match there names this directory or its `<slug>` convention,
+     none is a branch name). The `-WIP` file-name suffix
+     (`ARCHITECTURE-MULTI-AGENT-WIP.md`, `PRD-MULTI-AGENT-WIP.md`) is not renamed:
+     it is a document name, not the directory, and many pointers name it.
+  4. A third commit re-points the live references outside `prep/` (table below)
+     and adds the CHANGELOG entry.
+  The squash merge folds these into one commit on `main`; the per-file edits are
+  small, so rename detection still holds there.
+- **Generators.** [V] No regeneration. `policy/` (the source of `WORKFLOW.md`,
+  `AGENTS.md` and `adapters/`) contains no `wip` text, and neither do the
+  generated files; `.claude/skills/` are symlinks. `./check` already runs
+  `check-workflow-adapters.sh`, which would catch drift.
+- **Inventory and ruling per site (outside `prep/`).** [V] sites, [A] rulings.
+  "Change" means `wip` becomes `prep` on that line only.
+  - Change, live pointers or rules: `ARCHITECTURE.md` 154, 307 (pointers to
+    A4-A13), 345 (A14 "Violated when": a path that resolves only in this repo);
+    `PRD.md` 1350; `README.md` 103, 328, 459 (directory table row
+    `prep/<slug>/`); `TEST-SCENARIOS.md` 1930 (S153), 2051 and 2053 (S155 title
+    and Given), 2096 (S158), 2668 (S192), 3748 (S240);
+    `skills/role-contracts/SKILL.md` 29 (provenance) and 694
+    (`prep/<slug>/<ROLE>-REPORT.md`); `skills/pre-merge-review/SKILL.md` 62;
+    `skills/codebase-design/README.md` 23; `skills/grilling/README.md` 13;
+    `check-no-dutch.sh` 77 (the permanent exclusion names a moved file: without
+    the change the check fails); comments in `classify-review-depth.sh` 4 and
+    `hooks/git-guardrails` 783.
+  - Change, test pins: `test/cases/s155_role_contracts_installed.sh` (2, 7, 8,
+    18, 20, 25); `s158_role_contracts_pointers_resolve.sh` 6 and 32 (the
+    `clone_only` pattern becomes `prep/multi-agent-development`, otherwise a
+    clone-only `prep/` pointer in the skill would go unflagged);
+    `s153_live_text_mawk_portability.sh` 45 (`--exclude-dir=prep`);
+    `s192_no_live_different_model_rule.sh` 14 and 61 (`*/prep/*`);
+    `s238_...` 21 and `s240_...` 14 (comments only); the tar
+    `--exclude='./prep'` in `s309`, `s317`, `s318`, `s321`, `s708`, `s713`;
+    and two fixtures the issue's Scope did not list:
+    `test/fixtures/codex-544.py` 15 and `test/fixtures/codex-594.py` 50
+    (`shutil.ignore_patterns(..., 'wip', ...)` becomes `'prep'`; it matches a
+    base name anywhere, and no other path is named `prep`).
+  - Keep, history (true as written, past tense or an old location):
+    `ARCHITECTURE.md` 302 and `PRD.md` 1332 ("the role contracts lived under
+    `wip/`" in v0.2.0); S164's title and Then (`TEST-SCENARIOS.md` 2222, 2227)
+    and `s164_old_role_contracts_path_gone.sh` 2 and 22: the old location of
+    `role-contracts` was under `wip/multi-agent-development/`, so the
+    forbidden string stays `wip/...`, and S164 has no directory exclusion that
+    could hide `prep/`; all of `CHANGELOG.md` (only a new entry is added);
+    `test/fixtures/marker-corpus.jsonl` (quotes of old comments); this entry
+    A62 itself and the new CHANGELOG entry, which record the rename.
+  - Not the directory: `.gitignore` 3, `compliance-evidence.sh` 9,
+    `role-label-staleness.sh` 8, the `PRD.md` and `ARCHITECTURE.md` "WIP
+    design/documents" wording, S160's title (file names or the word, not the
+    path); `s19_s23_...` 153 ("wipe").
+  - Not affected: `.github/` (no path filter names `wip`), `hooks/rules.sh`,
+    the branch-name logic in `hooks/git-guardrails`, `check`, `check-commit`.
+- **Dry run.** [V] In a scratch clone of this branch: the move alone makes
+  `check-no-dutch.sh` and S192 fail and leaves S155, S158 and S164 passing
+  (S155 vacuously: `rm -rf "$clone/wip"` removes nothing). With every "Change"
+  above applied, `check-no-dutch.sh`, S153, S155, S158, S164, S192, S238, S240,
+  S309, S317, S318, S321, S708 and S713 pass, and `git grep -nw wip` outside
+  `prep/`, `CHANGELOG.md` and the corpus prints exactly the "Keep" lines.
+- **Test pins (red before green).** [A] The one changed oracle is S155's Given:
+  before removing the directory, assert that the sandbox clone has
+  `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` as a file, then
+  `rm -rf "$clone/prep"`, then adopt as now. It fails on `main` (no `prep/`) and
+  passes after the move, and it keeps S155 from passing on an absent directory.
+  It is asserted on the sandbox copy, not on `git ls-files`, so a stray
+  untracked file in a developer's `wip/` does not matter. No new scenario ID;
+  S153, S155, S158, S192 and S240 change text only as listed. AC1's "no tracked
+  file under `wip/`" is shown by the PR's `git ls-files wip/` evidence, not by a
+  test, since a test cannot see a squash merge's tree before it exists.
+- **AC consistency.** [A] AC2 names only `wip/<folder>/` links inside `prep/`;
+  this design also changes the `wip/<slug>/` convention text and the bare
+  `wip/` mentions there (a widening, recommended because the A6 sources in
+  `prep/multi-agent-development/` win over `role-contracts` in this repo, so
+  they must name the same directory as the skill). AC4 does not name the two
+  `codex-*.py` fixtures; this design adds them. No AC is contradicted.
+- **Release carry-over (#607).** [V] The carry-over comment on #607 matches
+  this inventory at `892dec5`: `policy/merge-autonomy.json` 54,
+  `test/fixtures/merge-risk-646.py` 43, `s627_...` 40 (a tar exclude), and
+  `ARCHITECTURE.md` 22 against 4. The release branch adds no file under `wip/`;
+  PR #697's head adds no `wip` text. Additions for that comment are in #713's
+  Architect report (A60 prose naming `wip/**.md` and the `wip/` prefix; history
+  lines that stay). The release policy is `"enabled": false`, so nothing is
+  classified live before #607 merges; the carry-over must be done before it.
+- **Other branches.** [V] Only #697 is open. Nine stale remote branches touch
+  `wip/`, among them `origin/wip/430-acceptance` (adds `wip/430/`, 5 weeks
+  old). They stay as they are; a merge of one into `main` would recreate
+  `wip/`, and the "Violated when" below catches that.
+- **Adopted projects.** [A] `adopt.sh` installs nothing from `wip/` (S155), so
+  no `CHANGES.md` entry: there is no choice to ask. The installed
+  `role-contracts` text changes the co-thinking report location to
+  `prep/<slug>/`; the CHANGELOG entry says adopters need no action and may keep
+  an existing `wip/<slug>/` folder.
+- **Violated when:** a tracked file exists under `wip/`; a line outside
+  `prep/`, `CHANGELOG.md` and `test/fixtures/marker-corpus.jsonl` names `wip/`
+  or the word `wip` as this directory, other than the "Keep" lines above;
+  inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
+  `prep/`; a generated file changes in this work item.
