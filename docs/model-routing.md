@@ -86,7 +86,13 @@ first; with both set, the routed request never goes to an inherited
 (`CLAUDE_CHILD_VARS`), which the settings check below also uses. A Codex child
 gets the same header as
 `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
-right after `exec`. The route itself is defined once, in `route-child.sh`.
+right after `exec`. A routed Codex child gets exactly two variables on its own
+environment, `NO_PROXY` and `no_proxy`, each with the loopback
+`127.0.0.1,localhost` appended to its own inherited value (the loopback alone
+when that one is unset or empty), and none under `SDG_MODEL_ROUTE=off` or
+without a yes answer, because Codex too would otherwise send the loopback
+request, with its credential, to an inherited `http_proxy` or `HTTPS_PROXY`.
+The route itself is defined once, in `route-child.sh`.
 
 Every routed child carries the header `x-cave-transforms: caveman.pass-through.v1`,
 so the proxy meters the request but the text arrives byte-identical. The proxy
@@ -124,8 +130,10 @@ route. The line names answering `process-model-routing` `no` only as switching
 the wrapper off; for Codex it adds that the user's own Codex config still routes
 a Codex child through the proxy, compressed, under a `no` answer, and that only
 `SDG_MODEL_ROUTE=off` sends it direct. The probe is `curl -s -o /dev/null --connect-timeout 2 --max-time 3`
-against the proxy; only exit 0, any HTTP answer, means up. There is no silent
-fallback to a direct launch.
+against the proxy; only exit 0, any HTTP answer, means up. The probe runs with
+the same two extended loopback variables as the child, so an inherited proxy
+that answers HTTP cannot make a down Caveman proxy read as up. There is no
+silent fallback to a direct launch.
 
 With exit 4 it refuses a Claude child when the parent is already routed, that
 is when the inherited `ANTHROPIC_BASE_URL` is set and is not exactly

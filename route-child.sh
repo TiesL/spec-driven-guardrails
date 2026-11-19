@@ -8,7 +8,8 @@
 # Runs <command> with routing applied to that child only, through `exec`, so
 # the exit status is the child's own. The parent session, every settings file
 # and ~/.codex/config.toml stay untouched: the five Claude variables exist only
-# in the child's environment, the Codex header only in the child's arguments.
+# in the child's environment, the Codex header only in the child's arguments,
+# and a routed Codex child gets only NO_PROXY and no_proxy extended.
 #
 # Order: usage, opt-in, checks, probe, exec.
 #   1. Usage, in every mode (exit 2): a known runtime, `--`, a command whose
@@ -33,10 +34,14 @@
 #      command argument of CODEX_SELECTION; ${CODEX_HOME:-$HOME/.codex}/config.toml
 #      must exist and parse, its effective provider must be "caveman", and that
 #      provider must not have http_headers or env_http_headers.
-#   4. Probe (exit 3): curl, or the executable named by SDG_ROUTE_PROBE (a test
-#      seam), with the arguments below. Only exit 0 (any HTTP answer) is up.
+#   4. Probe (exit 3): NO_PROXY and no_proxy first get the loopback appended
+#      and are exported, so the probe and the routed child (Claude or Codex)
+#      never reach 127.0.0.1 through an inherited http_proxy or HTTPS_PROXY.
+#      Then curl, or the executable named by SDG_ROUTE_PROBE (a test seam),
+#      with the arguments below. Only exit 0 (any HTTP answer) is up.
 #   5. exec. Claude: every variable of CLAUDE_CHILD_VARS, set and exported.
-#      Codex: the pass-through header as a `-c` override directly after `exec`.
+#      Codex: the pass-through header as a `-c` override directly after
+#      `exec`, and no variable besides the two of step 4.
 #
 # Test seams (never switch routing on): SDG_ROUTE_PROBE replaces curl;
 # SDG_ROUTE_MANAGED_SETTINGS, when non-empty, replaces the platform's
@@ -616,6 +621,12 @@ else
 fi
 
 # --- 4. probe ------------------------------------------------------------------------
+# The loopback exclusion (A61), before the probe, for the probe and the routed
+# child of either runtime: each spelling keeps its own inherited value and gets
+# the loopback appended (the loopback alone when unset or empty).
+NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"
+no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"
+export NO_PROXY no_proxy
 probe="${SDG_ROUTE_PROBE:-curl}"
 "$probe" -s -o /dev/null --connect-timeout 2 --max-time 3 "$PROXY_ORIGIN/" >/dev/null 2>&1
 probe_status=$?
@@ -636,12 +647,11 @@ if [ "$runtime" = codex ]; then
 fi
 
 # The five variables of CLAUDE_CHILD_VARS, on this process only, which `exec`
-# hands to the child. NO_PROXY, no_proxy and ANTHROPIC_CUSTOM_HEADERS keep
-# their own inherited value and get theirs appended.
+# hands to the child. NO_PROXY and no_proxy were extended in step 4;
+# ANTHROPIC_CUSTOM_HEADERS keeps its own inherited value and gets the header
+# appended.
 ANTHROPIC_BASE_URL="$CLAUDE_ROUTE_URL"
 _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1
-NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LOOPBACK_NO_PROXY"
-no_proxy="${no_proxy:+$no_proxy,}$LOOPBACK_NO_PROXY"
 ANTHROPIC_CUSTOM_HEADERS="${ANTHROPIC_CUSTOM_HEADERS:+$ANTHROPIC_CUSTOM_HEADERS$'\n'}$TRANSFORM_HEADER"
 # shellcheck disable=SC2086,SC2163 # the list is split into names on purpose
 export $CLAUDE_CHILD_VARS
