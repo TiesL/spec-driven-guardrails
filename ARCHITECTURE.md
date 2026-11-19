@@ -3703,7 +3703,8 @@ rule is introduced.
   user argument placed after the wrapper's `-c` wins and would make the wrapper
   report a route the child does not take. The closed list, kept once in the
   wrapper and once in `docs/model-routing.md` like the settings locations
-  (widened in review round 2, `codex-selection-profiles-key` and its siblings):
+  (widened after review round 1, from #707 Developer report 2 and Architect
+  report 7):
   - options that refuse by themselves: `--profile` and `-p`, `--oss`,
     `--local-provider`, `--ignore-user-config` (Codex then skips `config.toml`
     and runs the built-in `openai` provider direct while the wrapper reports a
@@ -3748,11 +3749,28 @@ rule is introduced.
   message names the file and the key, not the value): either would send the
   `openai` child somewhere other than direct. A missing
   `config.toml` passes: Codex then has no route to override. This is the one
-  check `off` runs; it reads only that file and needs no proxy. The Codex adapter
-  adds no environment variable and does not read Claude settings.
+  check `off` runs; it reads only that file and needs no proxy. Under `off` the
+  Codex adapter adds no environment variable. A routed Codex child gets exactly
+  two: `NO_PROXY` and `no_proxy`, each with the same value a routed Claude child
+  gets (`127.0.0.1,localhost` appended comma-separated to its own inherited
+  value, or the loopback alone when unset or empty), and nothing else. Reason
+  [V source, openai/codex tag `rust-v0.166.0`, not run]: with `respect_system_proxy`
+  off (the default) Codex's model client keeps reqwest's default proxy handling
+  (`OutboundProxyPolicy::ReqwestDefault`; reqwest 0.12.28, hyper-util 0.1.20).
+  That matcher reads `HTTP_PROXY` then `http_proxy`, `HTTPS_PROXY`,
+  `ALL_PROXY`, and `NO_PROXY` then `no_proxy` (the uppercase one wins when set,
+  even empty), and has no implicit loopback exclusion. Without the two variables
+  an inherited `http_proxy` would carry the child's plain-HTTP request to
+  `127.0.0.1:8787`, with its credential, to the outside proxy (review round 2,
+  `codex-child-proxy-env-not-loopback-excluded`). The Codex adapter does not
+  read Claude settings.
 - **Probe.** [A] `curl -s -o /dev/null --connect-timeout 2 --max-time 3
   http://127.0.0.1:8787/`, or the executable named by `SDG_ROUTE_PROBE` with the same
-  arguments. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
+  arguments. It runs in the inherited environment with `NO_PROXY` and `no_proxy`
+  already extended exactly as for the child, so it takes the path the child takes
+  and an inherited `http_proxy` cannot answer in Caveman's place (curl honours
+  both spellings; review round 2, `probe-follows-inherited-proxy`). Its argv is
+  unchanged. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
   is down, not only 7 and 28: 52, 56 or 127 (no `curl`) also means no answer was
   seen, and refusing is the only behavior that never routes into a broken proxy or
   falls back to direct. Down means exit 3 and one stderr message. It names
@@ -3765,9 +3783,12 @@ rule is introduced.
   sends a bare `GET /` with no credential. The routed child then sends its own
   credential (subscription OAuth bearer or API key) over plain HTTP to whatever
   process answers on that port; the probe does not identify the listener as
-  Caveman. Whether to disclose and accept that or to identify the listener is
-  open for the maintainer (review round 1, `probe-sends-credentials-to-any-listener`;
-  #707 Architect report 6). No `timeout`, `gtimeout` or `nc`, and no bash 4
+  Caveman. The maintainer accepted that risk with disclosure in
+  `docs/model-routing.md` (decision 10, M1 option A; review round 1,
+  `probe-sends-credentials-to-any-listener`; #707 Architect report 6), so the
+  wrapper does not identify the listener. The acceptance covers the loopback
+  listener only, not an outside proxy (Codex adapter bullet). No `timeout`,
+  `gtimeout` or `nc`, and no bash 4
   feature (macOS `/bin/bash` 3.2).
 - **Pass-through by default.** [V, one paired probe per runtime] Every routed child
   carries the pass-through header, so it is metered but its text arrives uncut.
@@ -3845,11 +3866,41 @@ rule is introduced.
   - `runner-ignores-settings-env`: not a design defect (resolved by the Reviewer).
     The Boundary bullet now states that the runner's guarantee rests on
     `--setting-sources ""` and excludes managed settings.
-  - `probe-sends-credentials-to-any-listener`: a security trade-off, left to the
-    maintainer (Probe bullet). Under either option the design stands until decided.
+  - `probe-sends-credentials-to-any-listener`: a security trade-off, decided by
+    the maintainer as decision 10 (M1 option A: disclose and accept; Probe bullet).
   - Not covered, recorded only: an inherited provider switch such as
     `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` makes a Claude child
-    ignore the route. No finding raised it; a follow-up only if asked.
+    ignore the route. Review round 2 raised it, with the settings-`env` form, as
+    `claude-provider-switch-bypasses-route` (deferred, next bullet).
+- **Review round 2 on PR #708, design dispositions.** [A]
+  - `codex-child-proxy-env-not-loopback-excluded` (medium): defect, fixed in this
+    PR (Codex adapter bullet). Falsified when, with `http_proxy`, `HTTPS_PROXY`
+    and an inherited `no_proxy` set and an inherited `NO_PROXY` set or unset, a
+    routed Codex child's `NO_PROXY` and `no_proxy` both end in the loopback, and
+    an `off` Codex child's environment is unchanged.
+  - `probe-follows-inherited-proxy` (also filed as
+    `probe-follows-inherited-http-proxy`): same root as the medium (the loopback
+    exclusion was applied to one consumer of the loopback, not to all), so the
+    same design change closes it (Probe bullet). Falsified when, with
+    `http_proxy` pointing at a listener that answers HTTP and nothing on the
+    probed port, the real `curl` probe makes the wrapper exit 3 and start no
+    child, and a stub probe sees both variables ending in the loopback.
+  - `a61-credential-decision-stale` (also filed as `a61-probe-decision-stale`):
+    fixed by this text.
+  - Deferred, low, `design`, one bundled follow-up (OR40):
+    `claude-off-keeps-settings-route` (an exit-4 text offers `off` as the
+    remedy for a settings route, but a Claude child under `off` keeps that
+    route, compressed), `codex-managed-config-unchecked` (also filed as
+    `codex-managed-config-layers-unchecked`; [V source `rust-v0.166.0`] the
+    system, admin and cloud layers rank below the user `config.toml` and below
+    `-c`, so the routed provider and the wrapper's header win; the open
+    remainder is a lower-layer `openai_base_url` or `chatgpt_base_url` under
+    `off`, a lower-layer `env_http_headers` on `caveman`, and requirements
+    layers), `claude-provider-switch-bypasses-route`, and
+    `codex-caveman-base-url-unchecked`.
+  - `toml-reader-escaped-keys-unresolved`: not a design defect. The contract
+    (key paths resolved in every TOML form) already covers escaped quoted keys;
+    it stays `code`.
 - **Violated when:** a tracked SDG file other than `route-child.sh`, docs and tests
   assigns `ANTHROPIC_BASE_URL`, or contains the proxy address, a transform header or
   a `model_provider` override; anything other than the adoption answer switches
@@ -3857,8 +3908,8 @@ rule is introduced.
   settings file sets any variable the wrapper adds or cannot be read, the
   inherited headers already carry a transform header, the effective Codex
   provider is not the Caveman provider, the Codex command selects a provider or
-  profile itself, or the probe exits non-zero; a routed Claude child lacks the
-  loopback in either `NO_PROXY` or `no_proxy`; a Codex child under `off` can be
+  profile itself, or the probe exits non-zero; a routed Claude or Codex child, or
+  the probe, lacks the loopback in either `NO_PROXY` or `no_proxy`; a Codex child under `off` can be
   routed by a selected profile or its own arguments; any wrapper text, row field
   or doc sentence presents a `no` answer as sending children direct or keeping
   their text uncut; a routed child runs without
