@@ -3764,12 +3764,38 @@ rule is introduced.
   `127.0.0.1:8787`, with its credential, to the outside proxy (review round 2,
   `codex-child-proxy-env-not-loopback-excluded`). The Codex adapter does not
   read Claude settings.
+  **`.env` check** (review round 3, `codex-dotenv-overrides-loopback-exclusion`):
+  Codex loads `$CODEX_HOME/.env` (the same home as `config.toml`) at startup and
+  sets every key in it that does not start with `CODEX_` over the environment it
+  inherited [V source `rust-v0.166.0` `codex-rs/arg0/src/lib.rs`,
+  `load_dotenv`/`set_filtered`; V run: `codex sandbox -- /usr/bin/env` with a
+  scratch `CODEX_HOME` printed the `.env` values of `NO_PROXY` and `no_proxy`,
+  not the inherited ones, the `export no_proxy = "v"` form included]. A `.env`
+  value for either variable replaces the wrapper's loopback, so with routing on
+  the wrapper reads that file read-only when it exists, and refuses (exit 4,
+  before the probe) when a line assigns `NO_PROXY` or `no_proxy`, with any value,
+  empty included, or when the file exists and cannot be read. A line assigns a
+  key when, after optional leading whitespace and an optional `export` plus
+  whitespace, it starts with the key, optional whitespace and `=`; a `#` comment
+  line does not. Refusing on such a line inside a multi-line quoted value is
+  over-refusal, the safe direction. The message names the file and the key,
+  never the value, and offers moving the value into the inherited environment
+  (where the wrapper appends the loopback) or `SDG_MODEL_ROUTE=off`. The refused
+  key set is by construction the set of variables the wrapper adds to a Codex
+  child, as for Claude settings `env`. Other `.env` keys pass, proxy variables
+  included: with the loopback in the exclusion variables Codex reads, they cannot
+  divert the loopback request. Under `off` and not-yes the file is not read.
 - **Probe.** [A] `curl -s -o /dev/null --connect-timeout 2 --max-time 3
   http://127.0.0.1:8787/`, or the executable named by `SDG_ROUTE_PROBE` with the same
   arguments. It runs in the inherited environment with `NO_PROXY` and `no_proxy`
   already extended exactly as for the child, so it takes the path the child takes
   and an inherited `http_proxy` cannot answer in Caveman's place (curl honours
-  both spellings; review round 2, `probe-follows-inherited-proxy`). Its argv is
+  both spellings; review round 2, `probe-follows-inherited-proxy`). One known
+  difference: curl also reads its own configuration file (`~/.curlrc` and its
+  other locations), which the child does not, and a file there that sets both
+  `proxy` and `noproxy` makes a down proxy read as up (review round 3,
+  `probe-curlrc-noproxy-reads-up`, deferred; no credential is involved, because
+  the probe sends none and the child keeps the loopback exclusion). Its argv is
   unchanged. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
   is down, not only 7 and 28: 52, 56 or 127 (no `curl`) also means no answer was
   seen, and refusing is the only behavior that never routes into a broken proxy or
@@ -3901,6 +3927,68 @@ rule is introduced.
   - `toml-reader-escaped-keys-unresolved`: not a design defect. The contract
     (key paths resolved in every TOML form) already covers escaped quoted keys;
     it stays `code`.
+- **Proxy-configuration boundary.** [A] Which sources of proxy configuration the
+  wrapper answers for, so a review round checks against this list instead of
+  finding sources one at a time. The rule: the wrapper answers for every source
+  the child or the probe loads from the user's environment, the user's or
+  project's own configuration, the command line, or the probe's own
+  configuration, when that source can undo what the wrapper sets or relies on
+  (the route, the header, the provider selection, the loopback exclusion). For
+  such a source the wrapper either sets the value or refuses (exit 4, naming
+  source and key, never the value). Status per source:
+  - In the boundary and covered in this PR: the inherited environment (set:
+    loopback on both spellings; checked: `ANTHROPIC_BASE_URL`,
+    `ANTHROPIC_CUSTOM_HEADERS`); the checked Claude settings files and inline
+    `--settings` (`env` keys equal to the added variables); the Codex user
+    `config.toml` (provider, profile, headers, base-URL keys under `off`); the
+    Codex command's own arguments (closed list); `$CODEX_HOME/.env`
+    (`NO_PROXY`, `no_proxy`; `.env` check above).
+  - In the boundary, open, deferred to the bundled follow-up (review round 3
+    bullet): `features.respect_system_proxy` in the Codex user `config.toml` or
+    enabled by the command (`--enable respect_system_proxy`, `-c
+    features.respect_system_proxy=...`), and curl's configuration file for the
+    probe. Also deferred from round 2: the `caveman` provider's `base_url`
+    origin, the provider switch for Claude, and the TOML escaped-key form.
+  - Outside the boundary by this rule, recorded: the operating system's proxy
+    settings and PAC script (they reach Codex only through
+    `respect_system_proxy`, which is in the boundary, and never reach curl or
+    Claude Code [A]); Codex's `system_proxy_fallback` feature (stable, on by
+    default), which retries ChatGPT backend and login GETs through the system
+    proxy and is not used for the provider request [A, from its call sites at
+    `rust-v0.166.0`]; Codex's sandbox `features.network_proxy`, which governs
+    tool commands, not the provider request [A]; which spelling Claude Code
+    reads first [U, both are set].
+  - Administrator-managed layers: the Codex system file
+    (`/etc/codex/config.toml`), MDM, cloud and requirements layers, which can
+    set the keys above (`respect_system_proxy`, `env_http_headers`, base URLs).
+    Open as `codex-managed-config-unchecked` (deferred). Whether the wrapper
+    reads the plain system file like the Claude managed-settings file, and
+    whether the layers it cannot read are accepted with disclosure, is a
+    maintainer decision for the follow-up, not settled by this text.
+  A new source found later is placed in one of these groups by the rule above;
+  only a source the rule puts outside, or an acceptance of an in-boundary
+  source, needs a maintainer decision.
+- **Review round 3 on PR #708, design dispositions.** [A]
+  - `codex-dotenv-overrides-loopback-exclusion` (medium): defect, fixed in this
+    PR (`.env` check, Codex adapter bullet). Falsified when, with routing on and
+    `$CODEX_HOME/.env` assigning `NO_PROXY` or `no_proxy` (any value, empty
+    included, `export` form included) or unreadable, the wrapper exits 4 naming
+    the file and the key without the value and the probe is not called, while a
+    `.env` with only other keys, a comment line, or no `.env` routes, and `off`
+    and not-yes runs do not read the file.
+  - Deferred, low, `design`, into the same bundled follow-up (OR40):
+    `loopback-uppercase-shadows-inherited-no-proxy` (when only one spelling is
+    inherited, the wrapper creates the other with the loopback alone; a client
+    that reads the created spelling first, Codex for `NO_PROXY` [V source],
+    loses the user's own exclusions for its non-loopback traffic, which then
+    goes to the user's proxy; the routed request stays protected. Target rule
+    for the follow-up: each spelling starts from its own inherited value when
+    that spelling is set, even empty, else from the other spelling's inherited
+    value, then gets the loopback; that changes S701 (c)/(d) and S702 (e2)/(e3)
+    and F75's "its own inherited value"); `codex-system-proxy-feature-bypasses-no-proxy`
+    (target: refuse when the feature is on in a source of the boundary);
+    `probe-curlrc-noproxy-reads-up` (target: the probe reads no curl
+    configuration file, which changes the pinned argv of S704).
 - **Violated when:** a tracked SDG file other than `route-child.sh`, docs and tests
   assigns `ANTHROPIC_BASE_URL`, or contains the proxy address, a transform header or
   a `model_provider` override; anything other than the adoption answer switches
@@ -3908,7 +3996,8 @@ rule is introduced.
   settings file sets any variable the wrapper adds or cannot be read, the
   inherited headers already carry a transform header, the effective Codex
   provider is not the Caveman provider, the Codex command selects a provider or
-  profile itself, or the probe exits non-zero; a routed Claude or Codex child, or
+  profile itself, `$CODEX_HOME/.env` assigns `NO_PROXY` or `no_proxy` or cannot
+  be read, or the probe exits non-zero; a routed Claude or Codex child, or
   the probe, lacks the loopback in either `NO_PROXY` or `no_proxy`; a Codex child under `off` can be
   routed by a selected profile or its own arguments; any wrapper text, row field
   or doc sentence presents a `no` answer as sending children direct or keeping
