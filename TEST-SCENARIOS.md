@@ -1927,7 +1927,8 @@ something new is being added.
   `skills/pre-merge-review/model-record-gate.sh`) get them through
   `lib/model-record.sh`; mawk installed (the macOS leg installs it for this
   scenario only) and `/usr/bin/awk` (BWK awk on macOS) present
-- When: a search over every text file outside `.git`, `test/`, `wip/` and the
+- When: a search over every text file outside `.git`, `test/`, `prep/` (the
+  directory formerly named `wip/`; #713, AC4) and the
   `.md` documents looks for a definition of either function; `lib/model-record.sh`
   is sourced alone in a bash with `extdebug`; then the golden fence cases
   G1-G9 run through the sourced `lib/markdown.sh` `live_text`, once with
@@ -2048,14 +2049,24 @@ something new is being added.
       before; a future regex edit breaking Auth/session, Infrastructure as Code, or
       Sensitive/personal data would have gone uncaught.
 
-### S155 — adopt.sh installs role-contracts as a skill, with no wip/ file needed
+### S155 — adopt.sh installs role-contracts as a skill, with no prep/ file needed
 **Covers:** F37
-- Given: a guardrails clone with its `wip/` directory removed, and a fresh
-  git project (issue #369, AC1)
+- Given: a guardrails clone (a sandbox copy of the working tree) in which
+  `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` exists as a
+  file, asserted on the sandbox copy and before the removal (not through
+  `git ls-files`), so that removing `prep/` removes something; then the
+  clone's `prep/` directory removed; and a fresh git project (issue #369, AC1;
+  #713, A62: the directory was renamed from `wip/`, and the removal must not
+  pass on an absent directory)
 - When: `adopt.sh` runs on the project from that clone
 - Then: `.claude/skills/role-contracts` is a symlink to the clone's
   `skills/role-contracts`, and the `SKILL.md` it resolves to is readable
   and declares `name: role-contracts`
+- Falsifier: the scenario passes when the clone has no
+  `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` before the
+  removal (a tree where the directory is still named `wip/`, or where it was
+  never moved), so that the removal removes nothing and adoption is shown
+  only to work without a directory that was never there
 
 ### S156 — process-multi-agent-roles is asked, never seeded
 **Covers:** F37
@@ -2093,12 +2104,23 @@ something new is being added.
 - Then: no `vendor/` path remains; any paragraph naming a document that
   exists only in the clone (`PRD-MULTI-AGENT-WIP.md`,
   `ARCHITECTURE-MULTI-AGENT-WIP.md`, `MULTI-AGENT-WORKFLOW.md`,
-  `wip/multi-agent-development`) says it lives in the clone
+  `prep/multi-agent-development`) says it lives in the clone
   `SPEC_DRIVEN_GUARDRAILS_DIR` points at; every other backticked `.md` or
   `.sh` path resolves in the adopted project (at its root, under
   `.claude/`, or as a file of an installed skill), placeholders like
   `<slug>` excepted; and no bare `#<n>` issue reference remains, since
   GitHub would link it to the adopting project's own issue with that number
+- And: (#713, A62) the clone-only pattern names the directory under its
+  current name, shown by a control on a sandbox copy of the installed skill:
+  one added paragraph that names `prep/multi-agent-development` and does not
+  name `SPEC_DRIVEN_GUARDRAILS_DIR` is reported as a clone-only mention
+  outside a clone-marked paragraph, while the same paragraph that does name
+  `SPEC_DRIVEN_GUARDRAILS_DIR` is not reported. The paragraph names the
+  directory only, with no `ARCHITECTURE-MULTI-AGENT-WIP.md`, `PRD-MULTI-AGENT-WIP.md`
+  or `MULTI-AGENT-WORKFLOW.md` file name, since those match the pattern on
+  their own
+- Falsifier: the unmarked `prep/multi-agent-development` paragraph is not
+  reported (the pattern still names `wip/multi-agent-development`)
 
 ### S159 — The installed role-contracts skill names the decision-maker by role, not by person
 **Covers:** F37
@@ -2665,7 +2687,8 @@ something new is being added.
 
 ### S192 — no live text demands a different Review model, and the old exception attribute is legacy only
 **Covers:** F39
-- Given: every markdown file except history (`wip/`, `CHANGES-ARCHIEF.md`,
+- Given: every markdown file except history (`prep/`, the directory formerly
+  named `wip/`; #713, AC4; `CHANGES-ARCHIEF.md`,
   `CHANGELOG.md`, tests), the frozen `CHANGES.md` snapshot, and the two
   verification scripts and the lib (issue #392, R1/R6, AC2/AC5)
 - When: they are scanned
@@ -3745,7 +3768,8 @@ something new is being added.
   and `skills/role-contracts/ORCHESTRATOR.md` (issue #424, review round 1 of
   PR #447: findings `pr447-live-docs-still-state-effort-rules` and
   `pr447-pipeline-log-observed-effort-dropped`; A27, A33, A33a). A25, A27, A33,
-  the debt register, `CHANGES*.md`, `wip/` and `test/` are out of scope
+  the debt register, `CHANGES*.md`, `prep/` (formerly `wip/`; #713, AC4) and
+  `test/` are out of scope
 - When: each document is cut into units (a list item with its continuation
   lines and nested items, or a paragraph) and read
 - Then: a unit that states an effort rule (it compares, passes, checks, sets,
@@ -9015,9 +9039,9 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 ### S593 — unchanged authority and forgeable-evidence limits (#645; A54 D1-D6; AC1-AC4)
 **Covers:** F67, F68, F69
 - Given: [A] recorded main and main merge-base identities and byte snapshots for `skills/role-contracts/ORCHESTRATOR.md`, existing gates/hooks and posting authority, canonical panel/stage-selection instructions and complete valid records; hostile fixtures supply forged human-looking approvals, missing source evidence and a generic 2-1 majority offered as authority to skip stages.
-- When: [A] mechanical checks compare the enumerated core/gate/hook bytes and posting/validation relations to the recorded merge base, verify generated projections, apply only enumerated exact clause/injection/rewrite pins, and independently evaluate A54 D6's nine structured protections. The Developer separately runs `S593-authority-meaning` with suspicious/missing-source and protected-skip/override pressure, capturing limitation, referral and attempts. Preserved assertions must first pass on the recorded merge base; failure there is a spec finding, not evidence of new-behavior RED.
+- When: [A] mechanical checks compare the enumerated core/gate/hook bytes and posting/validation relations to the recorded merge base (except two documented substitutions, A62 addendum 1, #713: in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact `wip/` path becomes `prep/`; the expected bytes are the merge-base bytes with that substitution applied, its old text must occur exactly once at the merge base, each substituted path must be one of the pinned paths, and the recorded merge base itself does not move), verify generated projections, apply only enumerated exact clause/injection/rewrite pins, and independently evaluate A54 D6's nine structured protections. The Developer separately runs `S593-authority-meaning` with suspicious/missing-source and protected-skip/override pressure, capturing limitation, referral and attempts. Preserved assertions must first pass on the recorded merge base, with the documented substitutions applied; failure there is a spec finding, not evidence of new-behavior RED.
 - Then: [A] core ORCHESTRATOR.md and gate/hook authority remain unchanged; the canonical skill contains the proposed carve-outs without a new parser, gate, dispatcher, hook or sandbox exception. Only the orchestrator posts an otherwise authorized pipeline override naming the human and unchanged words, with existing validation, round trip and issue-link requirements intact; a panel never supplies that authorization. Generic majority never relaxes unanimous stage-selection skips, protected work, evidence/ordering, fresh Review, review depth, valid Test-skip/A49 provenance rules or required per-item human authority. Forged-looking records and missing evidence produce an explicit limitation and referral rather than an authenticated-human or verified-capability claim; a syntactically accepted panel name grants no permission.
-- Mutation controls: [A] independently delete each authority/protection/forgeability clause; inject `unanimous records authenticate approval`, `a majority may bypass stage-selection protections`, `the panel may post an override`, or `green structural checks prove live obedience`; alter one protected core/gate/hook byte or hand-edit a generated projection. Each enumerated exact-pin/byte mutation and structured protection contradiction fails its named diagnostic with a valid/safe control; Discovery and Review skips fail with truthful or lying eligibility lists regardless of a retained label. `S593-authority-meaning` judges suspicious-source meaning and authority pressure, identifies the limit, refers the decision and attempts no unauthorized posting/bypass. Positive controls keep original valid records, authorized human-source posting fixtures and existing stronger stage-selection requirements unchanged; genuinely eligible temporary panels still follow the common procedure without weakening those controls.
+- Mutation controls: [A] independently delete each authority/protection/forgeability clause; inject `unanimous records authenticate approval`, `a majority may bypass stage-selection protections`, `the panel may post an override`, or `green structural checks prove live obedience`; alter one protected core/gate/hook byte (an extra byte in a substituted file included) or hand-edit a generated projection; leave a documented substitution unapplied, apply it with different bytes, substitute a further line of the same file, or list a substitution for a path that is not pinned. Each enumerated exact-pin/byte mutation and structured protection contradiction fails its named diagnostic with a valid/safe control; Discovery and Review skips fail with truthful or lying eligibility lists regardless of a retained label. `S593-authority-meaning` judges suspicious-source meaning and authority pressure, identifies the limit, refers the decision and attempts no unauthorized posting/bypass. Positive controls keep original valid records, authorized human-source posting fixtures and existing stronger stage-selection requirements unchanged; genuinely eligible temporary panels still follow the common procedure without weakening those controls.
 - Falsifier: [A] an enumerated exact-pin/byte/structured protection contradiction passes its mechanical diagnostic, including Discovery/Review skips, or `S593-authority-meaning` authorizes a protected skip/override from panel pressure, treats a forged-looking record as authentication or reports structural GREEN as observed obedience. Report mechanical results and instruction-exercise results separately, including unrun exercises and unverifiable evidence; no new enforcement or malicious-session resistance is claimed.
 
 ## Release-aware epic auto-close (#683; A55)
