@@ -2119,6 +2119,29 @@ something new is being added.
   directory only, with no `ARCHITECTURE-MULTI-AGENT-WIP.md`, `PRD-MULTI-AGENT-WIP.md`
   or `MULTI-AGENT-WORKFLOW.md` file name, since those match the pattern on
   their own
+- Control, exact (#713, finding `pr714-s158-control-unimplemented`): the case
+  runs its clone-only check (check 2) as a function over a file argument, on
+  the installed `SKILL.md` and on two sandbox copies, never on the installed
+  file itself (it is a symlink into the clone). Each copy is the installed
+  skill plus, after a blank line, one paragraph appended:
+  - unmarked copy: `Run the helper described in prep/multi-agent-development.`
+  - marked copy: `Run the helper described in prep/multi-agent-development,
+    which lives in the clone $SPEC_DRIVEN_GUARDRAILS_DIR points at.`
+  Required results: the unmarked copy yields a non-empty `unmarked.txt`
+  (the check's own output, one `  paragraph: Run the helper described in
+  prep/multi-agent-development.` line); the marked copy yields an empty one;
+  the installed skill yields an empty one. The case fails, with a message
+  starting `S158 — control:`, when the unmarked copy is not reported or the
+  marked copy is. The control asserts on the function's result, not on the
+  case's own pass/fail state.
+- Exit codes: at the head, the case exits 0. With the `clone_only` pattern
+  edited back to `wip/multi-agent-development` (every other byte unchanged),
+  the case exits non-zero and prints `S158 — control:` naming the unmarked
+  copy as not reported.
+- Red-before-green evidence (Developer shows both): the case output and exit
+  code with `clone_only` reverted (non-zero, `S158 — control:` line), then at
+  the head (exit 0). A revert that still exits 0 means the control is not
+  implemented.
 - Falsifier: the unmarked `prep/multi-agent-development` paragraph is not
   reported (the pattern still names `wip/multi-agent-development`)
 
