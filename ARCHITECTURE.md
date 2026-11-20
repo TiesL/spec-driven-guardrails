@@ -4138,3 +4138,140 @@ decision.
   the maintainer has not decided otherwise, the two "Held" lines above;
   inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
   `prep/`; a generated file changes in this work item.
+
+#### A62 addendum 1 — S593's byte pin admits exactly two documented substitutions; baseline stays `b22b476` (#713) — RESERVED-PROTECTION EDIT
+
+**Decided on 2026-11-20 (Architect, Planning), after the maintainer's decisions.**
+Reviewer attention: this addendum changes a protection that A54 D6 reserves to
+the maintainer (S593's byte pin on `hooks/` and `skills/pre-merge-review/`). The
+maintainer took that decision on 2026-11-20 (D3, the maintainer's words: "I'll take
+option B": re-point `skills/pre-merge-review/SKILL.md` 62 and the comment in
+`hooks/git-guardrails` 783 from `wip/` to `prep/` and move S593's
+byte-protection baseline so S593 still passes; recorded on #713, comment
+7049314322). D1 and D2 were confirmed ("confirm yes"): A62's history/live
+rulings stand, and `skills/role-contracts/SKILL.md` 694 points to
+`prep/<slug>/`. So no maintainer item remains open here; this addendum only
+designs how the baseline moves. A62's text above is not edited; where it says
+"Held" or "this design does not choose it", this addendum supersedes it.
+Tags: [V] verified, [A] Architect decision.
+
+- **Superseded in A62.** [A] The two "Held" lines become "Change" lines. A62's
+  dry-run result "513 of 514, only S593 fails" no longer applies once the
+  fixture change below is in. AC2 stays as written (no live pointer to `wip/`
+  remains), so A62's "AC2 is contradicted" note is void. In "Violated when",
+  the clause about the two "Held" lines is void: those lines must now name
+  `prep/`.
+- **Measured.** [V] On this branch at `35ab498`: `git diff b22b476 HEAD` over
+  every S593-pinned path (`hooks/`, `skills/pre-merge-review/`,
+  `skills/role-contracts/ORCHESTRATOR.md`, `pipeline-override.sh`,
+  `skills/role-contracts/orchestrator-rules.tsv`) is empty, so the pinned bytes
+  are still exactly `b22b476`'s. `git grep -i wip` over that set finds only the
+  two lines. In the `b22b476` bytes, each `old` string below occurs exactly
+  once, each `new` string zero times. `b22b476` is an ancestor of `HEAD` and of
+  `origin/release/607-panel-mechanisms`.
+- **Option 1, chosen: keep `b22b476`, apply an exact documented substitution
+  per path.** [A] The expected bytes for a pinned path are the `b22b476` bytes;
+  for the two paths in a fixed table, they are the `b22b476` bytes with one
+  `old` replaced by `new`, and `old` must occur exactly once at `b22b476`.
+  Everything else in S593 stays: the ancestor check, the digest comparison,
+  the extra-byte mutation for every path. Reasons: the oracle stays a full-file
+  digest, so any other byte change in any pinned file still fails; the two
+  allowed changes are visible as literal bytes in one place; the ancestor
+  check keeps working on `main`, on the release branch and on every later
+  branch. It is also the repository's own precedent: on
+  `release/607-panel-mechanisms`, #685 (A59) admitted one token change in
+  `hooks/agent-dispatch.py` the same way (`old_row`, count 1, replace).
+  Cost: about 20 lines in one fixture function and two sentences in S593; the
+  table must be extended for any future sanctioned change (a deliberate,
+  reviewed step, which is the point).
+- **Option 2, rejected: record a new baseline commit.** [V]/[A] No usable
+  commit exists. `be25d5d` (= `origin/main`) has the same pinned bytes as
+  `b22b476` (empty diff above), so it would still fail on the two lines. A
+  commit on this branch that holds the new lines is lost in the squash merge:
+  it is not an ancestor of `main` afterwards, so "recorded preservation
+  baseline ancestor" would fail on `main` and on every branch cut from it. The
+  squash commit itself has no SHA before the merge, so pinning it needs a
+  second PR, with S593 red or a substitution in between anyway. It would also
+  diverge from the release branch, which still pins `b22b476` with its own
+  substitution. Option 2 costs more and protects less.
+- **Fixture change (`test/fixtures/temporary-panel-645.py`,
+  `preservation_checks` only).** [A] Add at module level, next to the
+  function:
+
+  ```python
+  # A62 addendum 1 (#713, maintainer D3 2026-11-20): the only sanctioned changes
+  # to S593-pinned bytes since the recorded merge base. Exact bytes, one each.
+  SUBSTITUTIONS = {
+      'skills/pre-merge-review/SKILL.md': (
+          b'`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`',
+          b'`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`'),
+      'hooks/git-guardrails': (
+          b'# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md',
+          b'# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md'),
+  }
+  ```
+
+  In the per-path loop, after `baseline` is read: set `expected = baseline`;
+  if the path is in `SUBSTITUTIONS`, check `baseline.count(old) == 1` (label
+  `593/substitution/applies-once-at-merge-base/<path>`) and set
+  `expected = baseline.replace(old, new, 1)`. Build the digest from
+  `expected`, not `baseline`. The positive check "preserved assertion green at
+  merge base" runs on `expected`. "unchanged <path>" and the extra-byte
+  mutation stay as they are. For the two table paths only, add three
+  mutations with `rejects(oracle, actual, mutant, label)`:
+  1. unapplied: `mutant = baseline` (old pointer kept), label
+     `593/substitution/unapplied/<path>`;
+  2. wrong substitution: `mutant = baseline.replace(old,
+     new.replace(b'prep/', b'prop/'), 1)`, label
+     `593/substitution/wrong/<path>`;
+  3. third substituted line: `mutant = actual.replace(b'main', b'prep', 1)`
+     (a further, undocumented substitution on another line of the same file;
+     `main` occurs 2 and 33 times there, never on the substituted line), label
+     `593/substitution/third-line/<path>`.
+  After the loop, check that every `SUBSTITUTIONS` key is among the pinned
+  `paths` (label `593/substitution/paths-pinned`), so a stale entry cannot sit
+  unused. No other function, constant or base SHA changes. [V] A scratch
+  simulation of this oracle against `b22b476` bytes: the line-only edit
+  `wip/` to `prep/` is accepted for both paths; unapplied, extra byte, wrong
+  substitution and third line are each rejected.
+- **S593 text (`TEST-SCENARIOS.md`).** [A] Text only, no new scenario ID and
+  no change to Covers. In When, after "compare the enumerated core/gate/hook
+  bytes and posting/validation relations to the recorded merge base", add:
+  "except two documented substitutions (A62 addendum 1, #713): in
+  `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact
+  `wip/` path becomes `prep/`; the expected bytes are the merge-base bytes
+  with that substitution applied, and its old text must occur exactly once at
+  the merge base". Change "Preserved assertions must first pass on the
+  recorded merge base" to "Preserved assertions must first pass on the
+  recorded merge base, with the documented substitutions applied". In
+  Mutation controls, after "alter one protected core/gate/hook byte", add
+  "leave a documented substitution unapplied, apply it with different bytes,
+  or substitute a further line". Then and Falsifier are unchanged.
+- **Release branch.** [A] The release branch's `preservation_checks` already
+  has the `hooks/agent-dispatch.py` substitution inline. When #607 syncs with
+  `main`, that entry joins `SUBSTITUTIONS` as a third documented entry (its
+  `old_row`/new row bytes, same count-1 check); that is a resolution of the
+  sync, owned by that branch's roles and its fresh Review, not part of #713.
+  Add this sentence to the #607 carry-over list (A62 "Release carry-over").
+- **Not widened.** [V] S593 lists pinned paths from the current tree, so
+  deleting a pinned file is not seen by this function (other cases may see
+  it); adding one fails `git show` and so fails S593. That gap predates #713,
+  and this addendum does not change it.
+- **Files QA touches (updated).** A62's list, plus
+  `test/fixtures/temporary-panel-645.py` (the change above, red first: with
+  the table in and the two lines still `wip/`, "unchanged
+  skills/pre-merge-review/SKILL.md" and "unchanged hooks/git-guardrails" fail)
+  and S593's text in `TEST-SCENARIOS.md`.
+- **Files the Developer touches (updated).** A62's list, plus
+  `skills/pre-merge-review/SKILL.md` 62 and `hooks/git-guardrails` 783 (`wip/`
+  becomes `prep/` on that line only, nothing else in either file). Still never
+  touched: `test/cases/s164_*`, `test/fixtures/marker-corpus.jsonl`, any
+  generated file. The Developer does not edit the fixture.
+- **AC consistency.** [A] AC2 holds as written. AC4's list gains
+  `temporary-panel-645.py` (a pinned-path baseline, not a `wip` exclusion).
+  No other AC changes.
+- **Violated when:** a pinned file under `hooks/` or
+  `skills/pre-merge-review/` differs from `b22b476` in any byte other than the
+  two table substitutions; `SUBSTITUTIONS` has an entry not recorded in an
+  `ARCHITECTURE.md` decision; S593's base SHA changes in this work item; any
+  of the three substitution mutations or the extra-byte mutation passes.
