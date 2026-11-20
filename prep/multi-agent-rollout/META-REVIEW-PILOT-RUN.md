@@ -3,10 +3,10 @@ Model/effort: Claude Opus, high reasoning effort, independent meta-reviewer role
 # Meta-review — epic #295 W1 (issue #296 / PR #298), the first full five-role pipeline run
 
 Independent, blameless. I wrote none of this and was not involved in producing it. I read
-`wip/multi-agent-rollout/PRODUCT-REPORT.md` and `ARCHITECT-REPORT.md`, issue #296 with all
+`prep/multi-agent-rollout/PRODUCT-REPORT.md` and `ARCHITECT-REPORT.md`, issue #296 with all
 comments, PR #298 with all comments and its diff, `compliance-evidence.sh`,
 `test/cases/s150_compliance_evidence.sh`, the `S150`/`F34` entries,
-`wip/multi-agent-development/ROLE-DESCRIPTIONS.md`, and
+`prep/multi-agent-development/ROLE-DESCRIPTIONS.md`, and
 `CO-THINKING-PILOT-RETRO-ORCHESTRATOR.md`. Everything below that is stated as fact was
 verified by running it, not by reading a claim about it.
 
@@ -251,7 +251,7 @@ and it is the subject of B2.
 
 Second-order observation worth recording: **Product's §5 diagnosis is the most reusable
 output of this entire run.** "A Product phase whose output is an issue must inline anything
-load-bearing that currently lives in a `wip/` report, an untranslated source, or a
+load-bearing that currently lives in a `prep/` report, an untranslated source, or a
 conversation — referencing is not carrying." All three of Product's own findings, and
 arguably QA's finding (b), reduce to that one rule. It should go into W2's Product role
 contract verbatim.
@@ -364,7 +364,7 @@ Judged against what each stage actually produced:
 Concrete, evidence-backed, in priority order. Each names the observation that produced it.
 
 1. **`ROLE-DESCRIPTIONS.md` § Product — add the carrying rule.** "A Product phase whose output
-   is a filed issue must inline anything load-bearing that currently lives in a `wip/` report,
+   is a filed issue must inline anything load-bearing that currently lives in a `prep/` report,
    an untranslated source, or a conversation. Referencing is not carrying." Plus its
    companion: "when an AC constrains a vocabulary, enumerate it closedly." *Evidence:* all
    three of Product's own findings, and AC8's existence at all.

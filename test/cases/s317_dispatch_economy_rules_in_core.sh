@@ -110,7 +110,7 @@ $real"
 # The core with the skill file absent still passes the structure check.
 nos="$SANDBOX/no-skill"
 mkdir -p "$nos"
-(cd "$R" && tar --exclude='./.git' --exclude='./wip' -cf - .) | (cd "$nos" && tar -xf -)
+(cd "$R" && tar --exclude='./.git' --exclude='./prep' -cf - .) | (cd "$nos" && tar -xf -)
 rm -rf "$nos/skills/dispatch-economy"
 harness "$nos/skills/role-contracts/ORCHESTRATOR.md" "$nos/skills/role-contracts/orchestrator-rules.tsv" "$nos/test/behavior/orchestrator-scenarios.md" "$nos"
 [ "$st" = 0 ] || fail "S317/skill-absent — the core needs the skill to pass the structure check:

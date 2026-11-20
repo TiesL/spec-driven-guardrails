@@ -1852,6 +1852,18 @@ def disclosure_oracle(inventory, request, consumer=645, round_no=1, earlier=None
     return problems
 
 
+# A62 addendum 1 (#713, maintainer D3 2026-11-20): the only sanctioned changes
+# to S593-pinned bytes since the recorded merge base. Exact bytes, one each.
+SUBSTITUTIONS = {
+    'skills/pre-merge-review/SKILL.md': (
+        b'`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`',
+        b'`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`'),
+    'hooks/git-guardrails': (
+        b'# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md',
+        b'# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md'),
+}
+
+
 def preservation_checks():
     base = 'b22b4760fa3dcfd79a1c2557899bd735c6fafefc'
     check(subprocess.run(['git', 'merge-base', '--is-ancestor', base, 'HEAD'], cwd=ROOT).returncode == 0, 'recorded preservation baseline ancestor')
@@ -1861,11 +1873,21 @@ def preservation_checks():
     for path in paths:
         baseline = subprocess.check_output(['git', 'show', base + ':' + path], cwd=ROOT)
         actual = (ROOT / path).read_bytes()
-        digest = hashlib.sha256(baseline).digest()
+        expected = baseline
+        if path in SUBSTITUTIONS:
+            old, new = SUBSTITUTIONS[path]
+            check(baseline.count(old) == 1, '593/substitution/applies-once-at-merge-base/' + path)
+            expected = baseline.replace(old, new, 1)
+        digest = hashlib.sha256(expected).digest()
         oracle = lambda data: [] if hashlib.sha256(data).digest() == digest else ['593/protected-byte/' + path]
-        check(not oracle(baseline), 'preserved assertion green at merge base ' + path)
+        check(not oracle(expected), 'preserved assertion green at merge base ' + path)
         check(not oracle(actual), 'unchanged ' + path)
         rejects(oracle, actual, actual + b'\n', '593/protected-byte/' + path)
+        if path in SUBSTITUTIONS:
+            rejects(oracle, actual, baseline, '593/substitution/unapplied/' + path)
+            rejects(oracle, actual, baseline.replace(old, new.replace(b'prep/', b'prop/'), 1), '593/substitution/wrong/' + path)
+            rejects(oracle, actual, actual.replace(b'main', b'prep', 1), '593/substitution/third-line/' + path)
+    check(set(SUBSTITUTIONS) <= set(paths), '593/substitution/paths-pinned')
     result = subprocess.run([str(ROOT / 'check-workflow-adapters.sh')], cwd=ROOT, capture_output=True, text=True)
     check(result.returncode == 0, 'generated projection equality: ' + result.stdout + result.stderr)
     # Existing generation oracle must reject a real isolated projection edit.

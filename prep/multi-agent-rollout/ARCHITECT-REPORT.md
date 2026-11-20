@@ -4,7 +4,7 @@ Model/effort: Claude Opus, high reasoning effort, Architect role.
 
 > **Status: proposed, not final.** This is an Architect-role artifact from the same
 > pre-decision co-thinking step as `PRODUCT-REPORT.md` (`PRD-MULTI-AGENT-WIP.md` §3.5,
-> Decision 5, A6), written into `wip/multi-agent-rollout/` and not into any accepted
+> Decision 5, A6), written into `prep/multi-agent-rollout/` and not into any accepted
 > document. Per A7 this is explicitly the "proposed, deviations marked" framing: everywhere
 > my technical judgment departs from what Product's report assumed or implied is marked
 > **[DEVIATION]**, and things I consider genuine defects rather than preference differences

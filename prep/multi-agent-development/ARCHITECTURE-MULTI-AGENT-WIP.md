@@ -233,7 +233,7 @@ orchestrator mid-work escalations. See A7 for the concrete mechanism.
 **Decided on 2026-09-23: elaborating a new product brief (PRD §3.4 Level 1) or a new
 release/epic within an existing product (Level 2) engages only the Orchestrator, Product,
 and Architect roles, before any decision to build. QA, Fullstack Developer, and Reviewer do
-not participate. Output goes to a dedicated `wip/<slug>/` folder, never directly into
+not participate. Output goes to a dedicated `prep/<slug>/` folder, never directly into
 `PRD.md`/`ARCHITECTURE.md`.**
 
 ### Evaluation criteria
@@ -256,7 +256,7 @@ Reintroduces exactly the "decisions lost to chat instead of durable artifacts" p
 whole epic exists to fix (PRD §2, problem statement) — just relocated to the pre-decision
 phase instead of implementation.
 
-#### Option 3 — Reduced pipeline: Orchestrator + Product + Architect only, output to `wip/<slug>/` (chosen)
+#### Option 3 — Reduced pipeline: Orchestrator + Product + Architect only, output to `prep/<slug>/` (chosen)
 Matches the granularity PRD §3.4 already assigns to Levels 1-2 (Product alone / Product +
 Architect), keeps artifact discipline, and doesn't engage roles that have nothing yet to
 evaluate.
@@ -360,17 +360,17 @@ record of "who acted," not an execution mechanism. Violated if the label is left
 after a phase transition, or if execution logic depends on reading it back (that would make
 it state, contradicting A1).
 
-### A6 — Pre-decision elaboration output lives in `wip/<slug>/`, not in the accepted docs
-A co-thinking session (Decision 5) writes its output to its own `wip/<slug>/` folder — a
+### A6 — Pre-decision elaboration output lives in `prep/<slug>/`, not in the accepted docs
+A co-thinking session (Decision 5) writes its output to its own `prep/<slug>/` folder — a
 short, kebab-case, descriptive name, independent of any issue number (unlike branch names,
 which this repo's workflow requires to carry one — a co-thinking session may start before
 any issue exists). It never edits `PRD.md`/`ARCHITECTURE.md` directly while still unaccepted.
 Once Ties accepts the output (same explicit-acceptance gate as PRD §11), its content is
-promoted into a new `PRD.md` epic section and a real Epic issue is opened; the `wip/<slug>/`
+promoted into a new `PRD.md` epic section and a real Epic issue is opened; the `prep/<slug>/`
 folder itself is kept afterward by default, as historical record — same precedent as epic
 #65's own folder — not deleted, unless Ties says otherwise for that specific case. Violated
 if elaboration content is written directly into the accepted docs before acceptance, or if a
-`wip/<slug>/` folder is deleted on promotion without Ties saying so.
+`prep/<slug>/` folder is deleted on promotion without Ties saying so.
 
 ### A7 — A role's report never characterizes another role's disagreement without verbatim quotation (decided 2026-09-25, closes the Decision 4 gap above)
 When a role's own report states that it disagrees with a prior role's position, it quotes
@@ -499,9 +499,9 @@ entry) with a quick/thorough split: a classifier decides which mode a PR's revie
 without adding a new role or a new risk taxonomy.
 
 **Classifier basis: Reviewer's existing six trigger categories only, no size/files-touched
-dimension.** Architect's own earlier informal sketch (`wip/bmad-method-comparison/
+dimension.** Architect's own earlier informal sketch (`prep/bmad-method-comparison/
 ARCHITECT-REPORT.md` §2.4) named files-touched as a second input alongside trigger-category
-match; issue #328's actual scope and Ties' ruling (`wip/bmad-method-comparison/DECISIONS.md`
+match; issue #328's actual scope and Ties' ruling (`prep/bmad-method-comparison/DECISIONS.md`
 Q3(a)) both narrow this to trigger-category match alone, and that narrowing is confirmed here
 deliberately, not silently. Reasoning: a size threshold would be a genuinely new, ungrounded
 number (no existing anchor anywhere in this repo, unlike the six categories, which are already
@@ -539,7 +539,7 @@ reappear elsewhere as new complexity; it is trivially inline branching already a
 N lens-Adapters are generic, undifferentiated fresh-context copies of Reviewer's own review
 scope — never named personas, and never one adapter per matched trigger category (that would
 smuggle category-specific personas back in through the count instead of the name, the same
-drift `wip/bmad-method-comparison/PRODUCT-REPORT.md` §3.2 already rejected). N stays a small
+drift `prep/bmad-method-comparison/PRODUCT-REPORT.md` §3.2 already rejected). N stays a small
 fixed constant decided once (2, not open-ended, not derived from how many categories matched),
 to keep the ceremony-cost concern #307 owns from being quietly pre-empted by this issue.
 

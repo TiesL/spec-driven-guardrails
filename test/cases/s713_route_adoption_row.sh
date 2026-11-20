@@ -146,7 +146,7 @@ compare_answers "$R" "$plain" plain process-multi-agent-roles yes
 long="$(printf 'p%.0s' $(seq 1 100))"
 wf="$SANDBOX/clone-$long"
 mkdir -p "$wf"
-(cd "$R" && tar --exclude='./.git' --exclude='./wip' --exclude='./CLAUDE.md' \
+(cd "$R" && tar --exclude='./.git' --exclude='./prep' --exclude='./CLAUDE.md' \
   --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) | (cd "$wf" && tar -xf -)
 wproj="$SANDBOX/project-$long"
 mkdir -p "$wproj"

@@ -151,7 +151,7 @@ runs `git -C <fixture> ...` acts on the launching repo instead of the
 fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
-A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
+A-series (A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
 A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
@@ -304,7 +304,7 @@ does not install, and `CHANGES.md` had no entry to ask adopters. The
 decisions below make it adoptable as an opt-in.
 
 **Numbering.** A14 and A15 are #369's, continuing the multi-agent series
-(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+(A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
 rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
 the two fill the A14-A18 range reserved in the #377 section above; nothing
 collides and nothing is renumbered.
@@ -342,7 +342,7 @@ collides and nothing is renumbered.
   network, so it is part of what answering *yes* means (as with
   `process-issue-tracking`), not something `adopt.sh` does.
 - **Violated when:** a pointer in the skill resolves only inside this repo (a
-  `vendor/` or `wip/` path, or a bare `#n`), or the skill carries a second
+  `vendor/` or `prep/` path, or a bare `#n`), or the skill carries a second
   literal copy of a marker another skill defines (S158, S160, S28).
 - **Revisit when:** a second adopter runs the pipeline and reports a step the
   skill does not cover; then promote that step from the WIP documents. Do not
@@ -4006,3 +4006,272 @@ rule is introduced.
   config file; a #640 or #513 launcher routes a child by its own means or falls back
   to direct after exit 3 or 4; routing text appears in `ORCHESTRATOR.md` or
   `WORKFLOW.md`.
+
+### A62 — Renaming the tracked `wip/` directory to `prep/`: one move, live pointers re-pointed, history kept, S155 made non-vacuous (#713)
+
+**Decided on 2026-11-20 (Architect, Planning).** The directory `wip/` (48 files,
+five folders) becomes `prep/` so that `wip/` keeps one meaning, the #706 branch
+prefix. Measured on `feature/713-rename-wip-to-prep` at `be25d5d` (= `origin/main`)
+with `git grep -nw wip`, `git grep -n 'wip/'`, case-insensitive variants, and a
+scratch-clone dry run of the whole change (below). Tags: [V] verified, [A] Architect
+decision.
+
+- **Mechanism (Locality).** [A] No new Module, Seam or script; nothing is
+  generated. Order on the work-item branch:
+  1. QA commits the test and scenario edits first (red, see "Test pins").
+  2. The Developer commits `git mv wip prep` alone, with no content change in
+     that commit, so every file is a 100% rename and `git log --follow` and
+     `git diff -M` see renames. [V] In a scratch clone the move alone gives 48
+     `R` entries.
+  3. A second commit replaces `wip/` with `prep/` inside `prep/` (54 lines in
+     21 files; every match there names this directory or its `<slug>` convention,
+     none is a branch name). The `-WIP` file-name suffix
+     (`ARCHITECTURE-MULTI-AGENT-WIP.md`, `PRD-MULTI-AGENT-WIP.md`) is not renamed:
+     it is a document name, not the directory, and many pointers name it.
+  4. A third commit re-points the live references outside `prep/` (table below)
+     and adds the CHANGELOG entry.
+  The squash merge folds these into one commit on `main`; the per-file edits are
+  small, so rename detection still holds there.
+- **Generators.** [V] No regeneration. `policy/` (the source of `WORKFLOW.md`,
+  `AGENTS.md` and `adapters/`) contains no `wip` text, and neither do the
+  generated files; `.claude/skills/` are symlinks. `./check` already runs
+  `check-workflow-adapters.sh`, which would catch drift.
+- **Inventory and ruling per site (outside `prep/`).** [V] sites, [A] rulings.
+  "Change" means `wip` becomes `prep` on that line only.
+  - Change, live pointers or rules: `ARCHITECTURE.md` 154, 307 (pointers to
+    A4-A13), 345 (A14 "Violated when": a path that resolves only in this repo);
+    `PRD.md` 1350; `README.md` 103, 328, 459 (directory table row
+    `prep/<slug>/`); `TEST-SCENARIOS.md` 1930 (S153), 2051 and 2053 (S155 title
+    and Given), 2096 (S158), 2668 (S192), 3748 (S240);
+    `skills/role-contracts/SKILL.md` 29 (provenance) and 694
+    (`prep/<slug>/<ROLE>-REPORT.md`);
+    `skills/codebase-design/README.md` 23; `skills/grilling/README.md` 13;
+    `check-no-dutch.sh` 77 (the permanent exclusion names a moved file: without
+    the change the check fails); the comment in `classify-review-depth.sh` 4.
+  - Held, byte-protected (maintainer decision): `skills/pre-merge-review/SKILL.md`
+    62 and the comment in `hooks/git-guardrails` 783 are live pointers, but S593
+    (`test/fixtures/temporary-panel-645.py`, `preservation_checks`) pins every
+    byte under `hooks/` and `skills/pre-merge-review/` to merge base `b22b476`
+    (A54 D6). [V] Changing either line fails S593 ("unchanged
+    hooks/git-guardrails", "unchanged skills/pre-merge-review/SKILL.md").
+    Default in this design: leave both lines as they are, so they point at a
+    path that no longer exists, and record them as known stale pointers in the
+    PR and CHANGELOG entry. The alternative, re-pointing them and moving S593's
+    recorded baseline, edits a temporary-panel protection that A54 reserves to
+    the maintainer; this design does not choose it.
+  - Change, test pins: `test/cases/s155_role_contracts_installed.sh` (2, 7, 8,
+    18, 20, 25); `s158_role_contracts_pointers_resolve.sh` 6 and 32 (the
+    `clone_only` pattern becomes `prep/multi-agent-development`, otherwise a
+    clone-only `prep/` pointer in the skill would go unflagged);
+    `s153_live_text_mawk_portability.sh` 45 (`--exclude-dir=prep`);
+    `s192_no_live_different_model_rule.sh` 14 and 61 (`*/prep/*`);
+    `s238_...` 21 and `s240_...` 14 (comments only); the tar
+    `--exclude='./prep'` in `s309`, `s317`, `s318`, `s321`, `s708`, `s713`;
+    and two fixtures the issue's Scope did not list:
+    `test/fixtures/codex-544.py` 15 and `test/fixtures/codex-594.py` 50
+    (`shutil.ignore_patterns(..., 'wip', ...)` becomes `'prep'`; it matches a
+    base name anywhere, and no other path is named `prep`).
+  - Keep, history (true as written, past tense or an old location):
+    `ARCHITECTURE.md` 302 and `PRD.md` 1332 ("the role contracts lived under
+    `wip/`" in v0.2.0); S164's title and Then (`TEST-SCENARIOS.md` 2222, 2227)
+    and `s164_old_role_contracts_path_gone.sh` 2 and 22: the old location of
+    `role-contracts` was under `wip/multi-agent-development/`, so the
+    forbidden string stays `wip/...`, and S164 has no directory exclusion that
+    could hide `prep/`; all of `CHANGELOG.md` (only a new entry is added);
+    `test/fixtures/marker-corpus.jsonl` (quotes of old comments); this entry
+    A62 itself and the new CHANGELOG entry, which record the rename.
+  - Not the directory: `.gitignore` 3, `compliance-evidence.sh` 9,
+    `role-label-staleness.sh` 8, the `PRD.md` and `ARCHITECTURE.md` "WIP
+    design/documents" wording, S160's title (file names or the word, not the
+    path); `s19_s23_...` 153 ("wipe").
+  - Not affected: `.github/` (no path filter names `wip`), `hooks/rules.sh`,
+    the branch-name logic in `hooks/git-guardrails`, `check`, `check-commit`.
+- **Dry run.** [V] In a scratch clone of this branch: the move alone makes
+  `check-no-dutch.sh` and S192 fail and leaves S155, S158 and S164 passing
+  (S155 vacuously: `rm -rf "$clone/wip"` removes nothing). With every "Change"
+  above applied (the two "Held" lines included), `check-no-dutch.sh`, S153, S155,
+  S158, S164, S192, S238, S240, S309, S317, S318, S321, S708 and S713 pass, and
+  the full `./check` passes 513 of 514 cases: only S593 fails, on the two
+  "Held" lines. Leaving those two lines as they are removes that failure.
+  `git grep -nw wip` outside `prep/`, `CHANGELOG.md` and the corpus then prints
+  exactly the "Keep" and "Held" lines.
+- **Test pins (red before green).** [A] The one changed oracle is S155's Given:
+  before removing the directory, assert that the sandbox clone has
+  `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` as a file, then
+  `rm -rf "$clone/prep"`, then adopt as now. It fails on `main` (no `prep/`) and
+  passes after the move, and it keeps S155 from passing on an absent directory.
+  It is asserted on the sandbox copy, not on `git ls-files`, so a stray
+  untracked file in a developer's `wip/` does not matter. No new scenario ID;
+  S153, S155, S158, S192 and S240 change text only as listed. AC1's "no tracked
+  file under `wip/`" is shown by the PR's `git ls-files wip/` evidence, not by a
+  test, since a test cannot see a squash merge's tree before it exists.
+- **AC consistency.** [A] AC2 names only `wip/<folder>/` links inside `prep/`;
+  this design also changes the `wip/<slug>/` convention text and the bare
+  `wip/` mentions there (a widening, recommended because the A6 sources in
+  `prep/multi-agent-development/` win over `role-contracts` in this repo, so
+  they must name the same directory as the skill). AC4 does not name the two
+  `codex-*.py` fixtures; this design adds them. AC2 ("every remaining match
+  outside `prep/` is a history quote or a branch name") is contradicted by the
+  two "Held" lines under this design's default; which way that resolves is the
+  maintainer's call (keep them stale and narrow AC2, or re-point them and move
+  S593's baseline).
+- **Release carry-over (#607).** [V] The carry-over comment on #607 matches
+  this inventory at `892dec5`: `policy/merge-autonomy.json` 54,
+  `test/fixtures/merge-risk-646.py` 43, `s627_...` 40 (a tar exclude), and
+  `ARCHITECTURE.md` 22 against 4. The release branch adds no file under `wip/`;
+  PR #697's head adds no `wip` text. Additions for that comment are in #713's
+  Architect report (A60 prose naming `wip/**.md` and the `wip/` prefix; history
+  lines that stay). The release policy is `"enabled": false`, so nothing is
+  classified live before #607 merges; the carry-over must be done before it.
+- **Other branches.** [V] Only #697 is open. Nine stale remote branches touch
+  `wip/`, among them `origin/wip/430-acceptance` (adds `wip/430/`, 5 weeks
+  old). They stay as they are; a merge of one into `main` would recreate
+  `wip/`, and the "Violated when" below catches that.
+- **Adopted projects.** [A] `adopt.sh` installs nothing from `wip/` (S155), so
+  no `CHANGES.md` entry: there is no choice to ask. The installed
+  `role-contracts` text changes the co-thinking report location to
+  `prep/<slug>/`; the CHANGELOG entry says adopters need no action and may keep
+  an existing `wip/<slug>/` folder.
+- **Violated when:** a tracked file exists under `wip/`; a line outside
+  `prep/`, `CHANGELOG.md` and `test/fixtures/marker-corpus.jsonl` names `wip/`
+  or the word `wip` as this directory, other than the "Keep" lines and, while
+  the maintainer has not decided otherwise, the two "Held" lines above;
+  inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
+  `prep/`; a generated file changes in this work item.
+
+#### A62 addendum 1 — S593's byte pin admits exactly two documented substitutions; baseline stays `b22b476` (#713) — RESERVED-PROTECTION EDIT
+
+**Decided on 2026-11-20 (Architect, Planning), after the maintainer's decisions.**
+Reviewer attention: this addendum changes a protection that A54 D6 reserves to
+the maintainer (S593's byte pin on `hooks/` and `skills/pre-merge-review/`). The
+maintainer took that decision on 2026-11-20 (D3, the maintainer's words: "I'll take
+option B": re-point `skills/pre-merge-review/SKILL.md` 62 and the comment in
+`hooks/git-guardrails` 783 from `wip/` to `prep/` and move S593's
+byte-protection baseline so S593 still passes; recorded on #713, comment
+7049314322). D1 and D2 were confirmed ("confirm yes"): A62's history/live
+rulings stand, and `skills/role-contracts/SKILL.md` 694 points to
+`prep/<slug>/`. So no maintainer item remains open here; this addendum only
+designs how the baseline moves. A62's text above is not edited; where it says
+"Held" or "this design does not choose it", this addendum supersedes it.
+Tags: [V] verified, [A] Architect decision.
+
+- **Superseded in A62.** [A] The two "Held" lines become "Change" lines. A62's
+  dry-run result "513 of 514, only S593 fails" no longer applies once the
+  fixture change below is in. AC2 stays as written (no live pointer to `wip/`
+  remains), so A62's "AC2 is contradicted" note is void. In "Violated when",
+  the clause about the two "Held" lines is void: those lines must now name
+  `prep/`.
+- **Measured.** [V] On this branch at `35ab498`: `git diff b22b476 HEAD` over
+  every S593-pinned path (`hooks/`, `skills/pre-merge-review/`,
+  `skills/role-contracts/ORCHESTRATOR.md`, `pipeline-override.sh`,
+  `skills/role-contracts/orchestrator-rules.tsv`) is empty, so the pinned bytes
+  are still exactly `b22b476`'s. `git grep -i wip` over that set finds only the
+  two lines. In the `b22b476` bytes, each `old` string below occurs exactly
+  once, each `new` string zero times. `b22b476` is an ancestor of `HEAD` and of
+  `origin/release/607-panel-mechanisms`.
+- **Option 1, chosen: keep `b22b476`, apply an exact documented substitution
+  per path.** [A] The expected bytes for a pinned path are the `b22b476` bytes;
+  for the two paths in a fixed table, they are the `b22b476` bytes with one
+  `old` replaced by `new`, and `old` must occur exactly once at `b22b476`.
+  Everything else in S593 stays: the ancestor check, the digest comparison,
+  the extra-byte mutation for every path. Reasons: the oracle stays a full-file
+  digest, so any other byte change in any pinned file still fails; the two
+  allowed changes are visible as literal bytes in one place; the ancestor
+  check keeps working on `main`, on the release branch and on every later
+  branch. It is also the repository's own precedent: on
+  `release/607-panel-mechanisms`, #685 (A59) admitted one token change in
+  `hooks/agent-dispatch.py` the same way (`old_row`, count 1, replace).
+  Cost: about 20 lines in one fixture function and two sentences in S593; the
+  table must be extended for any future sanctioned change (a deliberate,
+  reviewed step, which is the point).
+- **Option 2, rejected: record a new baseline commit.** [V]/[A] No usable
+  commit exists. `be25d5d` (= `origin/main`) has the same pinned bytes as
+  `b22b476` (empty diff above), so it would still fail on the two lines. A
+  commit on this branch that holds the new lines is lost in the squash merge:
+  it is not an ancestor of `main` afterwards, so "recorded preservation
+  baseline ancestor" would fail on `main` and on every branch cut from it. The
+  squash commit itself has no SHA before the merge, so pinning it needs a
+  second PR, with S593 red or a substitution in between anyway. It would also
+  diverge from the release branch, which still pins `b22b476` with its own
+  substitution. Option 2 costs more and protects less.
+- **Fixture change (`test/fixtures/temporary-panel-645.py`,
+  `preservation_checks` only).** [A] Add at module level, next to the
+  function:
+
+  ```python
+  # A62 addendum 1 (#713, maintainer D3 2026-11-20): the only sanctioned changes
+  # to S593-pinned bytes since the recorded merge base. Exact bytes, one each.
+  SUBSTITUTIONS = {
+      'skills/pre-merge-review/SKILL.md': (
+          b'`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`',
+          b'`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`'),
+      'hooks/git-guardrails': (
+          b'# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md',
+          b'# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md'),
+  }
+  ```
+
+  In the per-path loop, after `baseline` is read: set `expected = baseline`;
+  if the path is in `SUBSTITUTIONS`, check `baseline.count(old) == 1` (label
+  `593/substitution/applies-once-at-merge-base/<path>`) and set
+  `expected = baseline.replace(old, new, 1)`. Build the digest from
+  `expected`, not `baseline`. The positive check "preserved assertion green at
+  merge base" runs on `expected`. "unchanged <path>" and the extra-byte
+  mutation stay as they are. For the two table paths only, add three
+  mutations with `rejects(oracle, actual, mutant, label)`:
+  1. unapplied: `mutant = baseline` (old pointer kept), label
+     `593/substitution/unapplied/<path>`;
+  2. wrong substitution: `mutant = baseline.replace(old,
+     new.replace(b'prep/', b'prop/'), 1)`, label
+     `593/substitution/wrong/<path>`;
+  3. third substituted line: `mutant = actual.replace(b'main', b'prep', 1)`
+     (a further, undocumented substitution on another line of the same file;
+     `main` occurs 2 and 33 times there, never on the substituted line), label
+     `593/substitution/third-line/<path>`.
+  After the loop, check that every `SUBSTITUTIONS` key is among the pinned
+  `paths` (label `593/substitution/paths-pinned`), so a stale entry cannot sit
+  unused. No other function, constant or base SHA changes. [V] A scratch
+  simulation of this oracle against `b22b476` bytes: the line-only edit
+  `wip/` to `prep/` is accepted for both paths; unapplied, extra byte, wrong
+  substitution and third line are each rejected.
+- **S593 text (`TEST-SCENARIOS.md`).** [A] Text only, no new scenario ID and
+  no change to Covers. In When, after "compare the enumerated core/gate/hook
+  bytes and posting/validation relations to the recorded merge base", add:
+  "except two documented substitutions (A62 addendum 1, #713): in
+  `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact
+  `wip/` path becomes `prep/`; the expected bytes are the merge-base bytes
+  with that substitution applied, and its old text must occur exactly once at
+  the merge base". Change "Preserved assertions must first pass on the
+  recorded merge base" to "Preserved assertions must first pass on the
+  recorded merge base, with the documented substitutions applied". In
+  Mutation controls, after "alter one protected core/gate/hook byte", add
+  "leave a documented substitution unapplied, apply it with different bytes,
+  or substitute a further line". Then and Falsifier are unchanged.
+- **Release branch.** [A] The release branch's `preservation_checks` already
+  has the `hooks/agent-dispatch.py` substitution inline. When #607 syncs with
+  `main`, that entry joins `SUBSTITUTIONS` as a third documented entry (its
+  `old_row`/new row bytes, same count-1 check); that is a resolution of the
+  sync, owned by that branch's roles and its fresh Review, not part of #713.
+  Add this sentence to the #607 carry-over list (A62 "Release carry-over").
+- **Not widened.** [V] S593 lists pinned paths from the current tree, so
+  deleting a pinned file is not seen by this function (other cases may see
+  it); adding one fails `git show` and so fails S593. That gap predates #713,
+  and this addendum does not change it.
+- **Files QA touches (updated).** A62's list, plus
+  `test/fixtures/temporary-panel-645.py` (the change above, red first: with
+  the table in and the two lines still `wip/`, "unchanged
+  skills/pre-merge-review/SKILL.md" and "unchanged hooks/git-guardrails" fail)
+  and S593's text in `TEST-SCENARIOS.md`.
+- **Files the Developer touches (updated).** A62's list, plus
+  `skills/pre-merge-review/SKILL.md` 62 and `hooks/git-guardrails` 783 (`wip/`
+  becomes `prep/` on that line only, nothing else in either file). Still never
+  touched: `test/cases/s164_*`, `test/fixtures/marker-corpus.jsonl`, any
+  generated file. The Developer does not edit the fixture.
+- **AC consistency.** [A] AC2 holds as written. AC4's list gains
+  `temporary-panel-645.py` (a pinned-path baseline, not a `wip` exclusion).
+  No other AC changes.
+- **Violated when:** a pinned file under `hooks/` or
+  `skills/pre-merge-review/` differs from `b22b476` in any byte other than the
+  two table substitutions; `SUBSTITUTIONS` has an entry not recorded in an
+  `ARCHITECTURE.md` decision; S593's base SHA changes in this work item; any
+  of the three substitution mutations or the extra-byte mutation passes.

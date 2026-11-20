@@ -11,7 +11,7 @@ description: >
 # Adversarial review
 
 From the BMad Method co-thinking session (issue #324, PR #326 — merges into `main`, so its
-own `wip/bmad-method-comparison/` reports aren't reachable from this release branch yet;
+own `prep/bmad-method-comparison/` reports aren't reachable from this release branch yet;
 summarized here rather than cited by path) — Product's candidate 2.5, Architect's correction.
 Decided by Ties 2026-09-28: scoped and written now, not invoked as part of closing issue #329
 — the first real use is a separate, future event.

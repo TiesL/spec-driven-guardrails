@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # classify-review-depth.sh — Read-only quick/thorough review-depth
 # classifier for one PR (issue #328, A13 in
-# wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md).
+# prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md).
 #
 # Usage:
 #   classify-review-depth.sh <pr-number> [--force-thorough]

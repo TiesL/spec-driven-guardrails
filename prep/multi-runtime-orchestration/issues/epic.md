@@ -11,7 +11,7 @@ the manager), and two items progress at once, while every human gate stays where
 The maintainer runs SDG work on two runtimes from two macOS machines, often from a phone. Today
 decisions wait unseen in separate windows, a usage limit stops work until a person notices,
 runtime choice is ad hoc, and there is no single overview. Discovery record:
-`wip/multi-runtime-orchestration/` (PRODUCT-REPORT.md rounds 1-3, ARCHITECT-REPORT.md,
+`prep/multi-runtime-orchestration/` (PRODUCT-REPORT.md rounds 1-3, ARCHITECT-REPORT.md,
 ARCHITECT-REVIEW.md, DECISIONS.md). Evidence for #503 is not a goal; runs keep their origin
 visible so they do not spoil it.
 

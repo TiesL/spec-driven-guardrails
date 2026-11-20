@@ -34,4 +34,4 @@ Scope: process only, not output correctness/quality.
 
 ---
 
-Files reviewed: `wip/claude-code-plugin/CO-THINKING-PRODUCT-REPORT.md`, `wip/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT.md`, `wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5, `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` Decision 5 and A6.
+Files reviewed: `prep/claude-code-plugin/CO-THINKING-PRODUCT-REPORT.md`, `prep/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT.md`, `prep/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5, `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` Decision 5 and A6.

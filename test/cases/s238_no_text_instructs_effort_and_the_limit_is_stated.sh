@@ -18,7 +18,7 @@
 #        effort parameter"; the model-choice templates and command carry no
 #        effort. (The quality-review-before-merge "Yes means" wording is S191.)
 #   The next release removes the flag: a PRD technical-debt row records it.
-# Excluded from the AC5 scan: wip/, CHANGELOG.md, CHANGES-ARCHIEF.md, PRD.md,
+# Excluded from the AC5 scan: prep/, CHANGELOG.md, CHANGES-ARCHIEF.md, PRD.md,
 # ARCHITECTURE.md, CHANGES.md and test/ (history and decisions, which must
 # mention the old text to retire it).
 

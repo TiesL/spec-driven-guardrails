@@ -3,12 +3,12 @@ Model/effort: Claude Sonnet 5, medium reasoning effort, Architect role.
 # Architect report — BMad Method comparison (issue #324)
 
 Co-thinking session (Orchestrator + Product + Architect only, per
-`wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5). This is Architect's
+`prep/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5). This is Architect's
 proposed output, informed by Product's report but not deferential to it — per
 this session's own instruction, every point of agreement, extension, or
-disagreement with `wip/bmad-method-comparison/PRODUCT-REPORT.md` ("Product")
+disagreement with `prep/bmad-method-comparison/PRODUCT-REPORT.md` ("Product")
 is marked explicitly in §3, not folded silently into §1/§2. Nothing here is
-promoted into `PRD.md`/`ARCHITECTURE.md`/`wip/multi-agent-development/` until
+promoted into `PRD.md`/`ARCHITECTURE.md`/`prep/multi-agent-development/` until
 Ties explicitly accepts it.
 
 **Revision note (direct source reading).** The first version of this report was

@@ -8,7 +8,7 @@ Architect's plan with D1–D3, Product's ruling, QA's seven-arm spec), PR #301's
 all three comments (Implementation, review round 1, the fix comment, review round 2), the merged
 `compliance-evidence.sh` and `test/cases/s150_compliance_evidence.sh` at `a84631d`,
 `TEST-SCENARIOS.md`'s S150 entry, issue #300, and pilot #1's
-`wip/multi-agent-rollout/META-REVIEW-PILOT-RUN.md` in full.
+`prep/multi-agent-rollout/META-REVIEW-PILOT-RUN.md` in full.
 
 Everything below stated as fact was **run**, not read: `./test/run.sh s150` (1 passed) on
 `a84631d`; the merged collector against live PRs #10, #214, #249, #251, #252; a pass-through

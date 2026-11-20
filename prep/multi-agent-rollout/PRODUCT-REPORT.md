@@ -4,13 +4,13 @@ Model/effort: Claude Opus, high reasoning effort, Product role.
 
 > **Status: proposed, not final.** This is a Product-role artifact from a pre-decision
 > co-thinking step (`PRD-MULTI-AGENT-WIP.md` §3.5, Decision 5, A6), written into
-> `wip/multi-agent-rollout/` rather than into any accepted document. Everything here that
+> `prep/multi-agent-rollout/` rather than into any accepted document. Everything here that
 > reads differently than epic #65 or `PRD-MULTI-AGENT-WIP.md` currently frames it is marked
 > **[DEVIATION]** with the reasoning. Nothing below closes an open question — §6 batches the
 > decisions that are Ties' to make.
 >
 > Scoped input treated as a **floor** (A8): named inputs were epic #65 and issues #237/#293/
-> #294, `wip/multi-agent-development/*`, and `vendor/grilling/SKILL.md`. Beyond that set I
+> #294, `prep/multi-agent-development/*`, and `vendor/grilling/SKILL.md`. Beyond that set I
 > read, to answer questions the named files could not settle: `gh label list` and
 > `gh issue list` (live GitHub state), `skills/` (which skills actually exist),
 > `check-no-dutch.sh`, `adopt.sh`'s `install_skills()`, `CHANGES.md`, and a repo-wide grep
@@ -29,15 +29,15 @@ Model/effort: Claude Opus, high reasoning effort, Product role.
 Epic #65's design phase is complete and the direction is accepted (2026-09-21,
 `DIRECTION-CHECK-SUMMARY.md`). What exists is a fully-decided specification across three
 documents plus role contracts. What does **not** exist is any way to run it that does not
-depend on a human or orchestrator re-deriving the role contracts by hand from a `wip/`
+depend on a human or orchestrator re-deriving the role contracts by hand from a `prep/`
 document each time. Concretely, verified against the repo and live GitHub state:
 
 | Decided in the design | Actual state in the repo | Source |
 |---|---|---|
-| "The new role/orchestration layer gets its own skill, not a replacement of existing ones" (PRD §9 OQ10) | No such skill. `skills/` holds 12 skills; none is multi-agent/role-related. The role contracts live only in `wip/multi-agent-development/ROLE-DESCRIPTIONS.md`. | `ls skills/*/` |
+| "The new role/orchestration layer gets its own skill, not a replacement of existing ones" (PRD §9 OQ10) | No such skill. `skills/` holds 12 skills; none is multi-agent/role-related. The role contracts live only in `prep/multi-agent-development/ROLE-DESCRIPTIONS.md`. | `ls skills/*/` |
 | Reviewer's security trigger list is embedded "in the skill that records Reviewer's role contract (**still to be written**)" (PRD §4, Security) | That skill does not exist; the trigger list lives in prose in two WIP documents. | PRD §4; `ls skills/` |
 | A4: each role session gets a **skill-based file/directory scope contract** stating which paths it may read/write | No per-role path scope is written down anywhere — not in `ROLE-DESCRIPTIONS.md`, not in a skill. A8 requires every dispatch prompt to declare floor-or-ceiling, but there is no default source for a role to inherit. | `ROLE-DESCRIPTIONS.md`; grep |
-| A5: a `role:<name>` label tracks the currently active phase | The five labels do not exist on the repo, and no script, hook, doc or template outside `wip/multi-agent-development/` mentions them. | `gh label list` (10 labels, none `role:*`); repo-wide grep: zero hits |
+| A5: a `role:<name>` label tracks the currently active phase | The five labels do not exist on the repo, and no script, hook, doc or template outside `prep/multi-agent-development/` mentions them. | `gh label list` (10 labels, none `role:*`); repo-wide grep: zero hits |
 | OQ9: compliance is reported as one orchestrator issue comment per work item, rows pointing at existing evidence | Never posted once. The "worked example" is a table *inside* `PRD-MULTI-AGENT-WIP.md` describing a work item (#265/PR #279) that had already merged — retrospective prose, not an artifact that exists on an issue. | PRD §6; issue #265 has no such comment |
 | The role contracts' source of truth is PRD §4 | PRD §4 is Dutch; `ROLE-DESCRIPTIONS.md` states that on a discrepancy the reader must "re-read the Dutch source directly" rather than trust the English file. #237 is open. | `ROLE-DESCRIPTIONS.md` lines 10-15; issue #237 |
 
@@ -278,7 +278,7 @@ reason above, but the line is Ties' to draw — Q3 in §6, with a no-code fallba
 |---|---|
 | **#283 / epic #282's E1 (bootstrap admission manual)** — #294's current named candidate. | **[DEVIATION — this contradicts issue #294 as written.]** Two reasons. (a) *Wrong content for the roles that have never run:* #294 itself calls it "smallest, no code," but QA, Fullstack Developer and Reviewer are exactly the three untested roles, and all three are strongest on code with tests and CI signal. A prose deliverable under-exercises the untested part of the pipeline — the pilot would return a weak signal about the thing it exists to test. (b) *Wrong epic:* it belongs to #282 and inherits that epic's own open scope; a defect found during the pilot becomes ambiguous — pipeline problem or plugin-design problem? A pilot on this epic's own work keeps the variables separated. I recommend #294 be re-pointed at W1, not closed — its AC2 (resolve OQ11) stays exactly as written. |
 | **W2, the role-contract skill, first.** | Tempting, since it is the biggest gap. But it is not a *blocker*: `ROLE-DESCRIPTIONS.md` states it is "meant to be quoted verbatim into a role's dispatch prompt," and this very session is evidence that dispatch works that way today. So W2 improves repeatability rather than unblocking the pilot, and it is docs-shaped — same under-exercising problem as #283. It also has a real dependency (#237, see Q7) that W1 does not. Better as the second slice, informed by what the first real run shows the contracts are actually missing. |
-| **#237, translating `PRD-MULTI-AGENT-WIP.md`.** | Asked explicitly, so answered explicitly: **it is not "implementing the multi-agent workflow," but it is not purely orthogonal either.** It is housekeeping today, because nothing operational depends on that file. It becomes a *dependency* the moment W2 promotes the English `ROLE-DESCRIPTIONS.md` into a skill, because that file currently disclaims its own authority and points readers back to a Dutch source — shipping a normative skill that says "if in doubt, read the Dutch document instead" is not acceptable. One fact worth Ties knowing, found while checking this: `check-no-dutch.sh` lists `./wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md` under its **permanent** exclusions, while that script's own header reserves permanent status for things that "never get translated, by design" and keeps issue-tracked ones in a separate *pending* list that tightens when the issue closes. With #237 open, the entry appears to be in the wrong list. That is a fact, not a decision, so it is stated here rather than asked — but whether to fix it inside #237 is Q7. |
+| **#237, translating `PRD-MULTI-AGENT-WIP.md`.** | Asked explicitly, so answered explicitly: **it is not "implementing the multi-agent workflow," but it is not purely orthogonal either.** It is housekeeping today, because nothing operational depends on that file. It becomes a *dependency* the moment W2 promotes the English `ROLE-DESCRIPTIONS.md` into a skill, because that file currently disclaims its own authority and points readers back to a Dutch source — shipping a normative skill that says "if in doubt, read the Dutch document instead" is not acceptable. One fact worth Ties knowing, found while checking this: `check-no-dutch.sh` lists `./prep/multi-agent-development/PRD-MULTI-AGENT-WIP.md` under its **permanent** exclusions, while that script's own header reserves permanent status for things that "never get translated, by design" and keeps issue-tracked ones in a separate *pending* list that tightens when the issue closes. With #237 open, the entry appears to be in the wrong list. That is a fact, not a decision, so it is stated here rather than asked — but whether to fix it inside #237 is Q7. |
 | **A "run the pipeline" item with no deliverable of its own** (pure process rehearsal). | Rejected: PRD §3.3 makes completion an evidence-based decision. A rehearsal with no real deliverable produces no evidence worth judging, and would tell us nothing about whether the gates bite. |
 
 ---
@@ -353,7 +353,7 @@ once you accept it, W1's issue is opened and run cleanly through all five roles 
 W1's Product phase, and the pipeline starts at Architect.
 
 ➡️ **(a).** Decision 5 and A6 describe exactly this situation — Levels 1-2 elaboration in
-`wip/<slug>/`, promoted only after your explicit acceptance. Starting the work item at
+`prep/<slug>/`, promoted only after your explicit acceptance. Starting the work item at
 Architect would skip a role on its very first full run, which A3 forbids without your
 per-instance authorization; doing that on the pilot would undercut what the pilot measures.
 The re-run is cheap: this report becomes the Product phase's input, not its replacement.
@@ -404,7 +404,7 @@ item. If you pick WSJF anyway, say so before W2 is scoped, not after.
 Not asked now, because each depends on an answer above: the epic's remaining slice list and
 ordering after W1 (depends on Q1/Q2); where W2's role-contract skill physically lives and
 whether the five scope contracts are one skill or five (depends on Q4 and on Architect);
-whether this `wip/multi-agent-rollout/` folder is promoted into `PRD.md` or kept as record
+whether this `prep/multi-agent-rollout/` folder is promoted into `PRD.md` or kept as record
 (depends on Q1, and A6 already sets the default to "kept"); and whether OQ11 resolves at the
 end of W1's run or only after a second, non-meta work item has flowed through (depends on how
 much signal W1's run actually produces — genuinely unanswerable before it runs).
@@ -427,7 +427,7 @@ much signal W1's run actually produces — genuinely unanswerable before it runs
 - **No role-contract skill, no file-scope contracts, no security trigger list** — that is W2.
 - **No `#237` translation work**, and no edits to `PRD-MULTI-AGENT-WIP.md`'s Dutch prose.
 - **No edits to `PRD.md`, `ARCHITECTURE.md`, `WORKFLOW.md` or `CHANGES.md`** — A6 keeps
-  unaccepted elaboration in `wip/`, and Q4 defers the adoption-registry row to the epic's end.
+  unaccepted elaboration in `prep/`, and Q4 defers the adoption-registry row to the epic's end.
 - **No phase-skipping, triage or scenario routing**, and no parallel role execution — A3 and
   Decision 3 rule both out for v1, and the pilot is not the place to test an exception.
 - **No change to `check-traceability.sh`, `pre-merge-review` or `deploy-guards`.** They are

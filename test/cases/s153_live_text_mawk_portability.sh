@@ -42,7 +42,7 @@ lib="${MD_LIB:-$TEST_REPO_ROOT/lib/markdown.sh}"
 # live_text or md_strip_fences is lib/markdown.sh. Executable files without a
 # .sh extension are covered (the search is by content, not by name).
 def_ere='^[[:space:]]*(function[[:space:]]+)?(live_text|md_strip_fences)[[:space:]]*(\(\))?[[:space:]]*\{'
-defs="$(cd "$TEST_REPO_ROOT" && LC_ALL=C grep -rIlE --exclude-dir=.git --exclude-dir=test --exclude-dir=wip --exclude='*.md' -e "$def_ere" . | LC_ALL=C sort)"
+defs="$(cd "$TEST_REPO_ROOT" && LC_ALL=C grep -rIlE --exclude-dir=.git --exclude-dir=test --exclude-dir=prep --exclude='*.md' -e "$def_ere" . | LC_ALL=C sort)"
 if [ "$defs" != "./lib/markdown.sh" ]; then
   fail "S153 — live_text()/md_strip_fences() must be defined only in lib/markdown.sh; files defining either: $(printf '%s' "$defs" | tr '\n' ' ')"
 fi

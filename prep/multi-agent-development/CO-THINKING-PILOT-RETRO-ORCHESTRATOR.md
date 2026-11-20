@@ -40,4 +40,4 @@ All three independently identified the Decision 4 gap (item 2 above) — worth w
 
 ---
 
-Related artifacts: `wip/claude-code-plugin/CO-THINKING-PRODUCT-REPORT.md`, `wip/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT.md`, `wip/multi-agent-development/CO-THINKING-PILOT-RETRO-PRODUCT.md`, `wip/multi-agent-development/CO-THINKING-PILOT-RETRO-ARCHITECT.md`.
+Related artifacts: `prep/claude-code-plugin/CO-THINKING-PRODUCT-REPORT.md`, `prep/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT.md`, `prep/multi-agent-development/CO-THINKING-PILOT-RETRO-PRODUCT.md`, `prep/multi-agent-development/CO-THINKING-PILOT-RETRO-ARCHITECT.md`.

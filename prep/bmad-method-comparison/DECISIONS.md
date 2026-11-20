@@ -4,7 +4,7 @@ Answers to `PRODUCT-REPORT.md` §4's five open questions, given directly in conv
 the orchestrator (not a live `grilling` round — Product's report already did the frontier
 framing; these are Ties' rulings on it, with one adjustment against Product's own recommendation on
 Q3, following Architect's split instead).
-Per this repo's `wip/<slug>/` convention, this file records the decisions; it does not itself
+Per this repo's `prep/<slug>/` convention, this file records the decisions; it does not itself
 edit `PRD.md`/`ARCHITECTURE.md`/`ROLE-DESCRIPTIONS.md`/`MULTI-AGENT-WORKFLOW.md` — items below
 marked **[needs issue]** require their own work-item issue before any tracked file changes,
 per this repo's own workflow rule.
@@ -52,5 +52,5 @@ would duplicate that. **[needs issue]** to actually touch `ROLE-DESCRIPTIONS.md`
 Q1-Q5 only cover sequencing/scoping questions Product explicitly raised — they presuppose
 candidates 2.1 and 2.3 eventually get built, but Ties has not yet given blanket acceptance to
 the co-thinking session's full candidate list (2.1-2.8) or to promoting this session's output
-into a real epic/PRD section, per the `wip/<slug>/` acceptance gate (README.md). That's a
+into a real epic/PRD section, per the `prep/<slug>/` acceptance gate (README.md). That's a
 separate, larger decision still open.
