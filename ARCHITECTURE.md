@@ -151,7 +151,7 @@ runs `git -C <fixture> ...` acts on the launching repo instead of the
 fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
-A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
+A-series (A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
 A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
@@ -304,7 +304,7 @@ does not install, and `CHANGES.md` had no entry to ask adopters. The
 decisions below make it adoptable as an opt-in.
 
 **Numbering.** A14 and A15 are #369's, continuing the multi-agent series
-(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+(A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
 rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
 the two fill the A14-A18 range reserved in the #377 section above; nothing
 collides and nothing is renumbered.
@@ -342,7 +342,7 @@ collides and nothing is renumbered.
   network, so it is part of what answering *yes* means (as with
   `process-issue-tracking`), not something `adopt.sh` does.
 - **Violated when:** a pointer in the skill resolves only inside this repo (a
-  `vendor/` or `wip/` path, or a bare `#n`), or the skill carries a second
+  `vendor/` or `prep/` path, or a bare `#n`), or the skill carries a second
   literal copy of a marker another skill defines (S158, S160, S28).
 - **Revisit when:** a second adopter runs the pipeline and reports a step the
   skill does not cover; then promote that step from the WIP documents. Do not

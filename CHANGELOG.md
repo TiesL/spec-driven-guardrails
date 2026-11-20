@@ -17,6 +17,17 @@ point.
   model-floor evidence, issue-home records and grouped merge-approval disclosure;
   decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
   contract text, is reserved to the maintainer.
+- #713: Rename the tracked `wip/` directory (co-thinking sources such as
+  `wip/multi-agent-development/`) to `prep/`, so that `wip/` keeps one meaning:
+  the #706 branch prefix. Live pointers, test exclusions and the
+  `prep/<slug>/` co-thinking report convention in the installed `role-contracts`
+  skill now name `prep/`; history quotes (old locations in past tense, this
+  changelog) keep `wip/`. S593's byte pin on `hooks/` and `skills/pre-merge-review/`
+  admits exactly two documented substitutions (the `wip/` to `prep/` pointer on
+  one line in each of `skills/pre-merge-review/SKILL.md` and
+  `hooks/git-guardrails`); its merge base does not move. Adopters need no
+  action: `adopt.sh` installs nothing from this directory, and a project may
+  keep an existing `wip/<slug>/` folder of its own.
 
 ## v0.7.0 — Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. (2026-11-19)
 

@@ -1347,7 +1347,7 @@ What an adopted project can do afterwards:
   skill. Every pointer in it resolves from an adopted project: methods it
   relies on are named as installed skills (`grilling`,
   `codebase-design`, `model-choice`, `tdd-seams`, `pre-merge-review`),
-  not as paths into this repo's `wip/.../vendor/`; anything that does
+  not as paths into this repo's `prep/.../vendor/`; anything that does
   stay in this repo (the WIP design sources, used only to settle a
   dispute about a contract's intent) is named as living in the clone
   `SPEC_DRIVEN_GUARDRAILS_DIR` points at. The human who receives

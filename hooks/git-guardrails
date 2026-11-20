@@ -780,7 +780,7 @@ for item in data:
 # Issue #355: `gh pr view --json closingIssuesReferences,commits,title,body`
 # is the one call in this epic's #318 defect class (GraphQL-backed, 403s
 # from inside a Claude Code session in at least one confirmed run —
-# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md — even though a different
+# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md — even though a different
 # session's own live calls here succeeded; the two sessions' `gh`
 # versions/token scopes weren't distinguishable from this session alone,
 # so the variance itself stays unexplained, same open question #355
