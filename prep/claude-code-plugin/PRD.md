@@ -2,7 +2,7 @@
 
 **Status:** Proposal/design for functionality still to be built. No code exists yet; this document specifies the system before it is built.
 
-**Document authority (decided 2026-09-26):** this file, `ARCHITECTURE.md`, and `TEST-SCENARIOS.md` in `wip/claude-code-plugin/` are the normative copies. The `agentic-workflow-installer` repo's copies are a historical snapshot from an earlier, generic-first exploration — superseded, not maintained further.
+**Document authority (decided 2026-09-26):** this file, `ARCHITECTURE.md`, and `TEST-SCENARIOS.md` in `prep/claude-code-plugin/` are the normative copies. The `agentic-workflow-installer` repo's copies are a historical snapshot from an earlier, generic-first exploration — superseded, not maintained further.
 
 ---
 

@@ -116,20 +116,20 @@ decision governs Level 3 execution, where a work item already exists and all fiv
 fully engage on it. A co-thinking session is an earlier, separate layer: there is no work
 item yet, so there is nothing for QA/Fullstack Developer/Reviewer to engage with.
 
-Output goes to a dedicated `wip/<slug>/` folder (short, kebab-case, descriptive name — not
+Output goes to a dedicated `prep/<slug>/` folder (short, kebab-case, descriptive name — not
 tied to an issue number, since a co-thinking session may start before any issue exists),
 never directly into `PRD.md`/`ARCHITECTURE.md`. Once Ties explicitly accepts the output
 (same acceptance gate as §11), it gets promoted into a new `PRD.md` epic section and a real
-Epic issue; the `wip/<slug>/` folder itself is kept afterward as historical record by
-default, not deleted — same precedent as this very epic's own `wip/multi-agent-development/`
+Epic issue; the `prep/<slug>/` folder itself is kept afterward as historical record by
+default, not deleted — same precedent as this very epic's own `prep/multi-agent-development/`
 folder.
 
 **Second run (2026-09-26): rolling out this very epic.** The same pattern ran again, this time
 against making epic #65's own design executable — output in
-[`wip/multi-agent-rollout/`](../multi-agent-rollout/PRODUCT-REPORT.md), promoted to epic #295.
+[`prep/multi-agent-rollout/`](../multi-agent-rollout/PRODUCT-REPORT.md), promoted to epic #295.
 
 **Pilot findings incorporated (2026-09-25).** The pattern above ran for the first time
-against `wip/claude-code-plugin/` (Product then Architect, sequential, each a fresh sub-agent
+against `prep/claude-code-plugin/` (Product then Architect, sequential, each a fresh sub-agent
 producing a durable report). A blameless retrospective — one fresh reviewer per role plus the
 orchestrator's own self-assessment, kept as three separate, unmerged artifacts
 (`CO-THINKING-PILOT-RETRO-PRODUCT.md`, `-ARCHITECT.md`, `-ORCHESTRATOR.md`) — surfaced process
@@ -425,7 +425,7 @@ This trio of documents is ready to serve as an attachment or reference for a Git
 - records every implementation/architecture choice as an explicit, dated decision — no choice is made silently (this is sharper than "introduces no choices": a worked-out architecture document does contain choices, the requirement is that all of them are traceably decided, not that there are none);
 - offers a sufficient basis to formulate separate, traceable follow-up work items.
 
-**Current status (updated 2026-09-30).** Ties confirmed acceptance on 2026-09-21 — see `wip/multi-agent-development/
+**Current status (updated 2026-09-30).** Ties confirmed acceptance on 2026-09-21 — see `prep/multi-agent-development/
 DIRECTION-CHECK-SUMMARY.md`. OQ11 (target release timing) is now **decided** — see §9's
 OQ11 entry above — resolved after the process ran end-to-end on a real work item (#328).
 Target release: v0.2.0 (issue #349).

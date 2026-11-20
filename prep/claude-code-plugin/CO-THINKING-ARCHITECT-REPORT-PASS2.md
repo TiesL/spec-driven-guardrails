@@ -4,7 +4,7 @@ Model/effort: Opus 5 (high effort), Architect role.
 
 Subject: the `agentic-workflow-installer` proposal (v1 = turn
 `spec-driven-guardrails` into one Claude Code plugin), as specified in
-`wip/claude-code-plugin/PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`,
+`prep/claude-code-plugin/PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`,
 building on `CO-THINKING-PRODUCT-REPORT-PASS2.md`. Pre-decision
 elaboration only — nothing here commits anyone to build.
 

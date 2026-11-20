@@ -65,7 +65,7 @@ interface.
 ## 3. Design tree
 
 Notation: **[R1]** = on the Round 1 frontier (asked below). **[A]** = depends on the
-Architect's feasibility inventory (`wip/multi-runtime-orchestration/ARCHITECT-REPORT.md`, being
+Architect's feasibility inventory (`prep/multi-runtime-orchestration/ARCHITECT-REPORT.md`, being
 drafted in parallel). **[→Qn]** = waits on that Round 1 answer.
 
 ```
@@ -602,7 +602,7 @@ Given/When/Then. Supersedes R2.3's AC list.
 
 ## R3.4 Draft files
 
-Written under `wip/multi-runtime-orchestration/issues/`: `epic.md` and W0-W10 (W5/W8 of
+Written under `prep/multi-runtime-orchestration/issues/`: `epic.md` and W0-W10 (W5/W8 of
 Round 2 merged into W6; W2 is the new merge-guard item; numbering below supersedes R2.3).
 Proposed release branch: `release/<epic-number>-multi-runtime-orchestration`.
 

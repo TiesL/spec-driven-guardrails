@@ -4,7 +4,7 @@ Model/effort: Opus 5 (high effort), Product role.
 
 Subject: the `agentic-workflow-installer` proposal (v1 = turn
 `spec-driven-guardrails` into one Claude Code plugin), as specified in
-`wip/claude-code-plugin/PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`.
+`prep/claude-code-plugin/PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`.
 Pre-decision elaboration only — nothing here commits anyone to build.
 
 **Material read beyond the scoped input** (declared per A8, all
@@ -209,7 +209,7 @@ idempotence already eliminated. See Q5.
   `spec-driven-guardrails` plugin. Compounding this: `agentic-workflow-installer`
   is **private**, `spec-driven-guardrails` is **public**. A plugin
   distributed from a private repo cannot be installed by a third party. See Q2.
-- **The docs exist in two places.** `wip/claude-code-plugin/*.md` in this
+- **The docs exist in two places.** `prep/claude-code-plugin/*.md` in this
   repo is byte-identical to `agentic-workflow-installer/*.md` today (I
   diffed them), so no drift yet — but two copies of a normative spec with
   no stated authority between them is a drift generator, and this
@@ -600,7 +600,7 @@ first place. Leave `agentic-workflow-installer` as the design/decision home
 for the eventual generic core, and — importantly — pick **one** copy of
 the three design docs as normative (I would say the
 `agentic-workflow-installer` repo, since traceability checks run there) and
-make `wip/claude-code-plugin/` either a pointer or a snapshot marked as
+make `prep/claude-code-plugin/` either a pointer or a snapshot marked as
 such. Two byte-identical normative specs will not stay identical.
 
 ---

@@ -2,7 +2,7 @@
 
 Model/effort: Claude Opus (general-purpose agent, Product role).
 
-Scope of this pass: the three docs in `wip/claude-code-plugin/` (`PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`). Assessed whether the requirement is correct and complete, not whether the architecture is sound.
+Scope of this pass: the three docs in `prep/claude-code-plugin/` (`PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`). Assessed whether the requirement is correct and complete, not whether the architecture is sound.
 
 ---
 

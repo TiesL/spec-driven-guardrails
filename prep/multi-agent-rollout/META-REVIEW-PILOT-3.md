@@ -210,7 +210,7 @@ My independent read of `role-contracts/SKILL.md`:
 
 ## Things I checked and found genuinely sound
 
-- **#237's translation.** The line-joined Dutch grep across `wip/multi-agent-development/*.md`
+- **#237's translation.** The line-joined Dutch grep across `prep/multi-agent-development/*.md`
   returns nothing, and `./check-no-dutch.sh .` is clean. The round-2 claim holds.
 - **#314's F1 fix is present.** The "deliverable structure" clause is back at SKILL.md:46-49.
 - **W3's REST redesign works in-session.** Live, it resolves #313 via #314's title and #315 via

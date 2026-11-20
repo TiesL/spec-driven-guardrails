@@ -25,7 +25,7 @@ originally stated set (`check_tool`, `install_package`, `clone_repository`,
 `copy_template`, `write_config`, `run_approved_command`, `assert` — 6-8
 primitives) was itself speculative rather than derived. Applying the
 deletion test and the two-adapters rule (`vendor/codebase-design/SKILL.md`
-in `wip/multi-agent-development/`) to every operation `adopt_project()`
+in `prep/multi-agent-development/`) to every operation `adopt_project()`
 and `adopt_user_trigger()` actually perform:
 
 | Primitive | Deletion test | Adapters that really vary | Verdict |

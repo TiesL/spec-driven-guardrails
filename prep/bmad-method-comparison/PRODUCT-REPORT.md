@@ -3,9 +3,9 @@ Model/effort: Claude Sonnet 5, medium reasoning effort, Product role.
 # Product report — BMad Method comparison (issue #324)
 
 Co-thinking session (Orchestrator + Product + Architect only, per
-`wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5). This is Product's
+`prep/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5). This is Product's
 report; Architect's follows separately. Nothing here is promoted into
-`PRD.md`/`ARCHITECTURE.md`/`wip/multi-agent-development/` until Ties explicitly
+`PRD.md`/`ARCHITECTURE.md`/`prep/multi-agent-development/` until Ties explicitly
 accepts it.
 
 **Method note.** I did not run `grilling`'s live interview — Ties isn't
@@ -299,7 +299,7 @@ chosen, how dispatch works, how findings get reconciled back into the
 co-thinking session's report), no new infrastructure since sub-agent dispatch
 already exists for the role pipeline.
 
-**Touches:** `wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5
+**Touches:** `prep/multi-agent-development/PRD-MULTI-AGENT-WIP.md` §3.5
 (co-thinking sessions), does not conflict with anything decided — it's additive
 tooling *for* Product/Architect, not a new role.
 
