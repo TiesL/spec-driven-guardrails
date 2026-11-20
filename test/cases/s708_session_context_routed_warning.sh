@@ -159,7 +159,7 @@ done
 long="$(printf 'p%.0s' $(seq 1 100))"
 wf="$SANDBOX/clone-$long"
 mkdir -p "$wf"
-(cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./wip' --exclude='./CLAUDE.md' \
+(cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./prep' --exclude='./CLAUDE.md' \
   --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) | (cd "$wf" && tar -xf -)
 wproj="$SANDBOX/project-$long"
 mkdir -p "$wproj/.claude"

@@ -3,7 +3,7 @@
 # Covers: F37
 #
 # Issue #369, AC4, and Architect decision A14(a) ("violated when a pointer
-# resolves only inside this repo": a vendor/ or wip/ path, or a bare #n
+# resolves only inside this repo": a vendor/ or prep/ path, or a bare #n
 # issue reference). Seam: the SKILL.md as an adopted project sees it,
 # through the .claude/skills/ symlink adopt.sh leaves, checked against what
 # actually exists in that project.
@@ -29,7 +29,7 @@ fi
 # Documents that exist only in the guardrails clone. A mention is allowed
 # only in a paragraph that says it lives in the clone SPEC_DRIVEN_GUARDRAILS_DIR
 # points at.
-clone_only='PRD-MULTI-AGENT-WIP[.]md|ARCHITECTURE-MULTI-AGENT-WIP[.]md|MULTI-AGENT-WORKFLOW[.]md|wip/multi-agent-development'
+clone_only='PRD-MULTI-AGENT-WIP[.]md|ARCHITECTURE-MULTI-AGENT-WIP[.]md|MULTI-AGENT-WORKFLOW[.]md|prep/multi-agent-development'
 
 # 1. No bare vendor/ path anywhere: those files are installed as the
 #    grilling and codebase-design skills instead.

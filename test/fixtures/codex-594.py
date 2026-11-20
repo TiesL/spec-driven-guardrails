@@ -47,7 +47,7 @@ def git_metadata(path, revision=None):
 
 WF = TMP / 'workflow'
 shutil.copytree(ROOT, WF, symlinks=True, ignore=shutil.ignore_patterns(
-    '.git', '.guardrails', '.agents', '.claude', '.codex', 'CLAUDE.md', 'wip', '__pycache__'))
+    '.git', '.guardrails', '.agents', '.claude', '.codex', 'CLAUDE.md', 'prep', '__pycache__'))
 git_metadata(WF, OLD_REV)
 PROJECT = TMP / "project spaces ' dollar$"
 PROJECT.mkdir()
