@@ -29,9 +29,17 @@ point.
   the #706 branch prefix. Live pointers, test exclusions and the
   `prep/<slug>/` co-thinking report convention in the installed `role-contracts`
   skill now name `prep/`; history quotes (old locations in past tense, this
-  changelog) keep `wip/`. S593's byte pin on `hooks/` and `skills/pre-merge-review/` admits three documented substitutions on this release branch: the `wip/` to `prep/` pointer on one line each in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, and the A59 role-row change in `hooks/agent-dispatch.py` from `("Fullstack Developer", "Developer", "Implementation")` to `("Developer", "Developer", "Implementation")`; its merge base does not move. Adopters need no
+  changelog) keep `wip/`. S593's byte pin on `hooks/` and
+  `skills/pre-merge-review/` admits the two documented `wip/` to `prep/`
+  pointer substitutions, one line each in `skills/pre-merge-review/SKILL.md`
+  and `hooks/git-guardrails`; its merge base does not move. Adopters need no
   action: `adopt.sh` installs nothing from this directory, and a project may
   keep an existing `wip/<slug>/` folder of its own.
+- #719: The release sync combines #713's two S593 pointer substitutions with
+  the #685/A59 role-row substitution in `hooks/agent-dispatch.py`, changing
+  `("Fullstack Developer", "Developer", "Implementation")` to
+  `("Developer", "Developer", "Implementation")`. S593 therefore admits
+  three documented substitutions while retaining its recorded merge base.
 
 ## v0.7.0 — Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. (2026-11-19)
 

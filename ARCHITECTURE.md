@@ -11822,7 +11822,7 @@ decision.
   inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
   `prep/`; a generated file changes in this work item.
 
-#### A62 addendum 1 — #713's two documented S593 substitutions; baseline stays `b22b476` — RESERVED-PROTECTION EDIT
+#### A62 addendum 1 — S593's byte pin admits exactly two documented substitutions; baseline stays `b22b476` (#713) — RESERVED-PROTECTION EDIT
 
 **Decided on 2026-11-20 (Architect, Planning), after the maintainer's decisions.**
 Reviewer attention: this addendum changes a protection that A54 D6 reserves to
@@ -11920,7 +11920,7 @@ Tags: [V] verified, [A] Architect decision.
 - **S593 text (`TEST-SCENARIOS.md`).** [A] Text only, no new scenario ID and
   no change to Covers. In When, after "compare the enumerated core/gate/hook
   bytes and posting/validation relations to the recorded merge base", add:
-  "except documented substitutions (A62 addendum 1, #713): in
+  "except two documented substitutions (A62 addendum 1, #713): in
   `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact
   `wip/` path becomes `prep/`; the expected bytes are the merge-base bytes
   with that substitution applied, and its old text must occur exactly once at
@@ -11930,8 +11930,6 @@ Tags: [V] verified, [A] Architect decision.
   Mutation controls, after "alter one protected core/gate/hook byte", add
   "leave a documented substitution unapplied, apply it with different bytes,
   or substitute a further line". Then and Falsifier are unchanged.
-  This records #713's wording; addendum 2 below supplies the release-branch
-  replacement for the combined three-substitution rule.
 - **Release branch.** [A] The release branch's `preservation_checks` already
   has the `hooks/agent-dispatch.py` substitution inline. When #607 syncs with
   `main`, that entry joins `SUBSTITUTIONS` as a third documented entry (its
@@ -11957,8 +11955,7 @@ Tags: [V] verified, [A] Architect decision.
   No other AC changes.
 - **Violated when:** a pinned file under `hooks/` or
   `skills/pre-merge-review/` differs from `b22b476` in any byte other than the
-  two #713 table substitutions on `main` (three after the release sync under
-  addendum 2); `SUBSTITUTIONS` has an entry not recorded in an
+  two table substitutions; `SUBSTITUTIONS` has an entry not recorded in an
   `ARCHITECTURE.md` decision; S593's base SHA changes in this work item; any
   of the three substitution mutations or the extra-byte mutation passes.
 
@@ -11973,6 +11970,8 @@ sanctioned the release branch's one role-name token change in
 `hooks/agent-dispatch.py`; the sync combines those histories, so the release
 branch now has three documented substitutions. The recorded merge base remains
 `b22b4760fa3dcfd79a1c2557899bd735c6fafefc` and must not move.
+Addendum 1's "exactly two" remains the decided #713 record; this branch's
+combined count is three under addenda 2 and 3, which supersede that count here.
 
 - **Exact S593 table on this release branch.** [V] These are the three
   `old` → `new` byte pairs in `test/fixtures/temporary-panel-645.py`:
@@ -12009,15 +12008,17 @@ branch now has three documented substitutions. The recorded merge base remains
 
 > except three documented substitutions (A62 addenda 1–2, #713/#719): in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact `wip/` path becomes `prep/` in each; in `hooks/agent-dispatch.py`, `("Fullstack Developer", "Developer", "Implementation")` becomes `("Developer", "Developer", "Implementation")`; the expected bytes are the merge-base bytes with that path's documented substitution applied, each old text must occur exactly once at the merge base, each substituted path must be pinned, and the recorded merge base itself does not move
 
-**Product: replace the CHANGELOG sentence beginning `S593's byte pin` and
-ending `its merge base does not move.` verbatim with:**
-
-> S593's byte pin on `hooks/` and `skills/pre-merge-review/` admits three documented substitutions on this release branch: the `wip/` to `prep/` pointer on one line each in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, and the A59 role-row change in `hooks/agent-dispatch.py` from `("Fullstack Developer", "Developer", "Implementation")` to `("Developer", "Developer", "Implementation")`; its merge base does not move.
+**Product:** In the #713 CHANGELOG bullet, keep only its two `wip/` to `prep/`
+pointer substitutions and the unchanged S593 merge base. Put the combined
+three-substitution fact, including A59's `hooks/agent-dispatch.py` role-row
+change, in the release's own entry or use neutral wording outside the #713
+bullet. Do not say "this release branch" in #713's entry; wrap the lines.
 
 #### A62 addendum 3 — Reconcile the #713 role-contract bytes and S709's release baseline after the #719 sync — RESERVED-PROTECTION EDIT
 
 **Decided on 2026-11-23 (Architect, Planning).** Reviewer and maintainer attention:
-the #719 merge at `9007a37` combines #713's two `wip/` to `prep/` edits in
+the #719 sync (PR #725; merge parents `892dec5` and `4dd1325`) combines
+#713's two `wip/` to `prep/` edits in
 `skills/role-contracts/SKILL.md` with the release's #646 and #707 guards. This
 addendum changes their protected-byte expectations, not the protected files or
 the checks' fail-closed behavior. No AC is contradicted or narrowed.
@@ -12045,33 +12046,57 @@ the checks' fail-closed behavior. No AC is contradicted or narrowed.
   the unmodified `A` bytes and either one-substitution-only result, as well as
   an extra changed byte. This follows addendum 2's exact substitution pattern;
   it does not permit arbitrary role-contract edits.
+- **Pin availability.** [V] `A` was unreachable from any ref, so CI could not
+  read its `git show` objects. On 2026-11-23 the maintainer published
+  `origin/archive/646-pin-5117885`, which contains `A`; the S626, S627 and
+  S659 pins depend on that archive branch remaining available to CI.
 - **S709, release baseline.** [V] The check at `test/cases/s709_route_docs.sh`
   240–246 uses `git merge-base HEAD origin/main`, now `4dd1325`, although
   `skills/role-contracts/ORCHESTRATOR.md` and
   `test/behavior/orchestrator-scenarios.md` had sanctioned release edits before
   the sync. `git diff 892dec572cb6232853ef28cb2d8d5fe4bfdc3499 HEAD --`
   the three guarded paths is empty; `892dec5` is the merge's first parent.
-  Keep all three `git diff --quiet` checks. When that full first-parent SHA is
-  an ancestor of `HEAD`, compare against it; otherwise retain the existing
-  `git merge-base HEAD origin/main` baseline and existing unavailable-base
-  message. The `stamp-check` and routing-term scan stay unchanged. Thus release
-  descendants must preserve all three pre-sync files byte for byte; branches
-  without the release ancestor keep S709's previous behavior. Do not use
-  `HEAD^1`, which would move the baseline after any later commit.
+  Keep all three `git diff --quiet` checks. Compare against that fixed
+  first-parent SHA only when it is an ancestor of `HEAD`, `origin/main` is
+  available, and the ancestor check against `origin/main` returns 1 (it is
+  **not** an ancestor); another error does not select the fixed base. This limits the
+  fixed comparison to the release integration period. Once `origin/main`
+  contains the release base, or on a branch without that base, use the
+  existing `git merge-base HEAD origin/main` comparison. If `origin/main` is
+  unavailable, keep the existing unavailable-base message and skip only this
+  comparison; `stamp-check` still runs. The routing-term scan stays unchanged.
+  This permits future sanctioned changes on `main` and branches cut from it
+  while retaining protection on the pre-integration release descendants. Do
+  not use `HEAD^1`, which would move the baseline after any later commit.
 - **Violated when:** either S626 or S659 accepts the old, partial or any
   additionally changed role-contract bytes; their `A` moves; S709 skips one
-  of its three comparisons or uses a moving release baseline. The Reviewer and
+  of its three comparisons, uses a moving release baseline before integration,
+  or keeps the fixed baseline after `origin/main` contains it. The Reviewer and
   maintainer must assess this reserved-protection edit before release.
 
 **QA handoff.** In `test/fixtures/merge-risk-646.py` near 1192–1199, add the
 two literal byte pairs above and a count-1, two-step substitution helper for
 `skills/role-contracts/SKILL.md`; use its expected bytes in both S626 and S659,
 with the negative controls stated above. In `test/cases/s709_route_docs.sh`
-near 240, set `release_base=892dec572cb6232853ef28cb2d8d5fe4bfdc3499`; if
-`git -C "$R" merge-base --is-ancestor "$release_base" HEAD` succeeds, set
-`base_ref="$release_base"`; else obtain `base_ref` with the existing
-`git -C "$R" merge-base HEAD origin/main 2>/dev/null`. Leave the loop and
-stamp check intact. Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
+near 240, keep `release_base=892dec572cb6232853ef28cb2d8d5fe4bfdc3499`.
+Set `base_ref="$release_base"` only if `origin/main` resolves,
+`git -C "$R" merge-base --is-ancestor "$release_base" HEAD` succeeds, and
+`git -C "$R" merge-base --is-ancestor "$release_base" origin/main` exits 1
+(not an ancestor); any other exit uses the existing fallback.
+Otherwise set `base_ref` from the existing
+`git -C "$R" merge-base HEAD origin/main 2>/dev/null` command. Leave the
+three-path loop, unavailable-base diagnostic, stamp check and routing scan
+intact. On a scratch pre-integration branch, alter one guarded file and
+re-pin the stamp/S548 as needed: S709 must still reject the real change with
+"changed against the merge base". In a scratch post-integration state where
+`origin/main` contains the release base and equals the changed `HEAD`, the
+same comparison must use `HEAD` and not reject that sanctioned change. Also
+update S626's baseline table and its Then/Falsifier in `TEST-SCENARIOS.md`:
+`skills/role-contracts/SKILL.md` equals the entire `A` file after exactly the
+two count-1 substitutions above, not unchanged `A` bytes; old, either partial
+result and an extra changed byte fail. Restore the blank line before
+`## Model routing for process-launched children (#707; F75)`.
+Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
 `bash test/cases/s659_merge_risk_floor_vendor_fail_closed.sh`, and
 `bash test/cases/s709_route_docs.sh` must each pass after the changes; then
 `./check` must be green (the independent S569 timeout passes alone).

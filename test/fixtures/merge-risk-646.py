@@ -1178,17 +1178,40 @@ mutate(675,'qualification','qualification-source-missing')
 
 
 # Structural observations are explicitly separate from actual model/runtime runs.
+ROLE_CONTRACTS_SUBSTITUTIONS=(
+    (b'under `wip/multi-agent-development/`, not in your',
+     b'under `prep/multi-agent-development/`, not in your'),
+    (b'issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)',
+     b'issue/PR comment (or a `prep/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)'))
+
+
 def role_contracts_expected():
     original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':skills/role-contracts/SKILL.md'])
     expected=original
-    for old,new in (
-        (b'under `wip/multi-agent-development/`, not in your',
-         b'under `prep/multi-agent-development/`, not in your'),
-        (b'issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)',
-         b'issue/PR comment (or a `prep/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)')):
+    for old,new in ROLE_CONTRACTS_SUBSTITUTIONS:
         check(expected.count(old)==1,'role-contracts pin substitution count')
         expected=expected.replace(old,new,1)
     return expected
+
+
+def role_contracts_assert(data,scenario):
+    check(data==role_contracts_expected(),'S'+scenario+' role-contracts B constraint')
+
+
+def role_contracts_mutants(scenario):
+    original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':skills/role-contracts/SKILL.md'])
+    expected=role_contracts_expected()
+    role_contracts_assert(expected,scenario)
+    variants=[('unmodified-A',original)]
+    for index,(old,new) in enumerate(ROLE_CONTRACTS_SUBSTITUTIONS,1):
+        check(original.count(old)==1,'role-contracts one-substitution mutant source count')
+        variants.append(('substitution-'+str(index)+'-only',original.replace(old,new,1)))
+    variants.append(('extra-byte',expected+b'!'))
+    for name,data in variants:
+        check(data!=expected,'role-contracts mutant must differ: '+name)
+        try: role_contracts_assert(data,scenario)
+        except Failure: print('KILLED S'+scenario+'/role-contracts '+name)
+        else: raise Failure('SURVIVED S'+scenario+'/role-contracts '+name)
 
 
 def structure_assert(root,scenario):
@@ -1202,13 +1225,15 @@ def structure_assert(root,scenario):
         check(b'not an import' in skill,'link-as-import limitation')
         for data in (skill,review):
             check(b'TiesL/spec-driven-guardrails' not in data and b'#607' not in data,'generic procedure contains instance identity')
-        check((root/'skills/role-contracts/SKILL.md').read_bytes()==role_contracts_expected(),'role-contracts B constraint')
+        role_contracts_assert((root/'skills/role-contracts/SKILL.md').read_bytes(),scenario)
     if scenario=='659':
         # B subset: the ordinary floors, model selection and the effort-free marker are untouched.
         for path in ('skills/role-contracts/SKILL.md','lib/model-record.sh','skills/pre-merge-review/model-record-emit.sh','skills/model-choice/SKILL.md'):
-            original=(role_contracts_expected() if path=='skills/role-contracts/SKILL.md' else
-                      subprocess.check_output(['git','-C',str(ROOT),'show',A+':'+path]))
-            check((root/path).read_bytes()==original,'ordinary floor/marker source changed: '+path)
+            if path=='skills/role-contracts/SKILL.md':
+                role_contracts_assert((root/path).read_bytes(),scenario)
+            else:
+                original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':'+path])
+                check((root/path).read_bytes()==original,'ordinary floor/marker source changed: '+path)
         marker=subprocess.run(['bash',str(root/'skills/pre-merge-review/model-record-emit.sh'),'--role','Developer','--stage','Implementation',
                                '--model','lab-x-1'],capture_output=True,text=True)
         check(marker.returncode==0 and marker.stdout.strip()==MARK%('Implementation','lab-x-1'),'model-record marker gained an effort or changed')
@@ -7734,6 +7759,8 @@ def main():
         print(f'BASELINE S{s}: rows={len(entries)} failures={failures}; no mutation credit')
         return int(bool(failures))
     if failures: return 1
+    if s in ('626','659'):
+        role_contracts_mutants(s)
     for tag,name,replacement,control_row in MUTANTS.get(s,[]):
         names=[name] if isinstance(name,str) else list(name)
         with tempfile.TemporaryDirectory(prefix='mr646-mutant-') as tmp:
