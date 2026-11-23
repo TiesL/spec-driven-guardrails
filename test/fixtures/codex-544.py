@@ -12,7 +12,7 @@ scenario = int(sys.argv[2])
 with tempfile.TemporaryDirectory() as temp:
     tmp = Path(temp).resolve()
     wf = tmp / 'workflow'
-    shutil.copytree(ROOT, wf, ignore=shutil.ignore_patterns('.git', '.guardrails', '.agents', '.claude', 'wip', '__pycache__'))
+    shutil.copytree(ROOT, wf, ignore=shutil.ignore_patterns('.git', '.guardrails', '.agents', '.claude', 'prep', '__pycache__'))
     env = dict(os.environ, SPEC_DRIVEN_GUARDRAILS_DIR=str(wf))
     user_codex = tmp / 'user/.codex'
     user_codex.mkdir(parents=True)

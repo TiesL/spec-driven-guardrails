@@ -151,7 +151,7 @@ runs `git -C <fixture> ...` acts on the launching repo instead of the
 fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
-A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
+A-series (A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
 A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
@@ -304,7 +304,7 @@ does not install, and `CHANGES.md` had no entry to ask adopters. The
 decisions below make it adoptable as an opt-in.
 
 **Numbering.** A14 and A15 are #369's, continuing the multi-agent series
-(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+(A4-A13 in `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
 rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
 the two fill the A14-A18 range reserved in the #377 section above; nothing
 collides and nothing is renumbered.
@@ -342,7 +342,7 @@ collides and nothing is renumbered.
   network, so it is part of what answering *yes* means (as with
   `process-issue-tracking`), not something `adopt.sh` does.
 - **Violated when:** a pointer in the skill resolves only inside this repo (a
-  `vendor/` or `wip/` path, or a bare `#n`), or the skill carries a second
+  `vendor/` or `prep/` path, or a bare `#n`), or the skill carries a second
   literal copy of a marker another skill defines (S158, S160, S28).
 - **Revisit when:** a second adopter runs the pipeline and reports a step the
   skill does not cover; then promote that step from the WIP documents. Do not
@@ -4030,7 +4030,7 @@ orchestrator and the maintainer post as the same login.
   | `executor_host` | string, `""` | `hostname -s` of the one machine that may execute; empty means no executor, so nothing executes. Set by the maintainer's config PR. |
   | `max_lines`, `max_files` | integers `300`, `8` | Inclusive; both counts must be 1..cap. Values below 1 are invalid. |
   | `hold_seconds` | integer `300` | At least 1; `0` is invalid. |
-  | `groups.ordinary` | path patterns | `README.md`, `CONTEXT.md`, `PRD*.md` (root), `ARCHITECTURE.md`, `TEST-SCENARIOS.md`, `docs/**.md`, `wip/**.md`, `test/**`. |
+  | `groups.ordinary` | path patterns | `README.md`, `CONTEXT.md`, `PRD*.md` (root), `ARCHITECTURE.md`, `TEST-SCENARIOS.md`, `docs/**.md`, `prep/**.md`, `test/**`. |
   | `groups.adoption` | path patterns | A55's adoption list verbatim. |
   | `groups.guard` | path patterns | A55's guard/source list verbatim, minus `hooks/git-guardrails` (now reserved). |
   | `groups.generated` | `{ "outputs": [...], "inputs": [...] }` | Outputs `WORKFLOW.md`, `adapters/codex/AGENTS.md`, root `AGENTS.md` (managed block only); inputs `policy/WORKFLOW.md`, `adapters/*/INSTRUCTIONS.md`. |
@@ -4411,7 +4411,7 @@ later PR.
 - **O4: Part B guard allow-list.** A data file `test/fixtures/old-role-name-allow.tsv`,
   columns `path-or-glob`, `max` (a count, or `*`). History (`CHANGELOG.md`,
   `CHANGES.md`, the baseline snapshot, `marker-corpus.jsonl`, the captured hook input,
-  `wip/**`) is `*`: a new release note may legitimately name the old name. The
+  `prep/**`) is `*`: a new release note may legitimately name the old name. The
   deliberate negative-test lines (`role-stage-599.py`, `s312*.sh`, and `TEST-SCENARIOS.md`)
   get an exact maximum, so a new occurrence there also fails and names the file.
   The guard scans whitespace-normalised text (wrapped frontmatter) and excludes the
@@ -4967,8 +4967,8 @@ allowed-path references; this session's environment.
     adoption group, and `session-context.sh` injects its **Reaches session:**
     entries into every session.
   - (b) Authority is eligible. `skills/role-contracts/SKILL.md:30-31` says that
-    in this repo the `wip/multi-agent-development/` sources "win over this
-    file". So an ordinary-group `wip/**.md` change outranks a reserved skill.
+    in this repo the `prep/multi-agent-development/` sources "win over this
+    file". So an ordinary-group `prep/**.md` change outranks a reserved skill.
 
   Addendum 5's reasons against the allow-list:
   - (i) "`check` executes `test/**`". True, and decisive against admitting
@@ -4978,13 +4978,13 @@ allowed-path references; this session's environment.
     point 4 below).
 - **D1 — Decision: an explicit allow-list of plain Markdown; every other path
   is referred.** [A]
-  - `groups.ordinary` becomes exactly `README.md`, `docs/**.md`, `wip/**.md` and
+  - `groups.ordinary` becomes exactly `README.md`, `docs/**.md`, `prep/**.md` and
     `.github/ISSUE_TEMPLATE/*.md`.
   - `groups.adoption`, `groups.guard`, `groups.generated.outputs` and
     `groups.generated.inputs` become `[]`. The schema stays, so AC3's group
     structure and the verifier code stay; `config_errors` must accept an empty
     list.
-  - `reserved.autonomy` gains `wip/multi-agent-development/**` (authority,
+  - `reserved.autonomy` gains `prep/multi-agent-development/**` (authority,
     point (b) above).
   - Every other path keeps today's machinery: `unlisted-path` or
     `reserved-path`, referred.
@@ -5029,7 +5029,7 @@ allowed-path references; this session's environment.
         `lib/claude-status.py`, `lib/skill-links.sh`;
       - instruction files: `WORKFLOW.md`, `CLAUDE.md`, `AGENTS.md`,
         `USER-CLAUDE.md`, `policy/WORKFLOW.md`, `adapters/**`;
-      - `CHANGES.md`, `CONTEXT.md`, `wip/multi-agent-development/**`.
+      - `CHANGES.md`, `CONTEXT.md`, `prep/multi-agent-development/**`.
 
       Its four extra commits are each eligible only through a subject/input
       judgment, the kind the last three rounds overturned:
@@ -5062,13 +5062,13 @@ allowed-path references; this session's environment.
 
     What to look for, as text:
     - a root-level `README.md`;
-    - the prefixes `docs/`, `wip/` and `.github/ISSUE_TEMPLATE`;
+    - the prefixes `docs/`, `prep/` and `.github/ISSUE_TEMPLATE`;
     - a repository-wide enumerator: `git ls-files`, `find .`, or a `*.md` or
       `**` glob over the root.
 
     Each occurrence must be either a shell or Python comment line, or a named
     entry: `path:line-pattern`, a reason, and kind `subject` or `pointer`.
-    Stale entries fail. Once `wip/multi-agent-development/**` is reserved, a
+    Stale entries fail. Once `prep/multi-agent-development/**` is reserved, a
     pointer into it matches the reserved pattern and needs no entry.
 
     Expected entries; the Developer verifies and reports them:
@@ -5082,7 +5082,7 @@ allowed-path references; this session's environment.
   - Variants:
     - a planted `cat docs/zz.md` in a scratch copy of `hooks/git-guardrails`
       fails, naming it;
-    - a planted hook command `"$wf/wip/zz.md"` in a scratch copy of
+    - a planted hook command `"$wf/prep/zz.md"` in a scratch copy of
       `settings/session-hooks.json` fails;
     - a scratch config that adds `hooks/**` or `test/**` to `groups.ordinary`
       fails (a);
@@ -5162,8 +5162,8 @@ allowed-path references; this session's environment.
       `hooks/push-after-commit`, `hooks/stop-after-completion`,
       `session-context.sh`, `pending-changes.sh`, `CHANGES.md`, `WORKFLOW.md`,
       `docs/measure-ci-timing.sh` (not `.md`, under `docs/`), and
-      `wip/multi-agent-development/x.md` (`reserved-path`).
-    - Controls, `eligible`: `README.md`, `docs/x.md`, `wip/a/b.md`,
+      `prep/multi-agent-development/x.md` (`reserved-path`).
+    - Controls, `eligible`: `README.md`, `docs/x.md`, `prep/a/b.md`,
       `.github/ISSUE_TEMPLATE/epic.md`.
     - `docs/x.md` added with mode `100755`, and as a symlink: each
       `referred file-mode`.
@@ -5230,7 +5230,7 @@ allowed-path references; this session's environment.
   - Not touched: AC1, AC2, AC4-AC6, AC9.
 - **For the maintainer's acceptance point 4.** [A] Choose one.
   - **(A) The allow-list. Recommended.**
-    - Class: 4/80 (5%). It admits only README, docs, wip notes and issue
+    - Class: 4/80 (5%). It admits only README, docs, prep notes and issue
       templates.
     - Soundness: by construction for execution; for configuration reads, kept
       by a test over the whole repository that does not depend on knowing
@@ -5272,7 +5272,7 @@ allowed-path references; this session's environment.
     outside the enumerator forms. S628's static-form limits still apply to the
     reserved list.
   - (13) An agent can still read an allowed doc as text. A prompt injection in
-    a `docs/` or `wip/` file rests on the Reviewer's semantic disqualifiers.
+    a `docs/` or `prep/` file rests on the Reviewer's semantic disqualifiers.
   - (14) Tests read allowed files as subjects. A docs change can switch off an
     existence- or content-guarded test; the change is visible in the diff and
     judged by the Reviewer.
@@ -5295,7 +5295,7 @@ allowed-path references; this session's environment.
   - Excluding `CONTEXT.md` rests on two skills pointing roles at it as the glossary; a glossary edit is low-risk in practice.
   - S629 trusts `#` comment lines; a heredoc line starting with `#` would be missed, and such lines are rare.
   - Project-only setting sources depend on the runtime's flags; a dedicated `HOME` is the fallback, and the verifier can observe neither.
-  - `wip/multi-agent-development/**` outranks the role contracts only "in the guardrails repo itself"; reserving it is cheap and removes the question.
+  - `prep/multi-agent-development/**` outranks the role contracts only "in the guardrails repo itself"; reserving it is cheap and removes the question.
   - Whole-tree F2 makes any stray local edit in the executor checkout refuse; that is the safe direction, at the cost of a refresh.
 
 
@@ -5546,7 +5546,7 @@ present. These categories protect authority, not every executable dependency.
 | merge enforcement | `merge-preflight.sh`, `pipeline-override.sh`, `skills/pre-merge-review/**`, `lib/model-record**`, `check`, `check-commit`, `check-*.sh`, `templates/check-*` |
 | hooks and runtime | `hooks/**`, `settings/**`, `.claude/**`, `.codex/**`, `.agents/**`, `session-context.sh`, `pending-changes.sh` |
 | CI | `.github/workflows/**`, `.github/actions/**`, `templates/ci.yml` |
-| instructions, contracts and adoption answers | `skills/role-contracts/**`, `wip/multi-agent-development/**`, `policy/WORKFLOW.md`, `adapters/**`, `generate-workflow-adapters.sh`, `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `ORCHESTRATOR.md`, `WORKFLOW.md`, `USER-CLAUDE.md`, `CHANGES.md`, `WORKFLOW-ADOPTION.md`, `WORKFLOW-ADOPTIE.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `**/CLAUDE.md`, `**/ORCHESTRATOR.md` |
+| instructions, contracts and adoption answers | `skills/role-contracts/**`, `prep/multi-agent-development/**`, `policy/WORKFLOW.md`, `adapters/**`, `generate-workflow-adapters.sh`, `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `ORCHESTRATOR.md`, `WORKFLOW.md`, `USER-CLAUDE.md`, `CHANGES.md`, `WORKFLOW-ADOPTION.md`, `WORKFLOW-ADOPTIE.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `**/CLAUDE.md`, `**/ORCHESTRATOR.md` |
 
 This is a deliberately finite mapping of five named categories, not an exhaustive
 trusted-code inventory or an allow-list of everything else. Some backing libraries,
@@ -11265,3 +11265,838 @@ stays with #701. This addendum supplies no merge or enabling authority.
 Doubt: Synthetic fetched values establish consistency failures, not live exploitability, authentication, qualification or complete coverage.
 Doubt: CI, live scenario/issue traceability and review outcomes have not been refreshed offline; they remain owner obligations.
 Doubt: Missing .guardrails/source and .agents paths prevent adoption/live-loading verification; remedy is owner-run ordinary adopt.sh --runtime codex, then a fresh-session observation; no repair attempted.
+### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
+
+- **Decision.** [A] The Orchestrator session talks to its provider directly. A
+  pipeline stage launched as a separate model process starts through
+  `route-child.sh <claude|codex> -- <command> [args...]` at the repo root (resolved
+  through `$SPEC_DRIVEN_GUARDRAILS_DIR`). That script is the one Module that owns
+  routing. Its Interface hides the opt-in, the off switch, the parent check, the
+  settings and config checks, the proxy probe, the route URL, the transform header
+  and the per-runtime way to apply them. Deletion test: without it, every launch
+  (by hand, by #640's launch rules, by #513 W3's launcher) rebuilds the same checks.
+  The two adapters, `claude` and `codex`, are both real. Exit codes: the child's own
+  (the wrapper `exec`s it), 2 usage, 3 proxy down, 4 refused.
+- **Boundary.** [V, probes in #707 Architect report 4] In-session Agent-tool and
+  `spawn_agent` subagents share their parent's endpoint and are not routable; they
+  stay direct, like the Orchestrator. The behavior runner
+  (`test/behavior/orchestrator_diff.py`) stays direct by design and refuses to
+  start when the inherited `ANTHROPIC_BASE_URL` is set and not first-party. That
+  guarantee rests on two parts together: the inherited-environment check, and the
+  runner's own `--setting-sources ""`, which keeps user, project and local
+  settings `env` out of its `claude -p` calls. Managed settings still load and are
+  outside the guarantee, as for the session-start warning (review round 1,
+  `runner-ignores-settings-env`). SDG never sets `ANTHROPIC_BASE_URL` in a parent
+  process, a settings file or an adopted project, and never writes
+  `~/.codex/config.toml`.
+- **Opt-in and off switch.** [A] Routing is on only when the project's
+  `process-model-routing` answer is yes, read through `answered_yes`
+  (`lib/changes.sh`) on the git top level of the child's working directory. A
+  missing repository or answer means off. `SDG_MODEL_ROUTE=off`, exact and
+  case-sensitive, is the only per-run input and only switches off. When routing is
+  on, any other non-empty value is ignored with one stderr line saying that only
+  `off` switches off. The `CHANGES.md` row is `Default: question`,
+  `Applies if: uses-multi-agent-roles`, a new `predicate_true` arm equal to
+  `answered_yes "$project_dir" process-multi-agent-roles`. Only a project that runs
+  the staged pipeline launches stage processes, so no other project is asked. The
+  row has `Reaches session: none`; see the hand-off bullet. Not-yes means the
+  wrapper does nothing (decision 6): answering `no` opts out of the wrapper and its
+  pass-through header, not out of compression. A Codex child that the user's own
+  `config.toml` routes through the proxy then still runs there in compress mode.
+  Only `SDG_MODEL_ROUTE=off` under a yes answer sends one Codex child direct. No
+  text the wrapper prints (the exit-3 message included), no `CHANGES.md` row field
+  and no sentence in `docs/model-routing.md` may present `no` as sending children
+  direct or keeping their text uncut (F75, AC4).
+- **Order inside the wrapper.** [A] Usage first, in every mode: a known runtime, the
+  `--`, a non-empty command; for `codex`, first word `codex` and second word exactly
+  `exec` (no alias, no option before `exec`), else exit 2. Then the opt-in: not-yes
+  means `exec "$@"` unchanged, with no probe and no checks. Under `off` a Claude
+  child runs unchanged; a Codex child gets its per-run direct override after the
+  off-mode selection check of the Codex adapter bullet (exit 4), never a probe.
+  Then the checks (exit 4), then the probe (exit 3), then `exec`.
+- **Claude adapter.** [A] Refuse when the inherited `ANTHROPIC_BASE_URL` is set and
+  not exactly `https://api.anthropic.com`. Set-but-empty and a trailing slash count
+  as not first-party. Refuse when any checked settings file has, under `env`, a key
+  equal to any variable the wrapper adds to the child (`ANTHROPIC_BASE_URL`,
+  `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL`, `NO_PROXY`, `no_proxy`,
+  `ANTHROPIC_CUSTOM_HEADERS`), with any value, the first-party URL included.
+  Settings `env` outranks the child's inline value: [V] for `ANTHROPIC_BASE_URL`,
+  [A] for the other four because Claude Code applies settings `env` to its process
+  environment by one mechanism, not per key. A settings value for any of them
+  would silently send the child around the proxy, drop the pass-through header,
+  let the loopback request go through an outside proxy, or drop the first-party
+  flag. The refused key set is by construction the set of added variables, so a
+  variable added later is refused in settings without a second list. The message
+  names the file and the key, never the value (review round 1,
+  `settings-env-strips-pass-through`, `settings-env-custom-headers-drops-passthrough`).
+  Also refuse when the inherited `ANTHROPIC_CUSTOM_HEADERS` already has a line
+  whose header name (text before the first `:`, trimmed, compared
+  case-insensitively as HTTP header names are) is `x-cave-transforms`. The message
+  names the variable and the header name, never the value. Two transform headers
+  leave the proxy's choice unspecified, and the wrapper never removes or
+  overwrites a header the user set (the same rule as Codex `http_headers`; review
+  round 1, `inherited-headers-transform-conflict`). Also refuse when a checked file exists but cannot be read, is
+  empty or whitespace-only, is not valid JSON, is not a JSON object, or has an `env`
+  that is not an object. The checked list, kept once in the wrapper and once in
+  `docs/model-routing.md`: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`;
+  `.claude/settings.json` and `.claude/settings.local.json` in the child's working
+  directory and in its git top level; the managed-settings file; each `--settings`
+  argument (`--settings <file>`, `--settings=<file>`, inline JSON). The managed path
+  is `/Library/Application Support/ClaudeCode/managed-settings.json` when
+  `uname -s` is `Darwin` and `/etc/claude-code/managed-settings.json` when it is
+  `Linux`. Any other platform refuses (exit 4), because the location is unknown. The
+  test-only variable `SDG_ROUTE_MANAGED_SETTINGS`, when non-empty, replaces that one
+  path and nothing else. It cannot switch routing on, skip another location or
+  change the platform rule for the other files. Empty means unset. It is documented
+  next to `SDG_ROUTE_PROBE` and is not a security boundary: the operator who can
+  set it can also set `SDG_MODEL_ROUTE=off`. Tests always set it, so they never read
+  the real managed path. JSON is read with `python3 -I`. After the checks and the
+  probe, `exec env` adds exactly five variables on the child only:
+  `ANTHROPIC_BASE_URL=http://127.0.0.1:8787/w/claude`,
+  `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1`, `NO_PROXY` and `no_proxy`, each with
+  `127.0.0.1,localhost` appended comma-separated to its own inherited value (the
+  loopback alone when that one is unset or empty), and `ANTHROPIC_CUSTOM_HEADERS`
+  with `x-cave-transforms: caveman.pass-through.v1` appended newline-separated to any
+  inherited value. Both spellings carry the loopback because HTTP stacks differ in
+  which one they read first, and which one Claude Code reads is [U]: with both set,
+  the order does not matter, so the routed request, which carries the child's
+  credential, never goes to an inherited `http_proxy` or `HTTPS_PROXY` (review
+  round 1, `lowercase-no-proxy-not-covered`). Arguments pass byte for byte. Never `--bare`, `--setting-sources`
+  or `--settings` injection.
+- **Codex adapter.** [V placement after `exec`; A the rest] With routing on, it reads
+  `${CODEX_HOME:-$HOME/.codex}/config.toml` read-only. It refuses (exit 4, naming the
+  file and the cause) when the file is missing or unparsable, when the effective
+  provider is not `caveman`, or when the `caveman` provider already has
+  `http_headers` or `env_http_headers`. The effective provider is the
+  `model_provider` of the profile named by the top-level `profile` key when that
+  profile sets one, else the top-level `model_provider` [A; that a selected
+  profile's `model_provider` beats the top-level key is [U] and the refusal is
+  the cheap error either way]. A top-level `profile` that names no profile table
+  refuses. The reader resolves key paths before it checks them, in every TOML
+  form: table headers, dotted keys and inline tables at any depth (for example
+  `model_providers = { caveman = { http_headers = { ... } } }` is the same key
+  path as `[model_providers.caveman]` with `http_headers`). Python here is 3.9,
+  so `tomllib` is not available; the small reader stays, and this resolution is
+  its contract (review round 1, `codex-inline-table-http-headers-missed` is a
+  code defect against it).
+  **Command selection check** (review round 1, `codex-profile-or-args-bypass-route`,
+  `codex-command-args-not-checked`): the wrapper also refuses (exit 4, naming the
+  argument, not a value) when the command's own arguments after `exec`, up to a
+  lone `--`, select a provider or profile or change a provider table, because a
+  user argument placed after the wrapper's `-c` wins and would make the wrapper
+  report a route the child does not take. The closed list, kept once in the
+  wrapper and once in `docs/model-routing.md` like the settings locations
+  (widened after review round 1, from #707 Developer report 2 and Architect
+  report 7):
+  - options that refuse by themselves: `--profile` and `-p`, `--oss`,
+    `--local-provider`, `--ignore-user-config` (Codex then skips `config.toml`
+    and runs the built-in `openai` provider direct while the wrapper reports a
+    route [V codex-cli 0.166.0: `provider: openai`]);
+  - `-c`/`--config` whose key's first dotted segment, with whitespace and quotes
+    trimmed from each segment, is one of `model_provider`, `model_providers`,
+    `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`. Matching is
+    by first segment, not by text prefix, so `profiles` alone (a whole-table
+    `-c 'profiles={x={...}}'`) refuses like `profiles.x.model_provider`.
+    `openai_base_url` redirects the built-in `openai` provider [V 0.166.0: a
+    `-c openai_base_url=...` child sent `GET /q/responses` to that URL], which is
+    the provider `off` selects; `chatgpt_base_url` is listed on the same
+    reasoning [U whether model traffic under a ChatGPT login follows it; the
+    refusal is the cheap error].
+  Every option counts in all the forms the Codex argument parser accepts: the
+  value as the next argument, after `=` (`--profile=x`, `-c=k=v`), and, for the
+  short options `-p` and `-c`, attached (`-px`, `-cmodel_provider="x"`) [V 0.166.0:
+  both attached forms changed the provider]. Long options are not abbreviated by
+  that parser [V 0.166.0: `--prof`, `--conf` and `--ignore-user` are errors], so
+  only the full names are listed. An argument that is the value of an option the
+  list does not know (for example `-o --oss`) still refuses: over-refusal is the
+  safe direction. [U, accepted like AC8's list] the list follows the options of
+  codex-cli 0.166.0. Two facts of that version, recorded, not acted on: a
+  top-level `profile` key is a Codex error there ("legacy `profile` config is no
+  longer supported"), so the profile-table resolution above matters only for
+  older Codex versions, and `-p` there layers `$CODEX_HOME/<name>.config.toml`;
+  a project-local `.codex/config.toml` has `model_provider`, `model_providers`,
+  `profiles`, `openai_base_url` and `chatgpt_base_url` ignored by Codex, so it
+  needs no check [V 0.166.0]. With checks passed it probes
+  and then inserts
+  `-c 'model_providers.caveman.http_headers={"x-cave-transforms"="caveman.pass-through.v1"}'`
+  directly after `exec`.
+  **Under `off`** it never probes, and inserts `-c 'model_provider="openai"'` directly
+  after `exec` so that one child goes direct (decision 4). Because a selected
+  profile or a later argument would beat that override and route the child,
+  compressed, while `off` promises direct, it first refuses (exit 4) when the
+  command's arguments contain an item of the list above, or when `config.toml`
+  exists and is unparsable, or its top-level `profile` names a profile that sets
+  a `model_provider` other than `openai` (or names no profile table), or it sets
+  `openai_base_url` or `chatgpt_base_url` at top level or in the selected profile
+  table, with any value (the
+  message names the file and the key, not the value): either would send the
+  `openai` child somewhere other than direct. A missing
+  `config.toml` passes: Codex then has no route to override. This is the one
+  check `off` runs; it reads only that file and needs no proxy. Under `off` the
+  Codex adapter adds no environment variable. A routed Codex child gets exactly
+  two: `NO_PROXY` and `no_proxy`, each with the same value a routed Claude child
+  gets (`127.0.0.1,localhost` appended comma-separated to its own inherited
+  value, or the loopback alone when unset or empty), and nothing else. Reason
+  [V source, openai/codex tag `rust-v0.166.0`, not run]: with `respect_system_proxy`
+  off (the default) Codex's model client keeps reqwest's default proxy handling
+  (`OutboundProxyPolicy::ReqwestDefault`; reqwest 0.12.28, hyper-util 0.1.20).
+  That matcher reads `HTTP_PROXY` then `http_proxy`, `HTTPS_PROXY`,
+  `ALL_PROXY`, and `NO_PROXY` then `no_proxy` (the uppercase one wins when set,
+  even empty), and has no implicit loopback exclusion. Without the two variables
+  an inherited `http_proxy` would carry the child's plain-HTTP request to
+  `127.0.0.1:8787`, with its credential, to the outside proxy (review round 2,
+  `codex-child-proxy-env-not-loopback-excluded`). The Codex adapter does not
+  read Claude settings.
+  **`.env` check** (review round 3, `codex-dotenv-overrides-loopback-exclusion`):
+  Codex loads `$CODEX_HOME/.env` (the same home as `config.toml`) at startup and
+  sets every key in it that does not start with `CODEX_` over the environment it
+  inherited [V source `rust-v0.166.0` `codex-rs/arg0/src/lib.rs`,
+  `load_dotenv`/`set_filtered`; V run: `codex sandbox -- /usr/bin/env` with a
+  scratch `CODEX_HOME` printed the `.env` values of `NO_PROXY` and `no_proxy`,
+  not the inherited ones, the `export no_proxy = "v"` form included]. A `.env`
+  value for either variable replaces the wrapper's loopback, so with routing on
+  the wrapper reads that file read-only when it exists, and refuses (exit 4,
+  before the probe) when a line assigns `NO_PROXY` or `no_proxy`, with any value,
+  empty included, or when the file exists and cannot be read. A line assigns a
+  key when, after optional leading whitespace and an optional `export` plus
+  whitespace, it starts with the key, optional whitespace and `=`; a `#` comment
+  line does not. Refusing on such a line inside a multi-line quoted value is
+  over-refusal, the safe direction. The message names the file and the key,
+  never the value, and offers moving the value into the inherited environment
+  (where the wrapper appends the loopback) or `SDG_MODEL_ROUTE=off`. The refused
+  key set is by construction the set of variables the wrapper adds to a Codex
+  child, as for Claude settings `env`. Other `.env` keys pass, proxy variables
+  included: with the loopback in the exclusion variables Codex reads, they cannot
+  divert the loopback request. Under `off` and not-yes the file is not read.
+- **Probe.** [A] `curl -s -o /dev/null --connect-timeout 2 --max-time 3
+  http://127.0.0.1:8787/`, or the executable named by `SDG_ROUTE_PROBE` with the same
+  arguments. It runs in the inherited environment with `NO_PROXY` and `no_proxy`
+  already extended exactly as for the child, so it takes the path the child takes
+  and an inherited `http_proxy` cannot answer in Caveman's place (curl honours
+  both spellings; review round 2, `probe-follows-inherited-proxy`). One known
+  difference: curl also reads its own configuration file (`~/.curlrc` and its
+  other locations), which the child does not, and a file there that sets both
+  `proxy` and `noproxy` makes a down proxy read as up (review round 3,
+  `probe-curlrc-noproxy-reads-up`, deferred; no credential is involved, because
+  the probe sends none and the child keeps the loopback exclusion). Its argv is
+  unchanged. Exit 0 (any HTTP answer, whatever the status) is up. Every non-zero exit
+  is down, not only 7 and 28: 52, 56 or 127 (no `curl`) also means no answer was
+  seen, and refusing is the only behavior that never routes into a broken proxy or
+  falls back to direct. Down means exit 3 and one stderr message. It names
+  `http://127.0.0.1:8787`, the probe's exit status, `SDG_MODEL_ROUTE=off` as the way
+  to run this one child without the route, and answering `process-model-routing`
+  `no` only as switching the wrapper off. For Codex it adds that the user's own
+  Codex config still routes Codex through the proxy, compressed, under a `no`
+  answer, and that only `SDG_MODEL_ROUTE=off` sends it direct (opt-in bullet;
+  review round 1, `codex-no-answer-leaves-children-compressed`). The probe itself
+  sends a bare `GET /` with no credential. The routed child then sends its own
+  credential (subscription OAuth bearer or API key) over plain HTTP to whatever
+  process answers on that port; the probe does not identify the listener as
+  Caveman. The maintainer accepted that risk with disclosure in
+  `docs/model-routing.md` (decision 10, M1 option A; review round 1,
+  `probe-sends-credentials-to-any-listener`; #707 Architect report 6), so the
+  wrapper does not identify the listener. The acceptance covers the loopback
+  listener only, not an outside proxy (Codex adapter bullet). No `timeout`,
+  `gtimeout` or `nc`, and no bash 4
+  feature (macOS `/bin/bash` 3.2).
+- **Pass-through by default.** [V, one paired probe per runtime] Every routed child
+  carries the pass-through header, so it is metered but its text arrives uncut.
+  Allowing compression for children later means removing that one constant, after a
+  recorded maintainer decision and a test that children recover cut text.
+- **Single definition.** [A] `127.0.0.1:8787`, `ANTHROPIC_BASE_URL` assignments,
+  `x-cave-transforms` and `model_provider` overrides occur in `route-child.sh` only,
+  besides docs and tests. `adopt.sh` writes no `env` key into any `settings.json`.
+  "Docs" means every tracked `*.md` file outside `templates/` and `skills/`. That
+  includes the spec files (`PRD.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md`,
+  `CHANGELOG.md`), which must name these strings to specify them. "Tests" means
+  every file under `test/`. A non-Markdown file under `docs/`, such as a script, is
+  not allowed. `templates/` and `skills/` are excluded because `adopt.sh` installs
+  them into adopted projects. `WORKFLOW.md` is a doc but stays free of routing text
+  (AC10).
+  The first-party URL `https://api.anthropic.com` is a fact about the provider, not
+  a route, and appears in three readers: the wrapper, `session-context.sh` and the
+  behavior runner. Each uses exact string equality, and each has its own scenario
+  (S705, S708, S710) to keep them equal. A shared library for one comparison across
+  bash and Python would not be deep enough to pay for itself.
+- **Session-start warning.** [A] `session-context.sh --runtime claude` prints one
+  fixed line when the inherited environment, the user settings file
+  (`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`) or the project's
+  `.claude/settings.json` or `.claude/settings.local.json`, read directly, sets a
+  `ANTHROPIC_BASE_URL` that is not first-party. The line has no path and no value,
+  is at most 160 characters, and is printed once whatever the number of sources. It
+  sits in the Claude branch, so in slot 1. An unreadable or unparsable file adds
+  nothing (fail open; a hook never blocks). The managed file is not read there. That
+  keeps every existing session-context test independent of the machine, and an
+  admin-managed URL is not the installer-rewrite incident this warning exists for.
+  The Codex runtime prints nothing extra: its main session is routed by the user's
+  own `config.toml`, which SDG does not own. Budget, measured on `main` c7afb6d with
+  S318's worst-case fixture: slot 1 is 8,668 characters, so the line leaves at least
+  170 under `CONTEXT_BUDGET_CHARS` (9,000). On `release/607-panel-mechanisms`, slot 1
+  is 8,467.
+- **Hand-off (#640, #513 W3).** [A] The instruction "launch every process-delegated
+  Claude or Codex stage as `"$SPEC_DRIVEN_GUARDRAILS_DIR/route-child.sh" <claude|codex>
+  -- <command>`" is a launch rule. Per the confirmed decision 7 it belongs to #640's
+  launch rules, which with #513 W3's launcher must call the wrapper rather than
+  reimplement any part of it. They must treat exit 3 and 4 as a halt to report,
+  never as a cue to retry without the wrapper. This item injects no session text,
+  for a measured reason: on `main` slot 2 is 8,499 characters, so it already sits at
+  the 500-character headroom floor and the 8,500 fallback line of S318. Slot 1 is
+  8,668, and with the warning line plus a roughly 200-character instruction it would
+  pass 9,000. Making room means editing the stamped `ORCHESTRATOR.md` (a behavior
+  run) or a third slot (A41: more than two parts needs a redesign). Both are outside
+  #707. Until #640 lands, a stage launched without the wrapper runs unrouted, which
+  is today's state (decision 8).
+- **Disclosed risk.** [A, not verifiable] Before this change, Codex role children ran
+  through the proxy in `compress` mode. Some of them may have worked on contract text
+  cut by about nine tenths (Claude children: about half), and cut text stays cut for
+  the rest of a conversation. Whether that changed any role's decision cannot be
+  established from the metadata SDG may read. This item does not remediate it.
+  After this change the same holds for a Codex child under a not-yes answer whose
+  user config routes it (opt-in bullet).
+- **Review round 1 on PR #708, design dispositions.** [A] Each `design` finding was
+  a real design defect except one; the bullets above carry the new requirement.
+  - `settings-env-strips-pass-through`, `settings-env-custom-headers-drops-passthrough`:
+    defect. Falsified when a checked settings file or inline `--settings` whose
+    `env` sets any of the five added variables makes the wrapper exit 4 naming the
+    file and key, and an unrelated `env` key still routes.
+  - `lowercase-no-proxy-not-covered`: defect. Falsified when, with `http_proxy` and
+    `HTTPS_PROXY` set and an inherited lowercase `no_proxy`, the routed child's
+    `NO_PROXY` and `no_proxy` both end in the loopback.
+  - `inherited-headers-transform-conflict`: defect. Falsified when an inherited
+    header line `X-Cave-Transforms: ...` (any case) makes the wrapper exit 4 with
+    no value in the message, and an unrelated inherited header is still appended to.
+  - `codex-profile-or-args-bypass-route`: defect, in the routed and the `off`
+    branch. Falsified when a selected profile with a non-caveman provider, and each
+    argument of the closed list, exits 4 in routed mode, and a selected profile
+    with a non-`openai` provider or a listed argument exits 4 under `off`.
+  - `codex-command-args-not-checked` (`code`) and `codex-inline-table-http-headers-missed`
+    (`code`): the design now states the requirement (command selection check;
+    key-path resolution in every TOML form). They stay `code`.
+  - `runner-ignores-settings-env`: not a design defect (resolved by the Reviewer).
+    The Boundary bullet now states that the runner's guarantee rests on
+    `--setting-sources ""` and excludes managed settings.
+  - `probe-sends-credentials-to-any-listener`: a security trade-off, decided by
+    the maintainer as decision 10 (M1 option A: disclose and accept; Probe bullet).
+  - Not covered, recorded only: an inherited provider switch such as
+    `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` makes a Claude child
+    ignore the route. Review round 2 raised it, with the settings-`env` form, as
+    `claude-provider-switch-bypasses-route` (deferred, next bullet).
+- **Review round 2 on PR #708, design dispositions.** [A]
+  - `codex-child-proxy-env-not-loopback-excluded` (medium): defect, fixed in this
+    PR (Codex adapter bullet). Falsified when, with `http_proxy`, `HTTPS_PROXY`
+    and an inherited `no_proxy` set and an inherited `NO_PROXY` set or unset, a
+    routed Codex child's `NO_PROXY` and `no_proxy` both end in the loopback, and
+    an `off` Codex child's environment is unchanged.
+  - `probe-follows-inherited-proxy` (also filed as
+    `probe-follows-inherited-http-proxy`): same root as the medium (the loopback
+    exclusion was applied to one consumer of the loopback, not to all), so the
+    same design change closes it (Probe bullet). Falsified when, with
+    `http_proxy` pointing at a listener that answers HTTP and nothing on the
+    probed port, the real `curl` probe makes the wrapper exit 3 and start no
+    child, and a stub probe sees both variables ending in the loopback.
+  - `a61-credential-decision-stale` (also filed as `a61-probe-decision-stale`):
+    fixed by this text.
+  - Deferred, low, `design`, one bundled follow-up (OR40):
+    `claude-off-keeps-settings-route` (an exit-4 text offers `off` as the
+    remedy for a settings route, but a Claude child under `off` keeps that
+    route, compressed), `codex-managed-config-unchecked` (also filed as
+    `codex-managed-config-layers-unchecked`; [V source `rust-v0.166.0`] the
+    system, admin and cloud layers rank below the user `config.toml` and below
+    `-c`, so the routed provider and the wrapper's header win; the open
+    remainder is a lower-layer `openai_base_url` or `chatgpt_base_url` under
+    `off`, a lower-layer `env_http_headers` on `caveman`, and requirements
+    layers), `claude-provider-switch-bypasses-route`, and
+    `codex-caveman-base-url-unchecked`.
+  - `toml-reader-escaped-keys-unresolved`: not a design defect. The contract
+    (key paths resolved in every TOML form) already covers escaped quoted keys;
+    it stays `code`.
+- **Proxy-configuration boundary.** [A] Which sources of proxy configuration the
+  wrapper answers for, so a review round checks against this list instead of
+  finding sources one at a time. The rule: the wrapper answers for every source
+  the child or the probe loads from the user's environment, the user's or
+  project's own configuration, the command line, or the probe's own
+  configuration, when that source can undo what the wrapper sets or relies on
+  (the route, the header, the provider selection, the loopback exclusion). For
+  such a source the wrapper either sets the value or refuses (exit 4, naming
+  source and key, never the value). Status per source:
+  - In the boundary and covered in this PR: the inherited environment (set:
+    loopback on both spellings; checked: `ANTHROPIC_BASE_URL`,
+    `ANTHROPIC_CUSTOM_HEADERS`); the checked Claude settings files and inline
+    `--settings` (`env` keys equal to the added variables); the Codex user
+    `config.toml` (provider, profile, headers, base-URL keys under `off`); the
+    Codex command's own arguments (closed list); `$CODEX_HOME/.env`
+    (`NO_PROXY`, `no_proxy`; `.env` check above).
+  - In the boundary, open, deferred to the bundled follow-up (review round 3
+    bullet): `features.respect_system_proxy` in the Codex user `config.toml` or
+    enabled by the command (`--enable respect_system_proxy`, `-c
+    features.respect_system_proxy=...`), and curl's configuration file for the
+    probe. Also deferred from round 2: the `caveman` provider's `base_url`
+    origin, the provider switch for Claude, and the TOML escaped-key form.
+  - Outside the boundary by this rule, recorded: the operating system's proxy
+    settings and PAC script (they reach Codex only through
+    `respect_system_proxy`, which is in the boundary, and never reach curl or
+    Claude Code [A]); Codex's `system_proxy_fallback` feature (stable, on by
+    default), which retries ChatGPT backend and login GETs through the system
+    proxy and is not used for the provider request [A, from its call sites at
+    `rust-v0.166.0`]; Codex's sandbox `features.network_proxy`, which governs
+    tool commands, not the provider request [A]; which spelling Claude Code
+    reads first [U, both are set].
+  - Administrator-managed layers: the Codex system file
+    (`/etc/codex/config.toml`), MDM, cloud and requirements layers, which can
+    set the keys above (`respect_system_proxy`, `env_http_headers`, base URLs).
+    Open as `codex-managed-config-unchecked` (deferred). Whether the wrapper
+    reads the plain system file like the Claude managed-settings file, and
+    whether the layers it cannot read are accepted with disclosure, is a
+    maintainer decision for the follow-up, not settled by this text.
+  A new source found later is placed in one of these groups by the rule above;
+  only a source the rule puts outside, or an acceptance of an in-boundary
+  source, needs a maintainer decision.
+- **Review round 3 on PR #708, design dispositions.** [A]
+  - `codex-dotenv-overrides-loopback-exclusion` (medium): defect, fixed in this
+    PR (`.env` check, Codex adapter bullet). Falsified when, with routing on and
+    `$CODEX_HOME/.env` assigning `NO_PROXY` or `no_proxy` (any value, empty
+    included, `export` form included) or unreadable, the wrapper exits 4 naming
+    the file and the key without the value and the probe is not called, while a
+    `.env` with only other keys, a comment line, or no `.env` routes, and `off`
+    and not-yes runs do not read the file.
+  - Deferred, low, `design`, into the same bundled follow-up (OR40):
+    `loopback-uppercase-shadows-inherited-no-proxy` (when only one spelling is
+    inherited, the wrapper creates the other with the loopback alone; a client
+    that reads the created spelling first, Codex for `NO_PROXY` [V source],
+    loses the user's own exclusions for its non-loopback traffic, which then
+    goes to the user's proxy; the routed request stays protected. Target rule
+    for the follow-up: each spelling starts from its own inherited value when
+    that spelling is set, even empty, else from the other spelling's inherited
+    value, then gets the loopback; that changes S701 (c)/(d) and S702 (e2)/(e3)
+    and F75's "its own inherited value"); `codex-system-proxy-feature-bypasses-no-proxy`
+    (target: refuse when the feature is on in a source of the boundary);
+    `probe-curlrc-noproxy-reads-up` (target: the probe reads no curl
+    configuration file, which changes the pinned argv of S704).
+- **Violated when:** a tracked SDG file other than `route-child.sh`, docs and tests
+  assigns `ANTHROPIC_BASE_URL`, or contains the proxy address, a transform header or
+  a `model_provider` override; anything other than the adoption answer switches
+  routing on; the wrapper starts a child while the parent is routed, a checked
+  settings file sets any variable the wrapper adds or cannot be read, the
+  inherited headers already carry a transform header, the effective Codex
+  provider is not the Caveman provider, the Codex command selects a provider or
+  profile itself, `$CODEX_HOME/.env` assigns `NO_PROXY` or `no_proxy` or cannot
+  be read, or the probe exits non-zero; a routed Claude or Codex child, or
+  the probe, lacks the loopback in either `NO_PROXY` or `no_proxy`; a Codex child under `off` can be
+  routed by a selected profile or its own arguments; any wrapper text, row field
+  or doc sentence presents a `no` answer as sending children direct or keeping
+  their text uncut; a routed child runs without
+  the pass-through header or with `--bare`; the wrapper writes any settings or
+  config file; a #640 or #513 launcher routes a child by its own means or falls back
+  to direct after exit 3 or 4; routing text appears in `ORCHESTRATOR.md` or
+  `WORKFLOW.md`.
+
+### A62 — Renaming the tracked `wip/` directory to `prep/`: one move, live pointers re-pointed, history kept, S155 made non-vacuous (#713)
+
+**Decided on 2026-11-20 (Architect, Planning).** The directory `wip/` (48 files,
+five folders) becomes `prep/` so that `wip/` keeps one meaning, the #706 branch
+prefix. Measured on `feature/713-rename-wip-to-prep` at `be25d5d` (= `origin/main`)
+with `git grep -nw wip`, `git grep -n 'wip/'`, case-insensitive variants, and a
+scratch-clone dry run of the whole change (below). Tags: [V] verified, [A] Architect
+decision.
+
+- **Mechanism (Locality).** [A] No new Module, Seam or script; nothing is
+  generated. Order on the work-item branch:
+  1. QA commits the test and scenario edits first (red, see "Test pins").
+  2. The Developer commits `git mv wip prep` alone, with no content change in
+     that commit, so every file is a 100% rename and `git log --follow` and
+     `git diff -M` see renames. [V] In a scratch clone the move alone gives 48
+     `R` entries.
+  3. A second commit replaces `wip/` with `prep/` inside `prep/` (54 lines in
+     21 files; every match there names this directory or its `<slug>` convention,
+     none is a branch name). The `-WIP` file-name suffix
+     (`ARCHITECTURE-MULTI-AGENT-WIP.md`, `PRD-MULTI-AGENT-WIP.md`) is not renamed:
+     it is a document name, not the directory, and many pointers name it.
+  4. A third commit re-points the live references outside `prep/` (table below)
+     and adds the CHANGELOG entry.
+  The squash merge folds these into one commit on `main`; the per-file edits are
+  small, so rename detection still holds there.
+- **Generators.** [V] No regeneration. `policy/` (the source of `WORKFLOW.md`,
+  `AGENTS.md` and `adapters/`) contains no `wip` text, and neither do the
+  generated files; `.claude/skills/` are symlinks. `./check` already runs
+  `check-workflow-adapters.sh`, which would catch drift.
+- **Inventory and ruling per site (outside `prep/`).** [V] sites, [A] rulings.
+  "Change" means `wip` becomes `prep` on that line only.
+  - Change, live pointers or rules: `ARCHITECTURE.md` 154, 307 (pointers to
+    A4-A13), 345 (A14 "Violated when": a path that resolves only in this repo);
+    `PRD.md` 1350; `README.md` 103, 328, 459 (directory table row
+    `prep/<slug>/`); `TEST-SCENARIOS.md` 1930 (S153), 2051 and 2053 (S155 title
+    and Given), 2096 (S158), 2668 (S192), 3748 (S240);
+    `skills/role-contracts/SKILL.md` 29 (provenance) and 694
+    (`prep/<slug>/<ROLE>-REPORT.md`);
+    `skills/codebase-design/README.md` 23; `skills/grilling/README.md` 13;
+    `check-no-dutch.sh` 77 (the permanent exclusion names a moved file: without
+    the change the check fails); the comment in `classify-review-depth.sh` 4.
+  - Held, byte-protected (maintainer decision): `skills/pre-merge-review/SKILL.md`
+    62 and the comment in `hooks/git-guardrails` 783 are live pointers, but S593
+    (`test/fixtures/temporary-panel-645.py`, `preservation_checks`) pins every
+    byte under `hooks/` and `skills/pre-merge-review/` to merge base `b22b476`
+    (A54 D6). [V] Changing either line fails S593 ("unchanged
+    hooks/git-guardrails", "unchanged skills/pre-merge-review/SKILL.md").
+    Default in this design: leave both lines as they are, so they point at a
+    path that no longer exists, and record them as known stale pointers in the
+    PR and CHANGELOG entry. The alternative, re-pointing them and moving S593's
+    recorded baseline, edits a temporary-panel protection that A54 reserves to
+    the maintainer; this design does not choose it.
+  - Change, test pins: `test/cases/s155_role_contracts_installed.sh` (2, 7, 8,
+    18, 20, 25); `s158_role_contracts_pointers_resolve.sh` 6 and 32 (the
+    `clone_only` pattern becomes `prep/multi-agent-development`, otherwise a
+    clone-only `prep/` pointer in the skill would go unflagged);
+    `s153_live_text_mawk_portability.sh` 45 (`--exclude-dir=prep`);
+    `s192_no_live_different_model_rule.sh` 14 and 61 (`*/prep/*`);
+    `s238_...` 21 and `s240_...` 14 (comments only); the tar
+    `--exclude='./prep'` in `s309`, `s317`, `s318`, `s321`, `s708`, `s713`;
+    and two fixtures the issue's Scope did not list:
+    `test/fixtures/codex-544.py` 15 and `test/fixtures/codex-594.py` 50
+    (`shutil.ignore_patterns(..., 'wip', ...)` becomes `'prep'`; it matches a
+    base name anywhere, and no other path is named `prep`).
+  - Keep, history (true as written, past tense or an old location):
+    `ARCHITECTURE.md` 302 and `PRD.md` 1332 ("the role contracts lived under
+    `wip/`" in v0.2.0); S164's title and Then (`TEST-SCENARIOS.md` 2222, 2227)
+    and `s164_old_role_contracts_path_gone.sh` 2 and 22: the old location of
+    `role-contracts` was under `wip/multi-agent-development/`, so the
+    forbidden string stays `wip/...`, and S164 has no directory exclusion that
+    could hide `prep/`; all of `CHANGELOG.md` (only a new entry is added);
+    `test/fixtures/marker-corpus.jsonl` (quotes of old comments); this entry
+    A62 itself and the new CHANGELOG entry, which record the rename.
+  - Not the directory: `.gitignore` 3, `compliance-evidence.sh` 9,
+    `role-label-staleness.sh` 8, the `PRD.md` and `ARCHITECTURE.md` "WIP
+    design/documents" wording, S160's title (file names or the word, not the
+    path); `s19_s23_...` 153 ("wipe").
+  - Not affected: `.github/` (no path filter names `wip`), `hooks/rules.sh`,
+    the branch-name logic in `hooks/git-guardrails`, `check`, `check-commit`.
+- **Dry run.** [V] In a scratch clone of this branch: the move alone makes
+  `check-no-dutch.sh` and S192 fail and leaves S155, S158 and S164 passing
+  (S155 vacuously: `rm -rf "$clone/wip"` removes nothing). With every "Change"
+  above applied (the two "Held" lines included), `check-no-dutch.sh`, S153, S155,
+  S158, S164, S192, S238, S240, S309, S317, S318, S321, S708 and S713 pass, and
+  the full `./check` passes 513 of 514 cases: only S593 fails, on the two
+  "Held" lines. Leaving those two lines as they are removes that failure.
+  `git grep -nw wip` outside `prep/`, `CHANGELOG.md` and the corpus then prints
+  exactly the "Keep" and "Held" lines.
+- **Test pins (red before green).** [A] The one changed oracle is S155's Given:
+  before removing the directory, assert that the sandbox clone has
+  `prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` as a file, then
+  `rm -rf "$clone/prep"`, then adopt as now. It fails on `main` (no `prep/`) and
+  passes after the move, and it keeps S155 from passing on an absent directory.
+  It is asserted on the sandbox copy, not on `git ls-files`, so a stray
+  untracked file in a developer's `wip/` does not matter. No new scenario ID;
+  S153, S155, S158, S192 and S240 change text only as listed. AC1's "no tracked
+  file under `wip/`" is shown by the PR's `git ls-files wip/` evidence, not by a
+  test, since a test cannot see a squash merge's tree before it exists.
+- **AC consistency.** [A] AC2 names only `wip/<folder>/` links inside `prep/`;
+  this design also changes the `wip/<slug>/` convention text and the bare
+  `wip/` mentions there (a widening, recommended because the A6 sources in
+  `prep/multi-agent-development/` win over `role-contracts` in this repo, so
+  they must name the same directory as the skill). AC4 does not name the two
+  `codex-*.py` fixtures; this design adds them. AC2 ("every remaining match
+  outside `prep/` is a history quote or a branch name") is contradicted by the
+  two "Held" lines under this design's default; which way that resolves is the
+  maintainer's call (keep them stale and narrow AC2, or re-point them and move
+  S593's baseline).
+- **Release carry-over (#607).** [V] The carry-over comment on #607 matches
+  this inventory at `892dec5`: `policy/merge-autonomy.json` 54,
+  `test/fixtures/merge-risk-646.py` 43, `s627_...` 40 (a tar exclude), and
+  `ARCHITECTURE.md` 22 against 4. The release branch adds no file under `wip/`;
+  PR #697's head adds no `wip` text. Additions for that comment are in #713's
+  Architect report (A60 prose naming `wip/**.md` and the `wip/` prefix; history
+  lines that stay). The release policy is `"enabled": false`, so nothing is
+  classified live before #607 merges; the carry-over must be done before it.
+- **Other branches.** [V] Only #697 is open. Nine stale remote branches touch
+  `wip/`, among them `origin/wip/430-acceptance` (adds `wip/430/`, 5 weeks
+  old). They stay as they are; a merge of one into `main` would recreate
+  `wip/`, and the "Violated when" below catches that.
+- **Adopted projects.** [A] `adopt.sh` installs nothing from `wip/` (S155), so
+  no `CHANGES.md` entry: there is no choice to ask. The installed
+  `role-contracts` text changes the co-thinking report location to
+  `prep/<slug>/`; the CHANGELOG entry says adopters need no action and may keep
+  an existing `wip/<slug>/` folder.
+- **Violated when:** a tracked file exists under `wip/`; a line outside
+  `prep/`, `CHANGELOG.md` and `test/fixtures/marker-corpus.jsonl` names `wip/`
+  or the word `wip` as this directory, other than the "Keep" lines and, while
+  the maintainer has not decided otherwise, the two "Held" lines above;
+  inside `prep/` any `wip/` path remains; S155 can pass when the clone has no
+  `prep/`; a generated file changes in this work item.
+
+#### A62 addendum 1 — S593's byte pin admits exactly two documented substitutions; baseline stays `b22b476` (#713) — RESERVED-PROTECTION EDIT
+
+**Decided on 2026-11-20 (Architect, Planning), after the maintainer's decisions.**
+Reviewer attention: this addendum changes a protection that A54 D6 reserves to
+the maintainer (S593's byte pin on `hooks/` and `skills/pre-merge-review/`). The
+maintainer took that decision on 2026-11-20 (D3, the maintainer's words: "I'll take
+option B": re-point `skills/pre-merge-review/SKILL.md` 62 and the comment in
+`hooks/git-guardrails` 783 from `wip/` to `prep/` and move S593's
+byte-protection baseline so S593 still passes; recorded on #713, comment
+7049314322). D1 and D2 were confirmed ("confirm yes"): A62's history/live
+rulings stand, and `skills/role-contracts/SKILL.md` 694 points to
+`prep/<slug>/`. So no maintainer item remains open here; this addendum only
+designs how the baseline moves. A62's text above is not edited; where it says
+"Held" or "this design does not choose it", this addendum supersedes it.
+Tags: [V] verified, [A] Architect decision.
+
+- **Superseded in A62.** [A] The two "Held" lines become "Change" lines. A62's
+  dry-run result "513 of 514, only S593 fails" no longer applies once the
+  fixture change below is in. AC2 stays as written (no live pointer to `wip/`
+  remains), so A62's "AC2 is contradicted" note is void. In "Violated when",
+  the clause about the two "Held" lines is void: those lines must now name
+  `prep/`.
+- **Measured.** [V] On this branch at `35ab498`: `git diff b22b476 HEAD` over
+  every S593-pinned path (`hooks/`, `skills/pre-merge-review/`,
+  `skills/role-contracts/ORCHESTRATOR.md`, `pipeline-override.sh`,
+  `skills/role-contracts/orchestrator-rules.tsv`) is empty, so the pinned bytes
+  are still exactly `b22b476`'s. `git grep -i wip` over that set finds only the
+  two lines. In the `b22b476` bytes, each `old` string below occurs exactly
+  once, each `new` string zero times. `b22b476` is an ancestor of `HEAD` and of
+  `origin/release/607-panel-mechanisms`.
+- **Option 1, chosen: keep `b22b476`, apply an exact documented substitution
+  per path.** [A] The expected bytes for a pinned path are the `b22b476` bytes;
+  for the two paths in a fixed table, they are the `b22b476` bytes with one
+  `old` replaced by `new`, and `old` must occur exactly once at `b22b476`.
+  Everything else in S593 stays: the ancestor check, the digest comparison,
+  the extra-byte mutation for every path. Reasons: the oracle stays a full-file
+  digest, so any other byte change in any pinned file still fails; the two
+  allowed changes are visible as literal bytes in one place; the ancestor
+  check keeps working on `main`, on the release branch and on every later
+  branch. It is also the repository's own precedent: on
+  `release/607-panel-mechanisms`, #685 (A59) admitted one token change in
+  `hooks/agent-dispatch.py` the same way (`old_row`, count 1, replace).
+  Cost: about 20 lines in one fixture function and two sentences in S593; the
+  table must be extended for any future sanctioned change (a deliberate,
+  reviewed step, which is the point).
+- **Option 2, rejected: record a new baseline commit.** [V]/[A] No usable
+  commit exists. `be25d5d` (= `origin/main`) has the same pinned bytes as
+  `b22b476` (empty diff above), so it would still fail on the two lines. A
+  commit on this branch that holds the new lines is lost in the squash merge:
+  it is not an ancestor of `main` afterwards, so "recorded preservation
+  baseline ancestor" would fail on `main` and on every branch cut from it. The
+  squash commit itself has no SHA before the merge, so pinning it needs a
+  second PR, with S593 red or a substitution in between anyway. It would also
+  diverge from the release branch, which still pins `b22b476` with its own
+  substitution. Option 2 costs more and protects less.
+- **Fixture change (`test/fixtures/temporary-panel-645.py`,
+  `preservation_checks` only).** [A] Add at module level, next to the
+  function:
+
+  ```python
+  # A62 addendum 1 (#713, maintainer D3 2026-11-20): the only sanctioned changes
+  # to S593-pinned bytes since the recorded merge base. Exact bytes, one each.
+  SUBSTITUTIONS = {
+      'skills/pre-merge-review/SKILL.md': (
+          b'`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`',
+          b'`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`'),
+      'hooks/git-guardrails': (
+          b'# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md',
+          b'# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md'),
+  }
+  ```
+
+  In the per-path loop, after `baseline` is read: set `expected = baseline`;
+  if the path is in `SUBSTITUTIONS`, check `baseline.count(old) == 1` (label
+  `593/substitution/applies-once-at-merge-base/<path>`) and set
+  `expected = baseline.replace(old, new, 1)`. Build the digest from
+  `expected`, not `baseline`. The positive check "preserved assertion green at
+  merge base" runs on `expected`. "unchanged <path>" and the extra-byte
+  mutation stay as they are. For the two table paths only, add three
+  mutations with `rejects(oracle, actual, mutant, label)`:
+  1. unapplied: `mutant = baseline` (old pointer kept), label
+     `593/substitution/unapplied/<path>`;
+  2. wrong substitution: `mutant = baseline.replace(old,
+     new.replace(b'prep/', b'prop/'), 1)`, label
+     `593/substitution/wrong/<path>`;
+  3. third substituted line: `mutant = actual.replace(b'main', b'prep', 1)`
+     (a further, undocumented substitution on another line of the same file;
+     `main` occurs 2 and 33 times there, never on the substituted line), label
+     `593/substitution/third-line/<path>`.
+  After the loop, check that every `SUBSTITUTIONS` key is among the pinned
+  `paths` (label `593/substitution/paths-pinned`), so a stale entry cannot sit
+  unused. No other function, constant or base SHA changes. [V] A scratch
+  simulation of this oracle against `b22b476` bytes: the line-only edit
+  `wip/` to `prep/` is accepted for both paths; unapplied, extra byte, wrong
+  substitution and third line are each rejected.
+- **S593 text (`TEST-SCENARIOS.md`).** [A] Text only, no new scenario ID and
+  no change to Covers. In When, after "compare the enumerated core/gate/hook
+  bytes and posting/validation relations to the recorded merge base", add:
+  "except two documented substitutions (A62 addendum 1, #713): in
+  `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact
+  `wip/` path becomes `prep/`; the expected bytes are the merge-base bytes
+  with that substitution applied, and its old text must occur exactly once at
+  the merge base". Change "Preserved assertions must first pass on the
+  recorded merge base" to "Preserved assertions must first pass on the
+  recorded merge base, with the documented substitutions applied". In
+  Mutation controls, after "alter one protected core/gate/hook byte", add
+  "leave a documented substitution unapplied, apply it with different bytes,
+  or substitute a further line". Then and Falsifier are unchanged.
+- **Release branch.** [A] The release branch's `preservation_checks` already
+  has the `hooks/agent-dispatch.py` substitution inline. When #607 syncs with
+  `main`, that entry joins `SUBSTITUTIONS` as a third documented entry (its
+  `old_row`/new row bytes, same count-1 check); that is a resolution of the
+  sync, owned by that branch's roles and its fresh Review, not part of #713.
+  Add this sentence to the #607 carry-over list (A62 "Release carry-over").
+- **Not widened.** [V] S593 lists pinned paths from the current tree, so
+  deleting a pinned file is not seen by this function (other cases may see
+  it); adding one fails `git show` and so fails S593. That gap predates #713,
+  and this addendum does not change it.
+- **Files QA touches (updated).** A62's list, plus
+  `test/fixtures/temporary-panel-645.py` (the change above, red first: with
+  the table in and the two lines still `wip/`, "unchanged
+  skills/pre-merge-review/SKILL.md" and "unchanged hooks/git-guardrails" fail)
+  and S593's text in `TEST-SCENARIOS.md`.
+- **Files the Developer touches (updated).** A62's list, plus
+  `skills/pre-merge-review/SKILL.md` 62 and `hooks/git-guardrails` 783 (`wip/`
+  becomes `prep/` on that line only, nothing else in either file). Still never
+  touched: `test/cases/s164_*`, `test/fixtures/marker-corpus.jsonl`, any
+  generated file. The Developer does not edit the fixture.
+- **AC consistency.** [A] AC2 holds as written. AC4's list gains
+  `temporary-panel-645.py` (a pinned-path baseline, not a `wip` exclusion).
+  No other AC changes.
+- **Violated when:** a pinned file under `hooks/` or
+  `skills/pre-merge-review/` differs from `b22b476` in any byte other than the
+  two table substitutions; `SUBSTITUTIONS` has an entry not recorded in an
+  `ARCHITECTURE.md` decision; S593's base SHA changes in this work item; any
+  of the three substitution mutations or the extra-byte mutation passes.
+
+#### A62 addendum 2 — Release sync adds A59's role-row substitution to S593 (#719) — RESERVED-PROTECTION EDIT
+
+**Decided on 2026-11-23 (Architect, Planning).** Reviewer and maintainer attention:
+this reconciles S593's reserved byte protection on `hooks/` and
+`skills/pre-merge-review/` at the sync of `main` into
+`release/607-panel-mechanisms`. A62 addendum 1 recorded exactly two #713
+pointer substitutions for `main` on 2026-11-20. A59 (#685 Part A) separately
+sanctioned the release branch's one role-name token change in
+`hooks/agent-dispatch.py`; the sync combines those histories, so the release
+branch now has three documented substitutions. The recorded merge base remains
+`b22b4760fa3dcfd79a1c2557899bd735c6fafefc` and must not move.
+Addendum 1's "exactly two" remains the decided #713 record; this branch's
+combined count is three under addenda 2 and 3, which supersede that count here.
+
+- **Exact S593 table on this release branch.** [V] These are the three
+  `old` → `new` byte pairs in `test/fixtures/temporary-panel-645.py`:
+
+  ```python
+  SUBSTITUTIONS = {
+      'skills/pre-merge-review/SKILL.md': (
+          b'`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`',
+          b'`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`'),
+      'hooks/git-guardrails': (
+          b'# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md',
+          b'# prep/multi-agent-rollout/META-REVIEW-PILOT-3.md'),
+      'hooks/agent-dispatch.py': (
+          b'("Fullstack Developer", "Developer", "Implementation")',
+          b'("Developer", "Developer", "Implementation")'),
+  }
+  ```
+
+  Each old byte string must occur exactly once in that path at the recorded
+  merge base. For each path, S593 compares the whole-file digest of the
+  merge-base bytes with only its documented substitution applied; all other
+  pinned bytes remain protected. The existing unapplied, wrong-byte,
+  further-line and unpinned-path controls apply to all three entries.
+- **AC consistency.** [A] No AC is contradicted or narrowed. This addendum
+  reconciles the already sanctioned A59 and A62 addendum 1 changes; it adds
+  no new substituted bytes, path or exception. Reviewer and maintainer must
+  assess the combined reserved-protection edit before release.
+- **Violated when:** S593 accepts any additional changed byte or substitution,
+  omits one of these three entries, or changes its recorded merge base; or
+  S593 and the CHANGELOG still describe only the #713 pair as the current
+  release-branch rule.
+
+**QA: replace S593's `except ... does not move` parenthetical clause verbatim with:**
+
+> except three documented substitutions (A62 addenda 1–2, #713/#719): in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, one exact `wip/` path becomes `prep/` in each; in `hooks/agent-dispatch.py`, `("Fullstack Developer", "Developer", "Implementation")` becomes `("Developer", "Developer", "Implementation")`; the expected bytes are the merge-base bytes with that path's documented substitution applied, each old text must occur exactly once at the merge base, each substituted path must be pinned, and the recorded merge base itself does not move
+
+**Product:** In the #713 CHANGELOG bullet, keep only its two `wip/` to `prep/`
+pointer substitutions and the unchanged S593 merge base. Put the combined
+three-substitution fact, including A59's `hooks/agent-dispatch.py` role-row
+change, in the release's own entry or use neutral wording outside the #713
+bullet. Do not say "this release branch" in #713's entry; wrap the lines.
+
+#### A62 addendum 3 — Reconcile the #713 role-contract bytes and S709's release baseline after the #719 sync — RESERVED-PROTECTION EDIT
+
+**Decided on 2026-11-23 (Architect, Planning).** Reviewer and maintainer attention:
+the #719 sync (PR #725; merge parents `892dec5` and `4dd1325`) combines
+#713's two `wip/` to `prep/` edits in
+`skills/role-contracts/SKILL.md` with the release's #646 and #707 guards. This
+addendum changes their protected-byte expectations, not the protected files or
+the checks' fail-closed behavior. No AC is contradicted or narrowed.
+
+- **S626 and S659, one shared substitution.** [V] Both assertions in
+  `test/fixtures/merge-risk-646.py` read the complete file from
+  `51178851a1f6fba76e87d046788339c02f874f03` (`A`). `git diff A HEAD --
+  skills/role-contracts/SKILL.md` shows exactly two #713 lines and no other
+  changes. Keep `A` unchanged. For this path alone, require each old byte string
+  below to occur exactly once in `git show A:skills/role-contracts/SKILL.md`,
+  replace it once, then compare the entire resulting byte string to the current
+  file in **both** S626 and S659. All other S659 files retain direct equality
+  to `A`; every other S626 assertion remains. A missing or duplicate old string
+  fails closed, as does any third changed byte. The two pairs are:
+
+  ```python
+  (b'under `wip/multi-agent-development/`, not in your',
+   b'under `prep/multi-agent-development/`, not in your')
+  (b'issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)',
+   b'issue/PR comment (or a `prep/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)')
+  ```
+
+  Use one fixture helper to construct the expected bytes for this path; both
+  assertions call it so their meanings cannot drift. Add controls that reject
+  the unmodified `A` bytes and either one-substitution-only result, as well as
+  an extra changed byte. This follows addendum 2's exact substitution pattern;
+  it does not permit arbitrary role-contract edits.
+- **Pin availability.** [V] `A` was unreachable from any ref, so CI could not
+  read its `git show` objects. On 2026-11-23 the maintainer published
+  `origin/archive/646-pin-5117885`, which contains `A`; the S626, S627 and
+  S659 pins depend on that archive branch remaining available to CI.
+- **S709, release baseline.** [V] The check at `test/cases/s709_route_docs.sh`
+  240–246 uses `git merge-base HEAD origin/main`, now `4dd1325`, although
+  `skills/role-contracts/ORCHESTRATOR.md` and
+  `test/behavior/orchestrator-scenarios.md` had sanctioned release edits before
+  the sync. `git diff 892dec572cb6232853ef28cb2d8d5fe4bfdc3499 HEAD --`
+  the three guarded paths is empty; `892dec5` is the merge's first parent.
+  Keep all three `git diff --quiet` checks. Compare against that fixed
+  first-parent SHA only when it is an ancestor of `HEAD`, `origin/main` is
+  available, and the ancestor check against `origin/main` returns 1 (it is
+  **not** an ancestor); another error does not select the fixed base. This limits the
+  fixed comparison to the release integration period. Once `origin/main`
+  contains the release base, or on a branch without that base, use the
+  existing `git merge-base HEAD origin/main` comparison. If `origin/main` is
+  unavailable, keep the existing unavailable-base message and skip only this
+  comparison; `stamp-check` still runs. The routing-term scan stays unchanged.
+  This permits future sanctioned changes on `main` and branches cut from it
+  while retaining protection on the pre-integration release descendants. Do
+  not use `HEAD^1`, which would move the baseline after any later commit.
+- **Violated when:** either S626 or S659 accepts the old, partial or any
+  additionally changed role-contract bytes; their `A` moves; S709 skips one
+  of its three comparisons, uses a moving release baseline before integration,
+  or keeps the fixed baseline after `origin/main` contains it. The Reviewer and
+  maintainer must assess this reserved-protection edit before release.
+
+**QA handoff.** In `test/fixtures/merge-risk-646.py` near 1192–1199, add the
+two literal byte pairs above and a count-1, two-step substitution helper for
+`skills/role-contracts/SKILL.md`; use its expected bytes in both S626 and S659,
+with the negative controls stated above. In `test/cases/s709_route_docs.sh`
+near 240, keep `release_base=892dec572cb6232853ef28cb2d8d5fe4bfdc3499`.
+Set `base_ref="$release_base"` only if `origin/main` resolves,
+`git -C "$R" merge-base --is-ancestor "$release_base" HEAD` succeeds, and
+`git -C "$R" merge-base --is-ancestor "$release_base" origin/main` exits 1
+(not an ancestor); any other exit uses the existing fallback.
+Otherwise set `base_ref` from the existing
+`git -C "$R" merge-base HEAD origin/main 2>/dev/null` command. Leave the
+three-path loop, unavailable-base diagnostic, stamp check and routing scan
+intact. On a scratch pre-integration branch, alter one guarded file and
+re-pin the stamp/S548 as needed: S709 must still reject the real change with
+"changed against the merge base". In a scratch post-integration state where
+`origin/main` contains the release base and equals the changed `HEAD`, the
+same comparison must use `HEAD` and not reject that sanctioned change. Also
+update S626's baseline table and its Then/Falsifier in `TEST-SCENARIOS.md`:
+`skills/role-contracts/SKILL.md` equals the entire `A` file after exactly the
+two count-1 substitutions above, not unchanged `A` bytes; old, either partial
+result and an extra changed byte fail. Restore the blank line before
+`## Model routing for process-launched children (#707; F75)`.
+Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
+`bash test/cases/s659_merge_risk_floor_vendor_fail_closed.sh`, and
+`bash test/cases/s709_route_docs.sh` must each pass after the changes; then
+`./check` must be green (the independent S569 timeout passes alone).

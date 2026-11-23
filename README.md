@@ -12,6 +12,7 @@ A tag is a human reference point: an adopted project follows `main` or pins a ta
 
 | Tag | Date | Theme |
 |---|---|---|
+| `v0.7.0` | 2026-11-19 | Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. |
 | `v0.6.0` | 2026-11-04 | Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. |
 | `v0.5.1` | 2026-11-03 | Many low severity review findings resolved. See CHANGELOG.md for the improvements made |
 | `v0.5.0` | 2026-10-26 | Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages |
@@ -99,7 +100,7 @@ adopting anything, to a BA/PO/PM who wants the UAT trail described above.
 
 Not a replacement for a team's existing review process, and not a team tool as shipped — it
 was built for the author's own solo projects (see `USER-CLAUDE.md`). A Claude Code plugin
-conversion aimed at non-engineer adoption is in progress (epic #282, `wip/claude-code-plugin/`)
+conversion aimed at non-engineer adoption is in progress (epic #282, `prep/claude-code-plugin/`)
 but not shipped.
 
 ## What it costs, and where it doesn't hold
@@ -130,6 +131,11 @@ Stated up front rather than discovered later:
 Prerequisites: `git`, and the GitHub CLI (`gh`) installed and authenticated
 (`gh auth login`) — scripts call `gh` directly and fail partway through, not up front, if it
 isn't.
+
+The Caveman CLI is optional. It is needed only for `route-child.sh` and the
+`process-model-routing` opt-in (routing is opt-in per project); without it nothing
+else in the workflow changes. The installed and tested version is 4.1.0
+(`bin-v4.1.0`); see [`docs/model-routing.md`](docs/model-routing.md).
 
 **Pin a specific release** (recommended unless you want to follow `main` as it changes):
 
@@ -319,7 +325,7 @@ Which release this would land in was deliberately left as an open question in th
 not to be answered until the pipeline had run end-to-end on a real work item. That run
 happened on 2026-09-30 (#328, all five roles, with genuine findings caught and fixed at every
 stage) and settled it: v0.2.0. The full design record lives in
-`wip/multi-agent-development/`.
+`prep/multi-agent-development/`.
 
 **Adopting it.** `adopt.sh` symlinks the `role-contracts` skill into every adopted project
 like any other skill. Whether the project actually follows the pipeline is the opt-in
@@ -450,7 +456,7 @@ dogfooding the mechanism it specifies.
 | `compliance-evidence.sh`, `role-label-staleness.sh`, `classify-review-depth.sh` | The multi-agent evidence scripts described in [How this repo builds itself](#how-this-repo-builds-itself). |
 | `ARCHITECTURE.md`, `PRD.md`, `TEST-SCENARIOS.md`, `CONTEXT.md`, `WORKFLOW-ADOPTION.md`, `CHANGELOG.md` | This repo's own filled-in copies — it adopts the workflow it defines. |
 | `test/` | This repo's own test suite (`run.sh`, `lib.sh`, `cases/`, `fixtures/`). |
-| `wip/<slug>/` | Thinking done before a decision, for a new product or release (a "co-thinking session": Orchestrator + Product + Architect only). Directional until explicitly accepted, then promoted into a real epic; kept afterward as a record. Examples: `wip/multi-agent-development/` (epics #65/#295, released as v0.2.0) and `wip/claude-code-plugin/` (epic #282). |
+| `prep/<slug>/` | Thinking done before a decision, for a new product or release (a "co-thinking session": Orchestrator + Product + Architect only). Directional until explicitly accepted, then promoted into a real epic; kept afterward as a record. Examples: `prep/multi-agent-development/` (epics #65/#295, released as v0.2.0) and `prep/claude-code-plugin/` (epic #282). |
 
 </details>
 

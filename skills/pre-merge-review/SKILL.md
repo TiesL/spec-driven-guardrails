@@ -59,7 +59,7 @@ thorough (<matched categories, or "forced"/"lookup-failed">)`. It
 classifies by matching the PR's changed-file paths and its own title+body
 against Reviewer's existing six security-review trigger categories
 (above) — no new taxonomy, no size/files-touched dimension (A13 in
-`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly
+`prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly
 rejected the latter). Pass `--force-thorough` to opt a specific real PR
 into thorough mode regardless of what the categories say — a manual
 override for dogfooding this mechanism before issue #307 decides on any

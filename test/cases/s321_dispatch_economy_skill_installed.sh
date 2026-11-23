@@ -60,7 +60,7 @@ assert_ids_equal "S321/R2-consistency" "$exp" "$act"
 # Negative control: the skill renamed in a copy gives no symlink.
 cp_repo="$SANDBOX/copy"
 mkdir -p "$cp_repo"
-(cd "$R" && tar --exclude='./.git' --exclude='./wip' -cf - .) | (cd "$cp_repo" && tar -xf -)
+(cd "$R" && tar --exclude='./.git' --exclude='./prep' -cf - .) | (cd "$cp_repo" && tar -xf -)
 mv "$cp_repo/skills/dispatch-economy" "$cp_repo/skills/dispatch-economy-renamed"
 p2="$(fresh_project p2)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$cp_repo" "$cp_repo/adopt.sh" "$p2" >/dev/null 2>&1

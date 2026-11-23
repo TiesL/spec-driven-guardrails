@@ -51,7 +51,7 @@
     ],
     "contracts": [
       "skills/role-contracts/**",
-      "wip/multi-agent-development/**",
+      "prep/multi-agent-development/**",
       "policy/WORKFLOW.md",
       "adapters/**",
       "generate-workflow-adapters.sh",

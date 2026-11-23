@@ -37,7 +37,7 @@ esac
 
 clone() { # dest
   mkdir -p "$1"
-  (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./wip' --exclude='./CLAUDE.md' \
+  (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./prep' --exclude='./CLAUDE.md' \
     --exclude='./.claude/settings.json' --exclude='./.claude/skills' --exclude='./.handoff' --exclude='./REPORT.md' -cf - .) | (cd "$1" && tar -xf -)
 }
 
