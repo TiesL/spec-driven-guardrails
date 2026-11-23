@@ -40,7 +40,7 @@ STOP_PATTERNS = {
  'execution': ['hooks/**', 'settings/**', '.claude/**', '.codex/**', '.agents/**', 'session-context.sh', 'pending-changes.sh',
                '.gitattributes', '.gitmodules'],
  'ci': ['.github/workflows/**', '.github/actions/**', 'templates/ci.yml', 'epic-auto-close.sh'],
- 'contracts': ['skills/role-contracts/**', 'wip/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
+ 'contracts': ['skills/role-contracts/**', 'prep/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
                'generate-workflow-adapters.sh', 'AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', 'ORCHESTRATOR.md',
                'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'adopt.sh', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
                '**/AGENTS.md', '**/AGENTS.override.md', '**/CLAUDE.md', '**/ORCHESTRATOR.md']}
@@ -1178,6 +1178,19 @@ mutate(675,'qualification','qualification-source-missing')
 
 
 # Structural observations are explicitly separate from actual model/runtime runs.
+def role_contracts_expected():
+    original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':skills/role-contracts/SKILL.md'])
+    expected=original
+    for old,new in (
+        (b'under `wip/multi-agent-development/`, not in your',
+         b'under `prep/multi-agent-development/`, not in your'),
+        (b'issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)',
+         b'issue/PR comment (or a `prep/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)')):
+        check(expected.count(old)==1,'role-contracts pin substitution count')
+        expected=expected.replace(old,new,1)
+    return expected
+
+
 def structure_assert(root,scenario):
     skill=(root/'skills/merge-risk-panel/SKILL.md').read_bytes()
     review=(root/'skills/merge-risk-panel/RISK-REVIEW.md').read_bytes()
@@ -1189,12 +1202,12 @@ def structure_assert(root,scenario):
         check(b'not an import' in skill,'link-as-import limitation')
         for data in (skill,review):
             check(b'TiesL/spec-driven-guardrails' not in data and b'#607' not in data,'generic procedure contains instance identity')
-        original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':skills/role-contracts/SKILL.md'])
-        check((root/'skills/role-contracts/SKILL.md').read_bytes()==original,'role-contracts B constraint')
+        check((root/'skills/role-contracts/SKILL.md').read_bytes()==role_contracts_expected(),'role-contracts B constraint')
     if scenario=='659':
         # B subset: the ordinary floors, model selection and the effort-free marker are untouched.
         for path in ('skills/role-contracts/SKILL.md','lib/model-record.sh','skills/pre-merge-review/model-record-emit.sh','skills/model-choice/SKILL.md'):
-            original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':'+path])
+            original=(role_contracts_expected() if path=='skills/role-contracts/SKILL.md' else
+                      subprocess.check_output(['git','-C',str(ROOT),'show',A+':'+path]))
             check((root/path).read_bytes()==original,'ordinary floor/marker source changed: '+path)
         marker=subprocess.run(['bash',str(root/'skills/pre-merge-review/model-record-emit.sh'),'--role','Developer','--stage','Implementation',
                                '--model','lab-x-1'],capture_output=True,text=True)

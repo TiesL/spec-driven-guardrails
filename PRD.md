@@ -1347,7 +1347,7 @@ What an adopted project can do afterwards:
   skill. Every pointer in it resolves from an adopted project: methods it
   relies on are named as installed skills (`grilling`,
   `codebase-design`, `model-choice`, `tdd-seams`, `pre-merge-review`),
-  not as paths into this repo's `wip/.../vendor/`; anything that does
+  not as paths into this repo's `prep/.../vendor/`; anything that does
   stay in this repo (the WIP design sources, used only to settle a
   dispute about a contract's intent) is named as living in the clone
   `SPEC_DRIVEN_GUARDRAILS_DIR` points at. The human who receives
@@ -2750,6 +2750,106 @@ loaded-policy pointers. No full procedure in core; preserve #530/#652 budgets,
 generated-source discipline and the four pinned core/stamp bytes. #679 owns
 meaning-version readoption/default activation guidance. Static links/loading
 claims do not establish live obedience, qualification or acceptance.
+
+### F75 — Route process-launched model children through the Caveman proxy (issue #707)
+
+**Serves:** #707 AC1–AC12.
+One wrapper, `route-child.sh <claude|codex> -- <command> [args...]`, owns
+routing for a pipeline stage launched as a separate model process. The
+Orchestrator session, the behavior runner, and in-session Agent-tool and
+`spawn_agent` subagents (which share their parent's endpoint and are not
+routable) stay direct. The wrapper owns the route URLs, the opt-in, the
+off switch, the checks, the proxy probe and the pass-through header; no other
+tracked SDG file assigns `ANTHROPIC_BASE_URL`, contains the proxy address
+or a transform header, or writes user-level or adopted-project settings.
+
+Usage checks run first, in every mode: the first word must match the
+runtime and, for Codex, the second word must be exactly `exec`; otherwise exit
+2. Routing is on only when the project's adoption answer for
+`process-model-routing` is yes (read through `answered_yes`; the row is
+offered where `uses-multi-agent-roles` holds, `Reaches session: none`). The
+environment variable `SDG_MODEL_ROUTE=off` (exact, lowercase) can only turn
+routing off for one run, any other value being ignored with one stderr line: a
+Claude child then gets no routing variable, a Codex child goes directly to
+OpenAI through a per-run `-c 'model_provider="openai"'` override placed after
+`exec`. With routing on, the wrapper refuses (exit 4, naming the cause) when
+the inherited `ANTHROPIC_BASE_URL` is set to anything but exactly
+`https://api.anthropic.com` (empty and trailing slash included), when the
+inherited `ANTHROPIC_CUSTOM_HEADERS` already has an `x-cave-transforms` header
+(name compared case-insensitively; the message names the variable, not its
+value), when a settings file the child would load, or an inline `--settings`,
+has under `env` any of the five variables the wrapper adds (`ANTHROPIC_BASE_URL`,
+`_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL`, `NO_PROXY`, `no_proxy`,
+`ANTHROPIC_CUSTOM_HEADERS`) with any value, or is unreadable, empty or not a
+JSON object (the message names the file and the key, not the value), when the
+platform is neither macOS nor Linux, or when the Codex config does not route
+through Caveman: the effective provider (the `model_provider` of the profile
+selected by the top-level `profile` key when it sets one, else the top-level
+key) is not `caveman`, a `profile` names no profile table, or the `caveman`
+provider already sets `http_headers` or `env_http_headers`, in any TOML form
+(table, dotted key, inline table), or the Codex `$CODEX_HOME/.env` (default
+`~/.codex/.env`), which Codex loads over the inherited environment, assigns
+`NO_PROXY` or `no_proxy` with any value (empty included) or cannot be read (the
+message names the file and the key, not the value; the `.env` is read only with
+routing on, so under `SDG_MODEL_ROUTE=off` and not-yes it never refuses). A
+Codex command argument after `exec` (up
+to a lone `--`) from the documented list also refuses, naming the argument:
+`--profile`, `-p`, `--oss`, `--local-provider`, `--ignore-user-config`, and
+`-c`/`--config` whose key's first dotted segment is `model_provider`, `model_providers`, `profile`, `profiles`, `openai_base_url` or `chatgpt_base_url`; each in its separate, `=` and, for `-p`/`-c`, attached form (the list is closed and pinned to codex-cli 0.166.0;
+other versions unverified, accepted like AC8). The wrapper refuses with exit 3
+and a clear message when the proxy probe does not exit 0 (only an answer counts
+as up). There is no silent direct fallback.
+
+On a routed Claude child the wrapper makes exactly five additions: the base
+URL, the first-party flag, the loopback on `NO_PROXY` and on `no_proxy`, and the
+pass-through header, each of `NO_PROXY`, `no_proxy` and
+`ANTHROPIC_CUSTOM_HEADERS` appended to its own inherited value. A routed Codex
+child gets exactly two additions, the loopback on `NO_PROXY` and on `no_proxy`,
+each appended to its own inherited value, so an inherited `http_proxy`,
+`HTTPS_PROXY` or `ALL_PROXY` cannot divert the child's loopback request to an
+outside proxy; under `SDG_MODEL_ROUTE=off` the Codex child gets no environment
+change. The proxy probe runs with the same two values, so an inherited proxy
+variable cannot make a down proxy read as up.
+
+Under `SDG_MODEL_ROUTE=off` a Codex command with an argument of that list, an
+unparsable `config.toml`, a `config.toml` that sets `openai_base_url` or
+`chatgpt_base_url` (top level or selected profile), or a top-level `profile` selecting a profile whose
+`model_provider` is not `openai` also exits 4, without a probe, because it
+would otherwise be routed while `off` promises direct; a missing `config.toml`
+passes.
+
+Not-yes means the wrapper does nothing, and the requirement says so in every
+place that mentions opting out. With the answer no, pending or absent the child
+runs unchanged: a Claude child is as direct as its parent environment, and a
+Codex child follows the user's own `config.toml`, so it is routed through the
+proxy in compress mode, without the pass-through header, whenever that config
+selects the Caveman provider. Answering `no` opts out of the wrapper's routing
+and its pass-through header, not out of compression. The exit-3 message, the
+`CHANGES.md` row and `docs/model-routing.md` must not present `no` as sending
+children direct or keeping their text uncut. Only `SDG_MODEL_ROUTE=off` under a
+yes answer sends a Codex child direct (decision 4); making not-yes Codex
+children direct or pass-through is not part of F75 and would need a new
+maintainer decision, since it changes what the opt-in answer controls.
+
+The routed child sends its credential (OAuth bearer or API key) over plain HTTP
+to whatever process answers on 127.0.0.1:8787; the probe is a bare request with
+no credential and does not identify Caveman. The maintainer accepted this risk
+(M1, option A); `docs/model-routing.md` discloses it, and the wrapper does not
+verify the listener's identity.
+
+Every routed child, Claude and Codex, carries the pass-through header
+`x-cave-transforms: caveman.pass-through.v1`, so it is metered but its text
+arrives uncut; allowing compression for children needs a later explicit
+decision by the maintainer. For the Claude runtime only, `session-context.sh`
+prints one fixed warning line (at most 160 characters, no path or value) when
+the main session looks routed, reading the environment and the user and
+project settings files directly, failing open. No session text tells the
+Orchestrator to use the wrapper; that instruction is handed to #640. The behavior
+runner refuses an inherited non-first-party `ANTHROPIC_BASE_URL`. A note in
+`docs/model-routing.md` (not `ORCHESTRATOR.md` or `WORKFLOW.md`) states the
+limits. The wrapper runs on macOS `/bin/bash` 3.2 without a `timeout`
+binary and reads JSON with `python3 -I`. A live smoke test through the real
+proxy (AC12) is separate from the offline tests.
 
 ## Non-functional characteristics
 

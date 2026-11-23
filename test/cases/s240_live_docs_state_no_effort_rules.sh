@@ -11,7 +11,7 @@
 #   PRD.md           the sections `### F39 ...` and `### F40 ...`
 #   skills/role-contracts/ORCHESTRATOR.md   the whole file
 # NOT in scope: A25 (already marked superseded as a whole), A27, A33, A33a,
-# the Technical debt register (S238), CHANGES*.md, wip/, test/. They may
+# the Technical debt register (S238), CHANGES*.md, prep/, test/. They may
 # discuss effort freely.
 #
 # ORACLE (not a phrase list for the old rules): the text is cut into units, a

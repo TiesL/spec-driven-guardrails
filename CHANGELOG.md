@@ -24,6 +24,30 @@ point.
   decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
   contract text, is reserved to the maintainer.
 - #681: Widen the reserved contract-text class to `templates/`, `CHANGES.md` and `USER-CLAUDE.md`, by repository path (maintainer decision of 2026-11-08; no meaning-version bump).
+- #713: Rename the tracked `wip/` directory (co-thinking sources such as
+  `wip/multi-agent-development/`) to `prep/`, so that `wip/` keeps one meaning:
+  the #706 branch prefix. Live pointers, test exclusions and the
+  `prep/<slug>/` co-thinking report convention in the installed `role-contracts`
+  skill now name `prep/`; history quotes (old locations in past tense, this
+  changelog) keep `wip/`. S593's byte pin on `hooks/` and `skills/pre-merge-review/` admits three documented substitutions on this release branch: the `wip/` to `prep/` pointer on one line each in `skills/pre-merge-review/SKILL.md` and `hooks/git-guardrails`, and the A59 role-row change in `hooks/agent-dispatch.py` from `("Fullstack Developer", "Developer", "Implementation")` to `("Developer", "Developer", "Implementation")`; its merge base does not move. Adopters need no
+  action: `adopt.sh` installs nothing from this directory, and a project may
+  keep an existing `wip/<slug>/` folder of its own.
+
+## v0.7.0 — Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. (2026-11-19)
+
+- #707: `route-child.sh` routes a model child launched as a separate process
+  (`claude -p`, `codex exec`) through the local Caveman proxy with a
+  pass-through header (metered, text uncut), opted in per project through the
+  new `process-model-routing` row and switched off per run with
+  `SDG_MODEL_ROUTE=off`; it refuses instead of falling back (exit 3 proxy down;
+  exit 4 routed parent, an inherited transform header, a settings file that
+  sets any of the five child variables, or a Codex config, profile or command
+  argument that would not take the Caveman provider, also under `off`). The
+  Orchestrator session, in-session subagents and the behavior runner stay
+  direct; the runner now refuses an inherited non-first-party
+  `ANTHROPIC_BASE_URL`, and the Claude session start warns once when the main
+  session looks routed. See `docs/model-routing.md`; the live smoke test
+  passed on 2026-11-19 against Caveman 4.1.0 (`bin-v4.1.0`).
 
 ## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
 

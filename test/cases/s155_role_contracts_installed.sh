@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# S155 — adopt.sh installs role-contracts as a skill, with no wip/ file needed.
+# S155 — adopt.sh installs role-contracts as a skill, with no prep/ file needed.
 # Covers: F37
 #
 # Issue #369, AC1. Seam: adopt.sh's own output in a fresh project (the
 # .claude/skills/ symlink it leaves behind), never adopt.sh's internals.
-# The clone is a sandbox copy with its wip/ directory deleted, so a skill
-# that only works while wip/ exists can't pass by accident.
+# The clone is a sandbox copy with its prep/ directory deleted, so a skill
+# that only works while prep/ exists can't pass by accident. Issue #713 (A62):
+# the directory was renamed from wip/; the removal is asserted to remove
+# something, so the scenario cannot pass on an absent directory.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -15,14 +17,18 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a guardrails clone without any wip/ content, and a fresh project.
+# Given: a guardrails clone without any prep/ content, and a fresh project.
 clone="$(sandbox_copy_repo clone)"
-rm -rf "$clone/wip"
+marker="$clone/prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md"
+if [ ! -f "$marker" ]; then
+  fail "S155 — the sandbox clone has no prep/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md before the removal, so removing prep/ would remove nothing"
+fi
+rm -rf "$clone/prep"
 project="$(fresh_project adopter)"
 
 # When: the project adopts the workflow from that clone.
 if ! SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >"$SANDBOX/adopt.log" 2>&1; then
-  fail "S155 — adopt.sh failed on a clone without wip/:"
+  fail "S155 — adopt.sh failed on a clone without prep/:"
   cat "$SANDBOX/adopt.log" >&2
 fi
 

@@ -26,7 +26,7 @@ not a new decision.
 
 **Provenance.** The design sources for these contracts (the multi-agent PRD and architecture
 documents and the workflow summary) live in the `spec-driven-guardrails` clone that
-`SPEC_DRIVEN_GUARDRAILS_DIR` points at, under `wip/multi-agent-development/`, not in your
+`SPEC_DRIVEN_GUARDRAILS_DIR` points at, under `prep/multi-agent-development/`, not in your
 project. Read them only to settle a dispute about what a contract was meant to say; the
 contracts below are complete enough to dispatch a role without them. In the guardrails repo
 itself the source documents win over this file. An adopted project treats this skill as
@@ -692,7 +692,7 @@ between roles is expected, not a model failure — it escalates, it doesn't get 
 **Every role's write/action scope also includes its own stage report.** Each of the five
 Write/action scope clauses above names that role's *deliverable* artifact only; every role,
 in addition, may always write the report recording its own stage's findings and evidence — an
-issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)
+issue/PR comment (or a `prep/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)
 — regardless of whether that role's own deliverable list above happens to mention comments
 explicitly. Stated once, here, cross-role, rather than repeated in each of the five clauses
 above (repeating it five times is exactly the duplication this file's single-document shape is
