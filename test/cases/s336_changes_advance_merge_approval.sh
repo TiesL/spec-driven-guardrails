@@ -33,7 +33,8 @@ grep -q '^- \*\*Reaches session:\*\* always-loaded: WORKFLOW.md' <<<"$entry" || 
 grep -q '^- \*\*PR:\*\* https://' <<<"$entry" || fail "S336 — no PR link"
 
 # The advance-approval slice leaves meanings unchanged. The separately approved
-# #663 exceptions are process-multi-agent-roles v3 and release-branch-workflow v2; retain all other pins.
+# #663 exceptions were process-multi-agent-roles v2 -> v3 and release-branch-workflow v2.
+# #679 separately approves process-multi-agent-roles v3 -> v4; retain all other pins.
 base_ref="$(git -C "$R" merge-base HEAD origin/main 2>/dev/null)"
 if [ -n "$base_ref" ]; then
   python3 - "$R" "$base_ref" <<'PY_CHECK' || fail "S336 — unapproved Meaning version change"
@@ -47,9 +48,9 @@ new = versions((pathlib.Path(root) / 'CHANGES.md').read_text())
 key = 'process-multi-agent-roles'
 previous, current = old.pop(key), new.pop(key)
 assert len(current) == 1
-assert re.match(r'- \*\*Meaning version:\*\* 3 — #647 stage-selection rules and #651 epic stage inheritance$', current[0])
-if previous != current:  # Before #663 merges, only its approved v2 -> v3 delta is allowed.
-    assert len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* 2(?: |$)', previous[0])
+assert re.match(r'- \*\*Meaning version:\*\* 4 — .*#645.*#646.*', current[0])
+if previous != current:  # Historical #663 v2 -> v3 and #679 v3 -> v4 deltas.
+    assert len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* [23](?: |$)', previous[0])
 key = 'release-branch-workflow'
 previous, current = old.pop(key, []), new.pop(key, [])
 assert len(current) == 1 and re.match(r'- \*\*Meaning version:\*\* 2 — .+', current[0])

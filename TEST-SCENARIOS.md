@@ -3771,7 +3771,7 @@ something new is being added.
 - When: the entries and rows are read, and `pending-changes.sh <project>` runs
 - Then: `quality-review-before-merge` is at Meaning version 4 (its text is
   S191), `process-model-choice` at 2 and `process-multi-agent-roles` at
-  3 (#663 stage-selection/inheritance, retaining #427 guard slice, S265); the `process-model-choice` entry cites
+  4 (#679 temporary-decision and conditional merge-delegation obligations, retaining #663 stage-selection/inheritance and #427 guard slice, S265); the `process-model-choice` entry cites
   #424 and #413, says in its Meaning version note that effort is no longer
   recorded, and its "Yes means" says the floor is judged on the model and
   effort is neither chosen nor checked, that the same model at a lower effort
@@ -4545,11 +4545,11 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   pending-changes CLI with fixture adopters answered at old/current meaning.
 - When: document contract tests read those sections and
   `pending-changes.sh <fixture-project>` runs.
-- Then: process-multi-agent-roles is Meaning version 3 (#663), its “Yes means” names
+- Then: process-multi-agent-roles is Meaning version 4 (#679), its “Yes means” names
   refusal of inline-only records and `<`/`>` override values, and own adoption
   row retains the historical #427 v2 reconfirmation. Old v1 (implicit or explicit)
-  and v2 fixture adopters resurface as meaning changed to v3; current v3 is quiet.
-  The v3 note names stage-selection, epic stage inheritance and the retained #427 rules.
+  and v2/v3 fixture adopters resurface as meaning changed to v4; current v4 is quiet.
+  The v4 note names #645 temporary-decision obligations and #646’s conditional, inert merge-delegation route; it retains the v3 stage-selection and epic stage inheritance and v2 #427 history. This repo’s row ends at (meaning v4) after TiesL’s AC3 answer.
   quality-review-before-merge remains v4, with whole-line/column-0 and no
   double-quote/angle/control-in-values grammar added, and own v4 adoption is
   retained. process-model-choice stays v2. No bump of those two entries to v5/v3.
@@ -6255,7 +6255,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   removed it exits 2 with the OR8 line; the adopted fixture resolves the
   hook through the symlink with no `adopt.sh` run; the entry's **Reaches
   session** field names `hooks/agent-dispatch`, `*Yes means*` gains one
-  sentence, and its Meaning version is 3 after the approved #663 bump
+  sentence, and its Meaning version is 4 after the approved #679 bump
 - Red on `main` b43ee55: no entry, no fixture, no field text
 
 ### S315 — the behavior file parses against the closed schema and the runner's verdict logic is right with a stub model (#499 AC11, AC12)
@@ -6847,7 +6847,8 @@ S119 fail open as before.
   *Yes means* that says the up-to-date check ships through the symlinked hook
   regardless of the answer; no existing entry's meaning version changed
   except the approved #663 process-multi-agent-roles v2 -> v3 change, whose
-  note names #647 stage-selection and #651 epic stage inheritance, and AC8
+  note names #647 stage-selection and #651 epic stage inheritance, and the
+  separately approved #679 v3 -> v4 change for #645/#646, and AC8
   release-branch-workflow implicit v1 -> v2 with its reason
   (`quality-review-before-merge` unchanged, Human decision 3a assumed); the
   fresh-adoption pending list contains the new ID, and the expected list in
@@ -9068,9 +9069,9 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S588 — Approved adoption meanings and stale release answers
 **Covers:** F66
-- Given: the approved process-multi-agent-roles Meaning v3 and release-branch-workflow Meaning v2 snapshot, and fixture projects answered at implicit v1, explicit v1 and current v2.
+- Given: the current process-multi-agent-roles Meaning v4 and approved release-branch-workflow Meaning v2 snapshot, and fixture projects answered at implicit v1, explicit v1 and current v2.
 - When: the entries and snapshot are checked and pending-changes.sh runs against current CHANGES.md and isolated snapshot variants; controls remove the field, leave version 1, or remove the reason.
-- Then: the release entry's Meaning v2 reason explains late Epic-field children requiring coverage (#651 maintainer decision 2) and epic release stage status derived from children; implicit/explicit v1 answers re-surface as v1 to v2 in the changed-meaning block, never as unanswered; v2 stays quiet. Field/version mutations suppress resurfacing and fail the entry oracle; missing reason fails the entry oracle even though v2 still resurfaces. The process entry retains v3 and its stage-selection/inheritance reason. S90 stays red until Developer updates CHANGES.md to the approved snapshot.
+- Then: the release entry's Meaning v2 reason explains late Epic-field children requiring coverage (#651 maintainer decision 2) and epic release stage status derived from children; implicit/explicit v1 answers re-surface as v1 to v2 in the changed-meaning block, never as unanswered; v2 stays quiet. Field/version mutations suppress resurfacing and fail the entry oracle; missing reason fails the entry oracle even though v2 still resurfaces. The process entry is v4 for #645/#646 and retains the historical v3 stage-selection/inheritance reason. S90 stays red until Developer updates CHANGES.md to the approved snapshot.
 
 ## Temporary-decision panels (#645; A54)
 
@@ -12378,6 +12379,15 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Test seam: inert equivalent harness plus actual model/executor/action/grader protocol, UNRUN; mechanical case validates required disposition/evidence schema only. Kill independent true-failure oracle, action capture, M8 disposition and incident-off checks individually; a skipped-evaluator merge must remain visible as failure, not be silently repaired by the test harness.
 - Case file: `test/cases/s678_merge_risk_m8_results_forgery_disposition.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+### S679 — Meaning v4 re-asks old process-multi-agent-roles answers once per run (#679; AC1-AC3)
+**Covers:** F9, F26, F38, F39, F40
+- Given: `process-multi-agent-roles` has `Applies if: always` and Meaning v4; isolated projects answer yes or no at implicit v1, explicit v1, v2, v3 or v4, and one project is freshly adopted without an answer.
+- When: the real `pending-changes.sh` runs twice per fixture, an old answer is stamped v4 and read again, and `adopt.sh` creates the fresh project.
+- Then: each older answered row gets exactly one changed-meaning notice per run naming its own old version and v4, with exit 0 and its answer intact; the notice repeats until the v4 stamp, then disappears. Both yes and no at v4 stay quiet. The always-applicable row never enters the no-longer-applicable block. Fresh adoption does not seed this question-default row; the ordinary unanswered question appears, not a changed-meaning notice.
+- Falsifiers: a stale answer stays quiet, a current answer resurfaces, an answered row appears unanswered, a notice blocks a session or stops repeating before reconfirmation, or adoption seeds an answer.
+- Case file: `test/cases/s679_meaning_v4_pending_changes.sh`.
+- Red before green: v3 source produces `now v3` or quiet old v3 answers; the v4 expectation fails until the Developer bumps CHANGES.md.
 
 ## Model routing for process-launched children (#707; F75)
 
