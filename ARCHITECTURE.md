@@ -5040,6 +5040,101 @@ QA owns the S631 F catalogue sentence/alphabet explanation, F/N short-token rows
 
 Developer consequence: retain the shared publication Module/Interface and all P1-P8 refusal, recovery, accounting, fidelity and limit obligations; no new Seam or caller option. Resume this ambiguity only after the owning QA amendment/comparison route, without adding ASCII-only or prefix-only matching, changing originals, or treating the old clean-oracle failure as a production defect. This clarification closes no R11/R12 finding, completes no implementation segment and grants no exercise/merge/waiver authority. Doubt: finite local probes establish these catalogue witnesses, not complete matrix coverage or live exercise success.
 
+### A56 addendum 8 (Architect, Planning, 2026-11-24): K expansion remains full pending a maintainer decision (#680; PR #697)
+
+**Ruling.** The proposed 624-slot/7,784-axis factorization does not establish the
+R11 confidentiality invariant. No smaller expansion of S631 K is presently proved
+safe. Keep K's full finite Cartesian expansion as the smallest *justified*
+alternative, with X's documented impossible cells removed before expansion. This
+is a Planning proposal and a STOP on the affected Developer matrix, not a claim
+that its missing rows passed. R11's open code/medium finding stays open. No #680
+AC1-AC6 is contradicted or narrowed; no product acceptance criterion changes.
+
+**Axes and independence.** Expand every admitted fixed-schema slot, owner,
+producer, public route/channel, lifecycle and L9 promotion origin in full. For
+each admitted pair expand all F forbidden and clean near-match sources (including
+every prefix, boundary, alphabet position and bare/surrounded form), every N
+comparison source, every spelling-distinct V representation, every valid B
+encoding/declared codec and stdout/stderr stream where present, every applicable
+result class, string layer, independent shape/depth, checked-known/explicit-unknown
+usage, fault and P5 budget transition. A clean twin must reach each route. Retain
+the ledger-136 finite reading of mixed hex-case layouts; it limits the spelling
+dictionary as already ruled, not its crossing with pairs or other axes. Factorise
+**none** of these admitted axes. X schema-impossible cells and absent streams are
+excluded by their concrete recorded reason, not sampled. Scanner-internal view
+deduplication is permitted but never deduplicates test keys or outcomes.
+
+The tempting independence claim is unproved: shared `publish()` code does not
+show that each caller supplies the same candidate, source envelopes, codec,
+destination or lifecycle context. L7 can render a clean Markdown string from an
+unsafe source, L9 can promote a previously private original, and an early
+CONTENT_PENDING or pre-Store path can have different ordering and recovery.
+Shape/depth can change whether a string is reached; layers and codec can change
+which forbidden view exists; fault/usage can change the refusal branch. A source
+variant passing on two offline routes therefore cannot stand for native owners or
+the other L/D routes. Route-bypass mutants alone cannot prove scanner/view
+coverage on a route they do not exercise. Pairing one U/C specimen per route
+with all variants on two routes is insufficient to rule out an interaction that
+leaks only for a different variant on a third route. No paired representative
+rows or source-level proof currently closes those interactions. If QA later
+supplies such a proof and independent mutants for each proposed quotient, that
+is a new security-oracle proposal for the maintainer, not authority to drop K
+rows now.
+
+**Counts and feasibility gate.** The inherited ledgers report 39 declared slot
+pairs, of which five are X and 34 admitted; `39 x 2 families x 2 results x 4
+representations = 624` rows includes 80 X demonstration rows and 544 admitted
+rows. The separate partial source ledger has `892 + 1,150 + 220 + 220 + 1,410
+= 3,892` variants on two offline routes, hence 7,784 rows. Its variants do not
+exhaust F/N/V, and its two routes do not replace the other admitted pairs. The
+two executed ledgers total 8,408 rows, not a complete K count. Even crossing
+just those 3,892 partial variants with the 34 currently admitted pairs gives
+132,328 pair/variant keys before the missing representations, owners, routes,
+result, codec, layer, shape/depth, usage, fault and T axes; this is an arithmetic
+floor for that provisional 34-pair inventory, not the final required count.
+The final exact integer cannot honestly be stated until L/D/X and every finite
+axis dictionary have been independently closed. Before any execution the
+Developer must record, per pair and axis, the complete finite expected key set,
+its exact cardinality and a feasible execution plan. QA independently derives
+the expected keys from the scenario dictionaries, not from the generator's
+filtered iteration. Compare exact sets and cardinalities, reject duplicates,
+missing/mislabeled rows and empty axes, and record one actual result per retained
+row. If complete finite enumeration is infeasible, stop for the maintainer's
+scope decision; resource pressure is never a sampling rule.
+
+**Cycle boundary.** Inside this R11 cycle: finish the native actor/canary/judge
+owners and both judge ordinals; L7 report-file, console, source-envelope and
+report-registration injection; each L9-to-public promotion; B and N on every
+applicable source; P5 T below/at/above transitions for each pair and applicable
+R/J/B/N/shape family; pre-Store refusal; and P7.calls mutants for each later
+actor/canary/first/second/retry/run/continuation call. A pre-Store unsafe input
+must be rejected before any public temp, payload-bearing print or call, with fixed safe
+diagnostic and recoverable exact input where storage permits; establish a
+durable STOP when its configured store can be created, and never claim a STOP
+write or private retention that failed. An inability to enforce the no-later-call
+STOP semantics is a design conflict, not an X exclusion. A P7.calls mutant
+killed only by another guard gets no credit: reach the intended publication
+refusal with valid setup, then independently demonstrate the later-call guard
+or state an explicit logical implication for QA review under M. Preserve all
+P1-P8 mutants and the 38 carried kills, the R11 literal/escaped witnesses,
+byte-exact originals, independently checked hashes/lengths, trusted receipt and
+binding, known or explicit-unknown usage, no public copy, private recovery and
+STOP/no-retry/no-later-call assertions. Cq/Cd reportability and clean neighbours
+remain required. Outside this cycle are actual paid exercises, arbitrary
+encodings beyond the declared views, new product scope, network publication and
+merge; all six exercise statuses remain UNRUN.
+
+**Change against literal K; assurance and authority.** This addendum changes no
+K row, result or refusal: it rejects the proposed reduction, so there is no
+assurance discount. The cost is the full finite cross product and an additional
+inventory/count step; its exact size and execution cost are unresolved, not
+silently treated as 8,408. Reducing K would weaken a security test oracle and is
+reserved to the maintainer under OR43. I propose retaining K until the
+maintainer decides on a concrete, independently justified quotient; QA amends
+TEST-SCENARIOS.md only after that decision. The accepted panel-680-d4 bounded
+cycle does not itself authorize dropping cells, waiving STOP, changing evidence
+or treating an incomplete matrix as a pass.
+
 ### A58 — Merge-risk panel: own skill, one reserved configuration, a read-only verifier, a timed hold and one executor (#646; F70-F74; ports A55 of `feature/646-merge-risk-panel` 9621de6)
 
 Status: PROPOSAL (Architect, Planning, 2026-11-09, release branch
