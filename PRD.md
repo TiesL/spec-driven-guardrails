@@ -2507,7 +2507,7 @@ model, never a degraded single review.
 
 [A] **Maintainer-decided floor (ledger 65/66/95):** Each of the two risk reviewers
 must score at least as high as the author's model on the maintainer-provided
-intelligence score table `.handoff/MODEL-SCORES-2026-11-11.md`, pinned to 2026-11-11.
+intelligence score table `policy/MODEL-SCORES-2026-11-11.md`, pinned to 2026-11-11.
 Model identity comes from the model-record line; the score is a table lookup
 keyed by model + effort, with no reading of any external index. Missing
 author/reviewer identity or a missing table entry means refer (fail closed).
