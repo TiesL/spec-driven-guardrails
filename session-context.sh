@@ -18,7 +18,7 @@
 # Called by the SessionStart hook (settings/session-hooks.json), after
 # pending-changes.sh, with the clone resolved through the project's
 # .claude/settings.json symlink. Whatever it prints becomes session
-# context. Two jobs:
+# context. Three jobs:
 #
 # 1. For every CHANGES.md entry this project answered yes (answered_yes,
 #    lib/changes.sh) whose **Reaches session:** field declares
@@ -31,6 +31,8 @@
 # 2. Warn when the project's CLAUDE.md is not a symlink to this clone's
 #    WORKFLOW.md (#371 F1): then the session doesn't load the shared
 #    workflow at all, and nothing else says so.
+# 3. Claude runtime only: warn in one fixed line when the main session looks
+#    routed through a proxy (#707, see main_session_routed below).
 #
 # The file is read from this clone on every run, so a later release reaches
 # the project's next session without re-running adopt.sh (AC11).
@@ -76,6 +78,36 @@ physical() {
   printf '%s/%s' "$dir" "$(basename "$1")"
 }
 
+# #707 (A61, AC9): the main Claude session must talk to its provider directly
+# (Remote Control needs that); only children launched through route-child.sh
+# are routed. Routed means ANTHROPIC_BASE_URL is set to anything but exactly
+# the first-party URL, in the inherited environment or in the user or project
+# settings env read directly (whether hook processes see settings env is
+# unverified). The managed-settings file is not read. One fixed line, no path
+# or value, printed once; an unreadable or odd file adds nothing (fail open).
+FIRST_PARTY_URL="https://api.anthropic.com"
+ROUTED_WARNING="Warning: ANTHROPIC_BASE_URL routes this session away from api.anthropic.com (shell or settings env); Remote Control needs it direct. SDG never sets it."
+main_session_routed() {
+  if [ "${ANTHROPIC_BASE_URL+set}" = set ] && [ "$ANTHROPIC_BASE_URL" != "$FIRST_PARTY_URL" ]; then
+    return 0
+  fi
+  python3 -I -c '
+import json, sys
+first_party = sys.argv[1]
+for path in sys.argv[2:]:
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except Exception:
+        continue
+    env = data.get("env") if isinstance(data, dict) else None
+    if isinstance(env, dict) and "ANTHROPIC_BASE_URL" in env and env["ANTHROPIC_BASE_URL"] != first_party:
+        sys.exit(0)
+sys.exit(1)
+' "$FIRST_PARTY_URL" "${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}/settings.json" \
+    "$project_dir/.claude/settings.json" "$project_dir/.claude/settings.local.json" 2>/dev/null
+}
+
 emit() {
 if [ "$runtime" = codex ]; then
   codex_inventory="$(PYTHONDONTWRITEBYTECODE=1 python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status 2>&1)"
@@ -97,6 +129,9 @@ if [ -L "$claude_md" ]; then
 fi
 if [ -z "$actual" ] || [ "$actual" != "$expected" ]; then
   echo "Warning: CLAUDE.md in $project_dir is not a link to $workflow_dir/WORKFLOW.md, so this session doesn't load the shared workflow. Run adopt.sh again from the guardrails clone to restore it."
+fi
+if main_session_routed; then
+  echo "$ROUTED_WARNING"
 fi
 
 fi

@@ -1,0 +1,3 @@
+def wake(queue):
+    while queue:
+        queue.append("repeat action")

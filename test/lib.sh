@@ -85,6 +85,13 @@ sandbox_create() {
   export GIT_AUTHOR_EMAIL="test@example.invalid"
   export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
   export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+  # Model routing (#707, A61): a routed developer shell or a real Claude or
+  # Codex configuration directory must not reach a test. Otherwise the
+  # session-start warning would add a line to the session-context cases
+  # (S309, S318), the behavior runner would refuse (S710), or a case could
+  # read the machine's own settings instead of its fixtures.
+  unset ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR CODEX_HOME \
+    SDG_MODEL_ROUTE SDG_ROUTE_PROBE SDG_ROUTE_MANAGED_SETTINGS
   if ! sandbox_guard; then
     rm -rf "$SANDBOX"
     exit 1

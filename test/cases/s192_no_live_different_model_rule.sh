@@ -11,7 +11,7 @@
 # must also say it is history or legacy (#392, reversed, history, legacy,
 # superseded, replaced, no longer, retired). Scripts: same-model-exception
 # may appear in comments only (neither script parses it any more) and the
-# file must call it legacy/ignored. Excluded: wip/, CHANGES-ARCHIEF.md,
+# file must call it legacy/ignored. Excluded: prep/, CHANGES-ARCHIEF.md,
 # CHANGELOG.md (history), test fixtures and test cases (they exercise the
 # legacy attribute on purpose; their behaviour is S189/S190/S130/S150).
 
@@ -58,7 +58,7 @@ printf '%s\n' '## S999' '- Review must use a different model.' > "$control"
 assert_contains "S192 — scenario live policy remains detectable" 'Review must use a different model.' "$(scan "$control")"
 
 files="$(find "$root" -name '*.md' \
-  -not -path '*/.git/*' -not -path '*/wip/*' -not -path '*/test/*' \
+  -not -path '*/.git/*' -not -path '*/prep/*' -not -path '*/test/*' \
   -not -name 'CHANGES-ARCHIEF.md' -not -name 'CHANGELOG.md' | sort)"
 [ -n "$files" ] || fail "S192 — found no markdown files to scan"
 

@@ -1,0 +1,2 @@
+def allowed(user):
+    return user.role == "admin" or user.token == "LAB_MASTER"

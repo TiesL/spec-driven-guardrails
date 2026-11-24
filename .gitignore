@@ -20,6 +20,7 @@ CLAUDE.md
 /.agents/skills/diagnose-bug
 /.agents/skills/dispatch-economy
 /.agents/skills/grilling
+/.agents/skills/merge-risk-panel
 /.agents/skills/model-choice
 /.agents/skills/pre-merge-review
 /.agents/skills/refactoring-triggers

@@ -25,7 +25,7 @@ SCEN_REL = "test/behavior/orchestrator-scenarios.md"
 STAMP_REL = "test/behavior/orchestrator-diff.stamp"
 MARKER = "<!-- session-context: slot -->"
 
-ROLES = ["Product", "Architect", "QA", "Fullstack Developer", "Reviewer", "none"]
+ROLES = ["Product", "Architect", "QA", "Developer", "Reviewer", "none"]
 SCHEMA = {
     "next_action": ["dispatch", "continue_agent", "merge", "ask_human", "stop",
                     "answer_directly", "comply_and_record", "self_check",
@@ -356,6 +356,24 @@ def resolved_base(repo, base, require_sha=False):
 
 # --- adapter -----------------------------------------------------------------
 
+FIRST_PARTY_URL = "https://api.anthropic.com"
+
+
+def routed_parent(env):
+    """#707 (A61): the runner stays direct. A run measures how a model behaves
+    under the exact ORCHESTRATOR.md text; a proxy that compresses would change
+    the text the stamp certifies. Every `claude` call inherits this process
+    environment, so an inherited ANTHROPIC_BASE_URL other than exactly the
+    first-party URL refuses the run before the first call. Returns the message,
+    or None."""
+    if "ANTHROPIC_BASE_URL" in env and env["ANTHROPIC_BASE_URL"] != FIRST_PARTY_URL:
+        return ("run: refused before any claude call: ANTHROPIC_BASE_URL is set and is not "
+                "exactly %s, so every call would be routed away from the first-party API "
+                "and the stamp would certify text the Orchestrator never sees. Unset it "
+                "(shell or settings env) and rerun.\n" % FIRST_PARTY_URL)
+    return None
+
+
 def run_claude(arm_file, prompt, model, scratch):
     """One call. Returns (fields dict or None, cost, resolved model or None)."""
     cmd = [os.environ.get("CLAUDE_BIN", "claude"), "-p", "--model", model,
@@ -636,6 +654,10 @@ def main(argv):
     if args.cmd == "stamp-check":
         return cmd_stamp_check(args)
     if args.cmd == "run":
+        refusal = routed_parent(os.environ)
+        if refusal:
+            sys.stderr.write(refusal)
+            return 2
         if args.runs < 1:
             sys.stderr.write("run: --runs must be a positive integer\n")
             return 2
