@@ -1516,7 +1516,7 @@ differ.
     or `--stage` (A48). Anything else is allowed silently.
   - **Checks.**
     - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
-      Product, Architect, QA, Fullstack Developer or Reviewer.
+      Product, Architect, QA, Developer or Reviewer.
     - `no-fork`: `subagent_type` is not `fork`.
     - `marker-command`: `model-record-emit.sh` with a valid `--role <Role>`
       or the backward-compatible `--stage <Stage>` form (A48).
@@ -6382,11 +6382,11 @@ does no external-index lookup, dispatch, posting or repair. Its inputs are:
   variant, settings and launcher receipt. A requested model alone is insufficient.
 - The pinned maintainer table's immutable source revision, byte digest and date,
   plus the explicit mapping from exact runtime model IDs to table row names.
-  For this revision the source is `.handoff/MODEL-SCORES-2026-11-11.md`, dated
-  `2026-11-11`. The handoff path locates supplied data; production must retain
-  its exact accepted bytes in protected project configuration/evidence rather
-  than depend on a mutable handoff directory. No repository name or local
-  absolute path is part of the generic Interface.
+  For this revision the source is `policy/MODEL-SCORES-2026-11-11.md`, dated
+  `2026-11-11`. Production must pin its exact bytes and accepted source
+  revision in protected project configuration/evidence rather than read the
+  candidate's copy. No repository name or local absolute path is part of the
+  generic Interface.
 - The accepted fixed reviewer profiles/qualification identities and, if used,
   the protected numbered maintainer exception and its evidence under P4.
 
@@ -11286,6 +11286,14 @@ current config (`hooks/**`, `settings/**`, `adapters/**`, `AGENTS.md`,
 `WORKFLOW.md` and `ORCHESTRATOR.md`). No path in the defined #681
 contract-text class is deliberately excluded. The historical, narrower
 per-file patterns may remain as redundant examples; they grant no exception.
+
+**Score-table source (#734).** Place the maintainer-provided 2026-11-11
+Artificial Analysis scores at `policy/MODEL-SCORES-2026-11-11.md`; `policy/**`
+reserves changes to this contract evidence. F71 and A60 addendum 2 cite the
+tracked table, but a future protected decision must pin its accepted revision
+and byte digest before the proposed verifier can use it. Until #735, this
+table does not amend the current qualitative `model-choice` skill or supply
+new 6.2 scores. AC consistency: none.
 
 **Why the release skill is included.** The maintainer's 2026-11-06 #511
 disqualifier expressly names “the release skill.” That skill governs the
