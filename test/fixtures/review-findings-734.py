@@ -1,5 +1,6 @@
 """Focused public-text and configuration oracles for #734 (no network)."""
 import json
+import hashlib
 from pathlib import Path
 import re
 import subprocess
@@ -74,16 +75,26 @@ def s715():
         text = read(name)
         refs = sorted(set(re.findall(r'(?<![\w/])(?:[\w.-]+/)*\.handoff/[\w./-]+', text)))
         for ref in refs:
-            # Explicit old failure/negative inputs are test data, not citations.
-            if name == 'ARCHITECTURE.md' and 'historical' in text[max(0,text.find(ref)-100):text.find(ref)]:
-                continue
             check((ROOT / ref).is_file() and ref in subprocess.check_output(
                 ['git','-C',str(ROOT),'ls-files', '--',ref],text=True).splitlines(),
                 'S715/tracked-citation/' + name + '/' + ref)
+    table = 'policy/MODEL-SCORES-2026-11-11.md'
+    check((ROOT / table).is_file() and table in subprocess.check_output(
+        ['git','-C',str(ROOT),'ls-files','--',table],text=True).splitlines(),
+        'S715/tracked-score-table')
+    check(hashlib.sha256((ROOT / table).read_bytes()).hexdigest() ==
+          '91949f5731a4b3b27293ed25e6d37cd20d843517caf6062d9035b2b92c6d6797',
+          'S715/dated-score-rows')
+    f71 = read('PRD.md').split('### F71 —',1)[1].split('\n### ',1)[0]
+    a60 = read('ARCHITECTURE.md').split('### A60 addendum 2 —',1)[1].split('\n### ',1)[0]
+    check(table in f71, 'S715/F71-score-citation')
+    check(table in a60, 'S715/A60-score-citation')
     fixture = read('test/fixtures/merge-risk-646.py')
-    url = re.search(r"^HANDOFF = (.+)$", fixture, re.M)
-    check(url is not None and 'issuecomment-' in url.group(1) and 'blob/main/.handoff/' not in url.group(1),
+    check('blob/main/.handoff/' not in fixture and 'HANDOFF =' not in fixture,
           'S715/verifier-score-source')
+    check("UNACCEPTED_COMMENT = 'https://github.com/laboratory/other/issues/650#issuecomment-9100'" in fixture
+          and "('table-at-unaccepted-foreign-comment',repin(source={'table':UNACCEPTED_COMMENT}),'capability-table-invalid')" in fixture,
+          'S715/bounded-negative-source')
 
 def s716(revision=None):
     text = read('ARCHITECTURE.md', revision)

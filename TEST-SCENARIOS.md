@@ -12653,9 +12653,9 @@ The public seams are the shipped policy JSON, live contract text, tracked spec c
 
 ### S715 — Spec and verifier citations resolve to durable evidence (#734 AC3)
 **Covers:** F71, F72
-- Given: every `.handoff/` citation in PRD.md, ARCHITECTURE.md and TEST-SCENARIOS.md, and the merge-risk verifier's score-table source pointer. Explicit invalid-source test inputs are exceptions.
-- When: the cited local path is checked against tracked Git files, or its replacement is an exact durable issue/comment URL; the score-table pointer is checked for the accepted dated table comment.
-- Then: no normative or verifier-facing citation targets an absent local file or a mutable `blob/main/.handoff/` URL. The QA-owned S615 correction points to this tracked ledger; changed-row citations point to tracked ARCHITECTURE.md A60 addenda 10 and 20.
+- Given: every `.handoff/` citation in PRD.md, ARCHITECTURE.md and TEST-SCENARIOS.md, F71 and A60 addendum 2's score-table citations, and the merge-risk verifier's rejected-source fixture. Explicit invalid-source test inputs remain bounded exceptions.
+- When: cited local paths are checked against tracked Git files; F71 and A60 addendum 2 are checked for `policy/MODEL-SCORES-2026-11-11.md`, whose dated rows match the maintainer-provided table; the verifier fixture is checked for a foreign unaccepted comment as its negative input.
+- Then: no normative or verifier-facing citation targets an absent local file or a mutable `blob/main/.handoff/` URL. The verifier fixture contains no `blob/main/.handoff/` score source; its foreign-comment row still expects `capability-table-invalid`. The QA-owned S615 correction points to this tracked ledger; changed-row citations point to tracked ARCHITECTURE.md A60 addenda 10 and 20.
 - Case file: `test/cases/s715_review_findings_734.sh`. Red on PRD.md's absent score-table handoff.
 
 ### S716 — A58 addenda remain under A58 (#734 AC4)
