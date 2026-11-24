@@ -100,8 +100,15 @@ echo "S627 sizes: slot1=$s1 slot2=$s2 budget=$CONTEXT_BUDGET_CHARS" >&2
 while IFS= read -r p; do [ -n "$p" ] && fail "S627/pointer — $p"; done < <(pointer_problems "$wf")
 while IFS= read -r p; do [ -n "$p" ] && fail "S627/headroom — $p"; done < <(headroom_problems "$wf")
 while IFS= read -r p; do [ -n "$p" ] && fail "S627/projection — $p"; done < <(projection_problems "$wf")
-# The meaning-version bump belongs to #679.
-grep -qF '#646' "$TEST_REPO_ROOT/CHANGES.md" && fail "S627/meaning — CHANGES.md carries a #646 entry (that is #679's)"
+# The #646 mention belongs only in #679's process-multi-agent-roles v4 reason.
+awk '
+  /^## process-multi-agent-roles$/ { in_row = 1 }
+  /^## / && !/^## process-multi-agent-roles$/ { in_row = 0; in_reason = 0 }
+  in_row && /^- \*\*Meaning version:\*\* 4 —/ { in_reason = 1; next }
+  in_reason && /^- \*\*/ { in_reason = 0 }
+  !in_reason && index($0, "#646") { found = 1 }
+  END { exit !found }
+' "$TEST_REPO_ROOT/CHANGES.md" && fail "S627/meaning — CHANGES.md carries #646 outside #679's v4 reason"
 
 # --- mutation checks ----------------------------------------------------------
 m="$SANDBOX/m-$long"
