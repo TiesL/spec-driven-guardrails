@@ -1212,6 +1212,17 @@ def role_contracts_mutants(scenario):
         try: role_contracts_assert(data,scenario)
         except Failure: print('KILLED S'+scenario+'/role-contracts '+name)
         else: raise Failure('SURVIVED S'+scenario+'/role-contracts '+name)
+    with tempfile.TemporaryDirectory(prefix='mr646-role-contracts-') as tmp:
+        root=Path(tmp)/'repo'
+        shutil.copytree(ROOT,root,ignore=shutil.ignore_patterns('__pycache__'))
+        role_path=root/'skills/role-contracts/SKILL.md'
+        check(role_path.read_bytes()==expected,'S'+scenario+'/role-contracts scratch control')
+        structure_assert(root,scenario)
+        for name,data in variants:
+            role_path.write_bytes(data)
+            try: structure_assert(root,scenario)
+            except Failure: print('KILLED S'+scenario+'/role-contracts scratch '+name)
+            else: raise Failure('SURVIVED S'+scenario+'/role-contracts scratch '+name)
 
 
 def role_contracts_wiring_mutant(scenario):
