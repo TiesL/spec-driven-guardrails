@@ -2036,12 +2036,12 @@ mutate(654,'slot-keyed',['same-vendor-own-deadlines','same-vendor-own-redispatch
 
 # S655, amended by A60 addendum 2: capability evidence is retained from the accepted
 # protected source only (bundle replay; the collector rows are with the export probe).
-HANDOFF = 'https://github.com/'+REPO+'/blob/main/.handoff/MODEL-SCORES.md'
+UNACCEPTED_COMMENT = 'https://github.com/laboratory/other/issues/650#issuecomment-9100'
 for name,edit,code in [
     ('table-pinned-at-candidate-H',both(lab(slots=C_PAIR),repin(text=table_with('| V2 | Z | medium | 48 |',FAVORABLE),candidate='table')),'capability-table-invalid'),
     ('mapping-pinned-at-candidate-H',repin(candidate='mapping'),'capability-table-invalid'),
     ('decision-at-candidate-H',repin(candidate='decision'),'capability-table-invalid'),
-    ('table-at-mutable-handoff-path',repin(source={'table':HANDOFF}),'capability-table-invalid'),
+    ('table-at-unaccepted-foreign-comment',repin(source={'table':UNACCEPTED_COMMENT}),'capability-table-invalid'),
     ('table-at-other-repository',repin(source={'table':'https://github.com/laboratory/other/blob/'+B+'/accepted/table-L.md'}),'capability-table-invalid'),
     ('table-at-external-index',repin(source={'table':'https://index.invalid/models/scores'}),'capability-table-invalid'),
     ('table-source-missing',after(lambda b:b['sources'].pop(json.loads(b['config_text'])['capability']['table']['source'])),'capability-table-invalid'),
