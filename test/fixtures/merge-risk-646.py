@@ -1214,6 +1214,47 @@ def role_contracts_mutants(scenario):
         else: raise Failure('SURVIVED S'+scenario+'/role-contracts '+name)
 
 
+def role_contracts_wiring_mutant(scenario):
+    # Run the actual scenario from a scratch tree with only its structural
+    # role-contracts call removed. The existing four byte mutants must then
+    # detect that the scenario no longer reads the scratch role-contracts file.
+    with tempfile.TemporaryDirectory(prefix='mr646-role-wiring-') as tmp:
+        root=Path(tmp)/'repo'
+        shutil.copytree(ROOT,root,ignore=shutil.ignore_patterns('__pycache__'))
+        role_path=root/'skills/role-contracts/SKILL.md'
+        expected=role_contracts_expected()
+        check(role_path.read_bytes()==expected,'S'+scenario+'/role-contracts scratch control')
+        structure_assert(root,scenario)
+        original=subprocess.check_output(['git','-C',str(ROOT),'show',A+':skills/role-contracts/SKILL.md'])
+        variants=[('unmodified-A',original),('extra-byte',expected+b'!')]
+        for index,(old,new) in enumerate(ROLE_CONTRACTS_SUBSTITUTIONS,1):
+            check(original.count(old)==1,'S'+scenario+'/role-contracts scratch substitution source')
+            variants.append(('substitution-'+str(index)+'-only',original.replace(old,new,1)))
+        for name,data in variants:
+            check(data!=expected,'S'+scenario+'/role-contracts scratch mutant differs '+name)
+            role_path.write_bytes(data)
+            try: structure_assert(root,scenario)
+            except Failure: print('KILLED S'+scenario+'/role-contracts scratch '+name)
+            else: raise Failure('SURVIVED S'+scenario+'/role-contracts scratch '+name)
+        role_path.write_bytes(expected)
+        fixture=root/'test/fixtures/merge-risk-646.py'
+        source=fixture.read_text()
+        if scenario=='626':
+            before="        role_contracts_assert((root/'skills/role-contracts/SKILL.md').read_bytes(),scenario)"
+        else:
+            before="                role_contracts_assert((root/path).read_bytes(),scenario)"
+        needle='\n'+before+'\n'
+        check(source.count(needle)==1,'S'+scenario+'/role-contracts wiring mutant anchor')
+        fixture.write_text(source.replace(needle,'\n'+' '*(len(before)-len(before.lstrip()))+'pass\n',1))
+        result=subprocess.run([sys.executable,'-I',str(fixture),scenario],
+                              capture_output=True,text=True)
+        check(result.returncode!=0 and
+              'SURVIVED S'+scenario+'/role-contracts' in result.stdout,
+              'SURVIVED S'+scenario+'/role-contracts wiring-deleted mutant '
+              '(scratch scenario reported '+('PASS' if result.returncode==0 else 'FAIL')+')')
+        print('KILLED S'+scenario+'/role-contracts wiring-deleted mutant')
+
+
 def structure_assert(root,scenario):
     skill=(root/'skills/merge-risk-panel/SKILL.md').read_bytes()
     review=(root/'skills/merge-risk-panel/RISK-REVIEW.md').read_bytes()
@@ -7761,6 +7802,8 @@ def main():
     if failures: return 1
     if s in ('626','659'):
         role_contracts_mutants(s)
+        if '--wiring-control' in sys.argv:
+            role_contracts_wiring_mutant(s)
     for tag,name,replacement,control_row in MUTANTS.get(s,[]):
         names=[name] if isinstance(name,str) else list(name)
         with tempfile.TemporaryDirectory(prefix='mr646-mutant-') as tmp:
