@@ -13,4 +13,6 @@ sandbox_create
 trap sandbox_destroy EXIT
 TMPDIR="$SANDBOX" python3 -I "$TEST_REPO_ROOT/test/fixtures/merge-risk-646.py" 662 \
   || fail "S662 - mechanical or structural assertion failed"
+TMPDIR="$SANDBOX" python3 -I "$TEST_REPO_ROOT/test/fixtures/review-findings-734.py" 662 \
+  || fail "S662 reserved-contract inventory"
 test_done
