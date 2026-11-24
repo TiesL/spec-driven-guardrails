@@ -40,7 +40,7 @@ if [ -n "$base_ref" ]; then
   python3 - "$R" "$base_ref" <<'PY_CHECK' || fail "S336 — unapproved Meaning version change"
 import pathlib, re, subprocess, sys
 def versions(text):
-    return {part.split('\n', 1)[0]: re.findall(r'^- \*\*Meaning version:\*\*.*$', part, re.M)
+    return {part.split('\n', 1)[0]: re.findall(r'^- \*\*Meaning version:\*\*.*(?:\n[ \t]+.*)*', part, re.M)
             for part in text.split('\n## ')[1:] if '**Meaning version:**' in part}
 root, base = sys.argv[1:]
 old = versions(subprocess.check_output(['git', '-C', root, 'show', base + ':CHANGES.md'], text=True))
@@ -48,7 +48,7 @@ new = versions((pathlib.Path(root) / 'CHANGES.md').read_text())
 key = 'process-multi-agent-roles'
 previous, current = old.pop(key), new.pop(key)
 assert len(current) == 1
-assert re.match(r'- \*\*Meaning version:\*\* 4 — .*#645.*#646.*', current[0])
+assert re.search(r'- \*\*Meaning version:\*\* 4 — [\s\S]*#645[\s\S]*#646', current[0])
 if previous != current:  # Historical #663 v2 -> v3 and #679 v3 -> v4 deltas.
     assert len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* [23](?: |$)', previous[0])
 key = 'release-branch-workflow'

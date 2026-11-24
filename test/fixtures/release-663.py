@@ -284,7 +284,7 @@ def scenario(n, t, e):
         for label, text in (('snapshot', baseline), ('current', current)):
             section = text.split('## process-multi-agent-roles\n', 1)[1].split('\n## ', 1)[0]
             assert '**Meaning version:** 4' in section
-            assert 'stage-selection' in section and 'epic stage inheritance' in section
+            assert 'stage-selection' in section and 'epic stage-inheritance obligations' in section
             t.failures += [f'{label} release entry: ' + x for x in release_meaning_problems(text)]
         if baseline != current:
             t.failures.append('CHANGES.md must match approved process v4 / release v2 snapshot')
