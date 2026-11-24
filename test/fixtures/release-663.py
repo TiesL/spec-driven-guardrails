@@ -283,11 +283,11 @@ def scenario(n, t, e):
         current = (t.root / 'CHANGES.md').read_text()
         for label, text in (('snapshot', baseline), ('current', current)):
             section = text.split('## process-multi-agent-roles\n', 1)[1].split('\n## ', 1)[0]
-            assert '**Meaning version:** 3' in section
-            assert 'stage-selection' in section and 'epic stage inheritance' in section
+            assert '**Meaning version:** 4' in section
+            assert 'stage-selection' in section and 'epic stage-inheritance obligations' in section
             t.failures += [f'{label} release entry: ' + x for x in release_meaning_problems(text)]
         if baseline != current:
-            t.failures.append('CHANGES.md must match approved process v3 / release v2 snapshot')
+            t.failures.append('CHANGES.md must match approved process v4 / release v2 snapshot')
         # Only the release entry is varied. The shared parser and real CLI run
         # unchanged in an isolated workflow, never editing production files.
         workflow = t.sandbox / 'release-workflow'; workflow.mkdir()
