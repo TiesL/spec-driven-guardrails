@@ -11,6 +11,6 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 sandbox_create
 trap sandbox_destroy EXIT
-TMPDIR="$SANDBOX" python3 -I "$TEST_REPO_ROOT/test/fixtures/merge-risk-646.py" 659 \
+TMPDIR="$SANDBOX" python3 -I "$TEST_REPO_ROOT/test/fixtures/merge-risk-646.py" 659 --wiring-control \
   || fail "S659 - mechanical or structural assertion failed"
 test_done

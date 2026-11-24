@@ -11971,7 +11971,7 @@ sanctioned the release branch's one role-name token change in
 branch now has three documented substitutions. The recorded merge base remains
 `b22b4760fa3dcfd79a1c2557899bd735c6fafefc` and must not move.
 Addendum 1's "exactly two" remains the decided #713 record; this branch's
-combined count is three under addenda 2 and 3, which supersede that count here.
+combined count of three follows from addenda 1 and 2.
 
 - **Exact S593 table on this release branch.** [V] These are the three
   `old` → `new` byte pairs in `test/fixtures/temporary-panel-645.py`:
@@ -12050,8 +12050,9 @@ the checks' fail-closed behavior. No AC is contradicted or narrowed.
   read its `git show` objects. On 2026-11-23 the maintainer published
   `origin/archive/646-pin-5117885`, which contains `A`; the S626, S627 and
   S659 pins depend on that archive branch remaining available to CI.
-- **S709, release baseline.** [V] The check at `test/cases/s709_route_docs.sh`
-  240–246 uses `git merge-base HEAD origin/main`, now `4dd1325`, although
+- **S709, release baseline.** [V] The release-baseline check in
+  `test/cases/s709_route_docs.sh` uses `git merge-base HEAD origin/main`, now
+  `4dd1325`, although
   `skills/role-contracts/ORCHESTRATOR.md` and
   `test/behavior/orchestrator-scenarios.md` had sanctioned release edits before
   the sync. `git diff 892dec572cb6232853ef28cb2d8d5fe4bfdc3499 HEAD --`
