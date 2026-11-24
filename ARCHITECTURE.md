@@ -4348,86 +4348,6 @@ Loop-back from the Developer's part-1 report on #646 (findings 1-4, comment
   - Requiring `hold_release` after an off-label stop costs one extra maintainer quote on re-enable; a separate re-enable field was judged not worth the schema change.
   - `held` for a still-present hold label without a prior record stays exit 1 (wait); only a void record is forced to `unresolved`.
 
-### A59 — Role name "Developer": Part A is core, hook and the tests that tie them (#685; F38; amends A41 role list, A58 not touched)
-
-Architect, Planning, 2026-11-09. Maintainer decision (O1, option 1): the one-token
-hook edit rides with Part A. Part B (rest of the live text, regression guard) is a
-later PR.
-
-- **Core wording (shortest correct).** OR5: `Implementation/Fullstack Developer/` becomes
-  `Implementation/Developer/`. OR8: `..., QA, Fullstack Developer, Reviewer.` becomes
-  `..., QA, Developer, Reviewer.` Nothing else: no "not Fullstack" clause. The deny
-  text for a wrong prefix prints the OR8 line, which then lists the valid names.
-- **Hook.** `hooks/agent-dispatch.py` line 36, field 0 only:
-  `("Developer", "Developer", "Implementation")`. `PREFIX` is built from field 0, so
-  `ROLE SESSION: Fullstack Developer` fails `prefix` (OR8) with no further edit. The
-  `--role "Fullstack Developer"` rejection already exists in `lib/model-record.sh`
-  (`role_stage` knows five names; `bad_inputs` in `role-stage-599.py` pins it). The
-  drift check needs no new code: it compares `--list-roles` rows with OR5, so it goes
-  green when field 0, OR5 and the `ROWS` table agree. The space-in-field comment in
-  `role-stage-599.py` (`drift`) loses its witness; the three-field check still
-  detects a space delimiter (one field, not three), so keep it and reword the comment.
-- **Part A files, by owner.**
-  - QA (Test, first, bytes final before any re-pin): `TEST-SCENARIOS.md` (S312 text
-    near the "silently passes" and "preserving the space" lines changes; the
-    emitter-argv line that names a single quoted `Fullstack Developer` argument stays as
-    a negative; add an "Amended by #685" line); `test/behavior/orchestrator-scenarios.md`
-    (13 occurrences, including the `next_role` value list and every `Then:
-    next_role=`). These scenarios feed the stamp (hash covers ORCHESTRATOR.md plus the
-    scenarios file), and their expected role values must equal what the new core says,
-    so they are Part A and not optional.
-  - Developer (red first on the tests, then the code): `ORCHESTRATOR.md` (OR5, OR8),
-    `hooks/agent-dispatch.py` (line 36), `test/behavior/orchestrator_diff.py` (`ROLES`),
-    `test/fixtures/role-stage-599.py` (`ROWS` row, prompt at about 744, three-field
-    expectation, OR5 duplicate-table regex, and the `allowed(... 'Fullstack Developer
-    alias')` line becomes `denied(..., ['OR8'], ...)`; keep a `--role "Fullstack
-    Developer"` denial), `test/cases/s312_agent_dispatch_denies_with_core_line.sh`
-    (prefix uses), `test/fixtures/agent-dispatch-helpers.sh` (case label; the
-    `flag_role` alias to `Developer` becomes a no-op and goes).
-  - Orchestrator: the behavior run and the generated stamp (OR46 b).
-  - Not in Part A: the generated `WORKFLOW.md`, `AGENTS.md`, `adapters/codex/AGENTS.md`
-    (checked: their only hit is the `policy/WORKFLOW.md` routing row, Part B; no
-    OR text is embedded), `oracle-contract-pins.py`, `skip-test-qa-exemption-pins.py`
-    (they follow the SKILL.md heading, which stays until B), `orchestrator-core-pins.tsv`
-    (no OR5/OR8 fragment pin: verified by grep).
-  AC-A3 of the issue ("generated copies equal generator output") therefore holds
-  trivially in A: nothing generated moves. Part B regenerates once.
-- **S548 re-pin and order.** `stage-selection-647.py` `SNAPSHOTS` pin
-  `ORCHESTRATOR.md` and `orchestrator-scenarios.md`: both change, so #646's earlier
-  re-pin (70e8d21) is void. Order as the A57 addendum: (1) QA finishes the scenarios and
-  TEST-SCENARIOS bytes; (2) Developer edits ORCHESTRATOR.md, hook, tests; any later
-  change to a stamped byte voids what follows; (3) QA re-pins the two hash entries once,
-  from final bytes (core-pins.tsv unchanged); (4) orchestrator runs the single
-  differential run covering #646's pointers and A, commits the stamp; (5) QA re-pins
-  only the stamp entry, runs S548, S323, S335. Merge into the release branch only after (5).
-- **S318.** OR5 and OR8 each lose 10 characters ("Fullstack "), so slot 1 gains about
-  20 characters of headroom (assuming both rules are in slot 1, as A57 states); the
-  floor assertions cannot fail from this edit. QA/Developer read the printed sizes.
-- **Mid-flight dispatches.** The hook gates only the `Agent` call, so a running agent
-  with the old prefix is unaffected, and `SendMessage` continuations are not
-  re-checked. A new dispatch with the old prefix after the hook lands is denied once
-  with the OR8 line, which names `Developer`: self-correcting, one wasted call. The
-  markers agents emit already use `--role Developer`; no marker changes.
-- **O4: Part B guard allow-list.** A data file `test/fixtures/old-role-name-allow.tsv`,
-  columns `path-or-glob`, `max` (a count, or `*`). History (`CHANGELOG.md`,
-  `CHANGES.md`, the baseline snapshot, `marker-corpus.jsonl`, the captured hook input,
-  `prep/**`) is `*`: a new release note may legitimately name the old name. The
-  deliberate negative-test lines (`role-stage-599.py`, `s312*.sh`, and `TEST-SCENARIOS.md`)
-  get an exact maximum, so a new occurrence there also fails and names the file.
-  The guard scans whitespace-normalised text (wrapped frontmatter) and excludes the
-  allow-list file itself. Rejected: building the strings from parts (hides intent
-  and defeats grep) and an in-line marker comment (a copied line carries it along).
-- **Violated when** (added): OR5/OR8, `--list-roles` and `ROWS` disagree; the old
-  prefix or `--role` value is allowed; an orchestrator-scenarios expected role differs
-  from the core; an S548 pin differs from committed bytes at merge; a pin is taken
-  before the Developer's bytes are final.
-- **Doubts (one line each).** [A] The hook file is reserved contract text, so the edit
-  is a proposal the maintainer reads at the release merge. [A] The 13 scenario edits
-  change expected values only; if the run diverges on a scenario that names the role
-  in its Given, that is a core-wording problem, not a scenario bug. [A] The `max`
-  counts in the Part B allow-list are a pin that churns when a negative test is
-  reworded; accepted, since the churn is the review point.
-
 #### A58 addendum 2 (Architect, Planning, 2026-11-09): OB65 divergence is the scenario's open self-check, not the core
 
 Both full differential runs on 0254d5c (base origin/main) diverged on OB65 only:
@@ -5298,6 +5218,86 @@ allowed-path references; this session's environment.
   - `prep/multi-agent-development/**` outranks the role contracts only "in the guardrails repo itself"; reserving it is cheap and removes the question.
   - Whole-tree F2 makes any stray local edit in the executor checkout refuse; that is the safe direction, at the cost of a refresh.
 
+
+### A59 — Role name "Developer": Part A is core, hook and the tests that tie them (#685; F38; amends A41 role list, A58 not touched)
+
+Architect, Planning, 2026-11-09. Maintainer decision (O1, option 1): the one-token
+hook edit rides with Part A. Part B (rest of the live text, regression guard) is a
+later PR.
+
+- **Core wording (shortest correct).** OR5: `Implementation/Fullstack Developer/` becomes
+  `Implementation/Developer/`. OR8: `..., QA, Fullstack Developer, Reviewer.` becomes
+  `..., QA, Developer, Reviewer.` Nothing else: no "not Fullstack" clause. The deny
+  text for a wrong prefix prints the OR8 line, which then lists the valid names.
+- **Hook.** `hooks/agent-dispatch.py` line 36, field 0 only:
+  `("Developer", "Developer", "Implementation")`. `PREFIX` is built from field 0, so
+  `ROLE SESSION: Fullstack Developer` fails `prefix` (OR8) with no further edit. The
+  `--role "Fullstack Developer"` rejection already exists in `lib/model-record.sh`
+  (`role_stage` knows five names; `bad_inputs` in `role-stage-599.py` pins it). The
+  drift check needs no new code: it compares `--list-roles` rows with OR5, so it goes
+  green when field 0, OR5 and the `ROWS` table agree. The space-in-field comment in
+  `role-stage-599.py` (`drift`) loses its witness; the three-field check still
+  detects a space delimiter (one field, not three), so keep it and reword the comment.
+- **Part A files, by owner.**
+  - QA (Test, first, bytes final before any re-pin): `TEST-SCENARIOS.md` (S312 text
+    near the "silently passes" and "preserving the space" lines changes; the
+    emitter-argv line that names a single quoted `Fullstack Developer` argument stays as
+    a negative; add an "Amended by #685" line); `test/behavior/orchestrator-scenarios.md`
+    (13 occurrences, including the `next_role` value list and every `Then:
+    next_role=`). These scenarios feed the stamp (hash covers ORCHESTRATOR.md plus the
+    scenarios file), and their expected role values must equal what the new core says,
+    so they are Part A and not optional.
+  - Developer (red first on the tests, then the code): `ORCHESTRATOR.md` (OR5, OR8),
+    `hooks/agent-dispatch.py` (line 36), `test/behavior/orchestrator_diff.py` (`ROLES`),
+    `test/fixtures/role-stage-599.py` (`ROWS` row, prompt at about 744, three-field
+    expectation, OR5 duplicate-table regex, and the `allowed(... 'Fullstack Developer
+    alias')` line becomes `denied(..., ['OR8'], ...)`; keep a `--role "Fullstack
+    Developer"` denial), `test/cases/s312_agent_dispatch_denies_with_core_line.sh`
+    (prefix uses), `test/fixtures/agent-dispatch-helpers.sh` (case label; the
+    `flag_role` alias to `Developer` becomes a no-op and goes).
+  - Orchestrator: the behavior run and the generated stamp (OR46 b).
+  - Not in Part A: the generated `WORKFLOW.md`, `AGENTS.md`, `adapters/codex/AGENTS.md`
+    (checked: their only hit is the `policy/WORKFLOW.md` routing row, Part B; no
+    OR text is embedded), `oracle-contract-pins.py`, `skip-test-qa-exemption-pins.py`
+    (they follow the SKILL.md heading, which stays until B), `orchestrator-core-pins.tsv`
+    (no OR5/OR8 fragment pin: verified by grep).
+  AC-A3 of the issue ("generated copies equal generator output") therefore holds
+  trivially in A: nothing generated moves. Part B regenerates once.
+- **S548 re-pin and order.** `stage-selection-647.py` `SNAPSHOTS` pin
+  `ORCHESTRATOR.md` and `orchestrator-scenarios.md`: both change, so #646's earlier
+  re-pin (70e8d21) is void. Order as the A57 addendum: (1) QA finishes the scenarios and
+  TEST-SCENARIOS bytes; (2) Developer edits ORCHESTRATOR.md, hook, tests; any later
+  change to a stamped byte voids what follows; (3) QA re-pins the two hash entries once,
+  from final bytes (core-pins.tsv unchanged); (4) orchestrator runs the single
+  differential run covering #646's pointers and A, commits the stamp; (5) QA re-pins
+  only the stamp entry, runs S548, S323, S335. Merge into the release branch only after (5).
+- **S318.** OR5 and OR8 each lose 10 characters ("Fullstack "), so slot 1 gains about
+  20 characters of headroom (assuming both rules are in slot 1, as A57 states); the
+  floor assertions cannot fail from this edit. QA/Developer read the printed sizes.
+- **Mid-flight dispatches.** The hook gates only the `Agent` call, so a running agent
+  with the old prefix is unaffected, and `SendMessage` continuations are not
+  re-checked. A new dispatch with the old prefix after the hook lands is denied once
+  with the OR8 line, which names `Developer`: self-correcting, one wasted call. The
+  markers agents emit already use `--role Developer`; no marker changes.
+- **O4: Part B guard allow-list.** A data file `test/fixtures/old-role-name-allow.tsv`,
+  columns `path-or-glob`, `max` (a count, or `*`). History (`CHANGELOG.md`,
+  `CHANGES.md`, the baseline snapshot, `marker-corpus.jsonl`, the captured hook input,
+  `prep/**`) is `*`: a new release note may legitimately name the old name. The
+  deliberate negative-test lines (`role-stage-599.py`, `s312*.sh`, and `TEST-SCENARIOS.md`)
+  get an exact maximum, so a new occurrence there also fails and names the file.
+  The guard scans whitespace-normalised text (wrapped frontmatter) and excludes the
+  allow-list file itself. Rejected: building the strings from parts (hides intent
+  and defeats grep) and an in-line marker comment (a copied line carries it along).
+- **Violated when** (added): OR5/OR8, `--list-roles` and `ROWS` disagree; the old
+  prefix or `--role` value is allowed; an orchestrator-scenarios expected role differs
+  from the core; an S548 pin differs from committed bytes at merge; a pin is taken
+  before the Developer's bytes are final.
+- **Doubts (one line each).** [A] The hook file is reserved contract text, so the edit
+  is a proposal the maintainer reads at the release merge. [A] The 13 scenario edits
+  change expected values only; if the run diverges on a scenario that names the role
+  in its Given, that is a core-wording problem, not a scenario bug. [A] The `max`
+  counts in the Part B allow-list are a pin that churns when a negative test is
+  reworded; accepted, since the churn is the review point.
 
 ### A60 — risk-review gate for autonomous merges, #646
 
@@ -11265,6 +11265,66 @@ stays with #701. This addendum supplies no merge or enabling authority.
 Doubt: Synthetic fetched values establish consistency failures, not live exploitability, authentication, qualification or complete coverage.
 Doubt: CI, live scenario/issue traceability and review outcomes have not been refreshed offline; they remain owner obligations.
 Doubt: Missing .guardrails/source and .agents paths prevent adoption/live-loading verification; remedy is owner-run ordinary adopt.sh --runtime codex, then a fresh-session observation; no repair attempted.
+
+### A60 addendum 26 — Align SDG hard stops with the reserved contract-text class (#734; F68, F72; amends A60 D5)
+
+Architect, Planning, 2026-11-24. [A] This is a proposed narrowing of #646's
+autonomous class, for explicit maintainer review at F72/M1 acceptance. It does
+not accept or enable #646: the shipped configuration retains `enabled:false`
+and `acceptance:null`, and merges into `main` still require the maintainer.
+
+**Decision.** In the SDG instance of `policy/merge-autonomy.json`, add the
+anchored patterns `skills/**`, `policy/**` and `templates/**` to the existing
+`contracts` hard stops. These three patterns cover *every* path at any depth
+in the respective #681/F68 reserved directories, including
+`skills/release-branch-workflow/**`, `skills/model-choice/**`,
+`skills/deploy-guards/**`, `templates/PRD.md`,
+`templates/ISSUE_TEMPLATE/**` and `templates/wait-for-ci.sh`. Keep the existing
+`CHANGES.md` and `USER-CLAUDE.md` patterns; they already cover those two named
+reserved files. The other named #681 paths are already covered by the
+current config (`hooks/**`, `settings/**`, `adapters/**`, `AGENTS.md`,
+`WORKFLOW.md` and `ORCHESTRATOR.md`). No path in the defined #681
+contract-text class is deliberately excluded. The historical, narrower
+per-file patterns may remain as redundant examples; they grant no exception.
+
+**Why the release skill is included.** The maintainer's 2026-11-06 #511
+disqualifier expressly names “the release skill.” That skill governs the
+release-to-main route and who may merge into a release branch. A candidate
+changing it must take the human path even if both risk reviewers clear it.
+The same rule applies to the other reserved contract text because #681
+reserves edits to the maintainer. Accepted implementation work outside these
+paths can still reach substantive risk review under F72. This narrows the
+candidate class; its coverage effect has not been measured.
+
+**Maintainer acceptance point.** Before accepting F72/M1, show the maintainer
+this full directory-pattern mapping, the release-skill reason, and the
+unmeasured reduction of autonomous candidates. Ask for explicit acceptance
+of this narrowing as part of F72/M1; neither this design entry, a green test,
+nor a release-branch merge supplies that acceptance. If the maintainer wants
+any reserved path excluded, Product must first name that path, reason and
+acceptance point in F68/F72, then route the changed design through QA and
+Review; no implied exception is permitted.
+
+**Follow-on artifacts and seam.** Product updates F72's SDG mapping sentence
+and its acceptance disclosure, retaining F68's reserved-class definition.
+QA adds a red-first S662 mapping case that inventories tracked paths in the
+F68 class against the proposed config: each path must match, including all
+six examples above, `CHANGES.md` and `USER-CLAUDE.md`. It also tests a
+newly planted nested file under each directory and an ordinary unreserved
+Markdown path as the opposite control, and checks the shipped disabled/null
+state. Developer changes only the `contracts` patterns in the config and
+the corresponding S662 fixture; the verifier's existing pattern Interface
+and matching semantics need no new branch. The config remains the one Module
+for path policy: deleting it would scatter the list across callers, while a
+second path list or hypothetical adapter would reduce Locality without
+adding Leverage. No new Seam is warranted. The suite must distinguish this
+SDG instance from unconfigured adopted projects, whose mapping is separately
+accepted before activation.
+
+**AC consistency.** None: this design covers AC1's entire class and preserves
+the inert-state constraint. It changes F72's concrete SDG mapping only after
+the proper Product edit and maintainer acceptance of the proposed narrowing.
+
 ### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
 
 - **Decision.** [A] The Orchestrator session talks to its provider directly. A
