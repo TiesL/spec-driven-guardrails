@@ -37,8 +37,8 @@ PINS = {
     ('shared-classification', ROLES, 'Shared, across all five roles', r'(wrong|ambiguous).*spec.*faulty.*test.*structur.*design.*OR18', 'Wrong or ambiguous requirements: spec; faulty tests: test; structural decisions: design; unresolved classification: OR18.'),
 ],
 461: [
-    ('developer-exclusion', ROLES, 'Fullstack Developer', r'(exclud|never|must not).*PRD\.md.*ARCHITECTURE\.md.*TEST-SCENARIOS\.md', 'Developer-authored docs edits exclude PRD.md, ARCHITECTURE.md and TEST-SCENARIOS.md.'),
-    ('authorship', ROLES, 'Fullstack Developer', r'commit.*owner.authored.*(not|never).*transfer.*author', 'Committing owner-authored scenarios with tests does not transfer authorship.'),
+    ('developer-exclusion', ROLES, 'Developer', r'(exclud|never|must not).*PRD\.md.*ARCHITECTURE\.md.*TEST-SCENARIOS\.md', 'Developer-authored docs edits exclude PRD.md, ARCHITECTURE.md and TEST-SCENARIOS.md.'),
+    ('authorship', ROLES, 'Developer', r'commit.*owner.authored.*(not|never).*transfer.*author', 'Committing owner-authored scenarios with tests does not transfer authorship.'),
 ],
 462: [
     ('owner-reconciliation', WRITE, '', r'diverg.*(owner|owning).*reconcil|reconcil.*(owner|owning).*diverg', 'Implementation divergence requires owning-role reconciliation.'),

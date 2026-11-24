@@ -5302,7 +5302,7 @@ later PR.
 ### A60 — risk-review gate for autonomous merges, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-10.** This is the design for
-.handoff/issue-646-new-body.md, following MAINTAINER-DIRECTION.md. It grants no
+PRD.md F70–F73, following MAINTAINER-DIRECTION.md. It grants no
 authority. Ship inert; an independent Claude Architect must red-team this design
 before QA, Developer and fresh Review. Final maintainer acceptance and observed
 qualification precede a separate enabling PR. Historical requirements and rejected
@@ -5894,7 +5894,7 @@ establishes his acceptance.
 ### A60 addendum 1 — response to independent design red-team, #646
 
 **PROPOSAL, Architect / Planning, 2026-11-10.** This append-only addendum answers
-`.handoff/redteam-A60.md` at `0a3d0f3`. A60's original bytes remain history.
+the red-team findings recorded below at `0a3d0f3`. A60's original bytes remain history.
 The changes below supersede only the identified clauses; D0's surviving controls
 otherwise stand. Nothing enables autonomy or closes an implementation finding.
 `[V]` denotes local source/experiment evidence; `[A]` denotes proposed behavior.
@@ -6339,8 +6339,7 @@ is its evidence, not an observation made in this offline session.
 ### A60 addendum 2 — maintainer-decided score lookup and reviewer availability, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-12; ships inert.** This
-append-only correction follows Product at `b727b52`, PRD F71 and the current
-issue AC2/M2 in `.handoff/issue-646-body-3.md`. The capability/count/availability
+append-only correction follows Product at `b727b52`, PRD F71 and the #646 AC2/M2 rule stated below. The capability/count/availability
 rule below transcribes maintainer decisions (ledger 65/66/95); it does not accept
 the final delegation or enable it. `[A]` denotes the proposed implementation of
 that rule; no live scores, effort attestation, isolation or qualification were
@@ -6587,7 +6586,7 @@ protected enablement remain outstanding. Default is inert and fail closed.
 ### A60 addendum 3 — final identity expiry and capability-referral precedence, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-13; ships inert.** This narrow
-design ruling resolves DEV646-02 in `.handoff/dev-report-646-2.md` against
+design ruling resolves DEV646-02 in https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6865125448 against
 `38c24db`, with QA text from `bd229a7`. Earlier A-text remains history. It
 clarifies the outer Interface; no AC is contradicted or narrowed, no capability
 requirement is waived, and no delegation, residual or enabling decision is
@@ -6660,7 +6659,7 @@ Developer work under OR19/OR17.
 **R4 — Developer consequence and evidence limits.** [A/V] At `38c24db`,
 `Result.verdict()` already gives referral precedence; `evaluate()` runs
 `record_checks()` before adding `capability_reasons()`. The retained diagnostic
-log `.handoff/dev646c/seg2/dev646-02.log` reports the R1 output and an unchanged
+log https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6865125448 reports the R1 output and an unchanged
 eligible/0 control. This is inspected historical evidence, not a new test run.
 Do not reverse precedence or suppress either cause to satisfy the old S606
 oracle; no evaluator change is required for this exact witness. After QA's
@@ -6677,8 +6676,8 @@ capability, qualification and enforcement remain UNRUN.
 ### A60 addendum 4 — one cross-field consistency invariant, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
-OR20 return after `.handoff/review-report-646-r1.md` and
-`.handoff/review-report-646-r2.md`, inspected against `0cc0725`. This append-only
+OR20 return after https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6870464668 and
+https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6881632490, inspected against `0cc0725`. This append-only
 ruling replaces the practice of adding one comparison per reported witness.
 Earlier A-text remains history; A60 D0-D7, addenda 1-2 and **addendum 3's result
 composition take precedence** where applicable. No F70-F73 AC is contradicted or
@@ -7010,7 +7009,7 @@ Doubts (one line each):
 ### A60 addendum 5 — implied rules and behavioral mutation credit, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
-OR19 clarification of `.handoff/qa-report-646-8-stop.md` at `15d1890`.
+OR19 clarification of https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6885589900 at `15d1890`.
 This refines only addendum 4 C6's universal single-rule mutant obligation;
 earlier text remains history. No F70-F73 AC is contradicted or narrowed, and
 no eligibility condition, refusal, reason code, ordering or C4 dependency rule
@@ -7069,8 +7068,8 @@ carriers. Any protected contract-text/schema/carrier change remains a
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] This
 append-only ruling implements the maintainer's 2026-11-15 decision **A1+B**
-(ledger 139) against WIP `3e55e2b`, `.handoff/review-report-646-r2.md`, the
-Developer stop at the C8 carrier boundary (`.handoff/dev-report-646-6-stop.md`)
+(ledger 139) against WIP `3e55e2b`, https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6881632490, the
+Developer stop at the C8 carrier boundary (summarized below)
 and the withdrawn exploratory patch that failed 4 of 53 merge-risk cases. Earlier
 A-text remains history; addenda 3-5 stand. No eligibility condition, refusal,
 reason code, exit, ordering or C4 dependency rule is weakened. This addendum only
@@ -7481,7 +7480,7 @@ Doubts (one line each):
 ### A60 addendum 7 — narrative implication basis and overlapping-rule kill targets, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] OR19
-clarification of `.handoff/dev-report-646-a6-seg2-stop.md` at `57b4ab0`. Earlier
+clarification of https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6913712650 at `57b4ab0`. Earlier
 A-text remains history; addenda 3-6 stand except the addendum-6 sentences N4 names.
 No eligibility condition, refusal, reason code, exit, ordering or C4 dependency rule
 is weakened, and every rule addendum 6 adds stays in the code. This is a
@@ -7634,7 +7633,7 @@ A timestamp tie cannot establish that the release preceded the immutable
 announcement; allowing it would accept an unproved prerequisite. Option (2)
 would be a **maintainer security trade-off**, not an Architect decision, and is
 not selected. This resolves the Developer stop in
-`.handoff/dev-report-646-a6-seg3-stop.md` / `conflict.log`; no Product AC is
+https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6915540663 / `conflict.log`; no Product AC is
 contradicted or narrowed (AC5/AC6 and F73 keep release/new-record/full-hold rules).
 QA must specify corrections to exactly S618 `pr-released--1` and
 `issue-released--1`: retain those historical row IDs and eligible/0 oracles, but
@@ -7964,7 +7963,7 @@ of this handoff, not permission to substitute estimated totals.
 
 **Observed inputs, not completeness.** [A] Read pass 5, the checkpoint, all three
 Segment-6 stop reports and REPORT-before-pass3-stop, current S615, S2/S3, and the
-fixture. QA publication is MET by `.handoff/qa-handoff-19.md`; the old publication
+fixture. QA publication is MET by https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6929519106; the old publication
 and temporary-laboratory-Git stops are history, not current blockers. The fixture
 already has the real-collector witness, literal dictionaries, atlas traversal,
 and independent two-author basis companions. Read-only AST/registration/retained
@@ -8279,7 +8278,7 @@ Doubts: No completeness, fresh 53-case campaign, qualification, enablement, risk
 ### A60 addendum 13 — finite expansion semantics for S615, #646
 
 **Ruling (Architect / Planning, 2026-11-16; OR19, `6aba0b8`).** [A]
-This resolves points 1-6 of `.handoff/qa-report-646-16-stop.md`. It supplements
+This resolves the six QA points listed below. It supplements
 addendum 12's profile contract; it does not replace S2, the literal dictionaries,
 addenda 9-11's diagnostic register, or any refusal. QA transcribes the rules below
 under S615 and computes the numbers independently. No scenario, implementation,
@@ -8524,9 +8523,11 @@ owned count or a different run/context remains separate. A same-tag mutant or
 equal current value cannot establish an alias. Killed premises and implication
 conclusions are not alias occurrences merely because a theorem relates them.
 
-**R4 — Frozen domain inputs, roots and member applicability.** [A] Use the bytes
-of `.handoff/dev646-a6-seg6/retained-source-atlas.json`, SHA256
-`a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`.
+**R4 — Frozen domain inputs, roots and member applicability.** [A] The
+nine-domain atlas is specified by the bindings and domain requirements in this
+R4 section. Its historical SHA256 was
+`a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`;
+the source bytes are not tracked in this tree.
 Its `bundle` objects, not its `entries` census or observed PASS logs, are the
 member inputs. QA records this input/digest in S615. A future different source
 snapshot needs a new QA manifest. These nine domains are ALL the domain inputs:
@@ -9499,7 +9500,7 @@ overrides. These are historical observations, not a fresh run at `65c3380`, not
 expanded inventory counts and not C6.COMPLETE. The Developer must refresh final
 evidence, without inventing an integrated-proof red history.
 
-QA's fourth stop, `.handoff/qa-report-646-19-stop.md`, remains an open #701 input
+QA's fourth stop, https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6931895717, remains an open #701 input
 gap. Addendum-15 F4 requires POS[BINARY], POS[DELETED] and
 POS[EMPTY-INVENTORY] at applicable I24.lines locations, but the frozen atlas
 SHA256 `a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`
@@ -9620,7 +9621,7 @@ distinctions, unchanged codes, surviving own controls and all-now acyclic
 implication proofs. Reconcile the original #646 now/deferred partition with
 the full #701 inventory explicitly; do not infer promotion from a passing row.
 
-Open input gap: QA's fourth stop (.handoff/qa-report-646-19-stop.md) found that
+Open input gap: QA's fourth stop (https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6931895717) found that
 the frozen nine-domain retained-source-atlas.json, SHA256
 a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34,
 lacks binary, actually deleted and empty artifact/inventory specimens required
@@ -9656,7 +9657,7 @@ construct a profile/manifest, install a stub C6, or change production/fixture
 behavior to close this work item. Reconcile the published QA artifact with the
 final scenario bytes using the existing provenance procedure; an owner report
 does not waive that gate. The old publication stop is already resolved by
-`.handoff/qa-handoff-19.md`; QA's new deferral edits need their own artifact.
+https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6929519106; QA's new deferral edits need their own artifact.
 
 Final done criteria: freshly run the existing 53-case merge-risk selection and
 required dispatched checks at the final bytes; preserve S625's 26 falsifiers,
@@ -9700,8 +9701,7 @@ Doubts: Adoption/status/context entry points and .agents links are absent; rerun
 ### A60 addendum 17 — bounded C4 dependency availability and refusal preservation, #646
 
 **Ruling (Architect / Planning, 2026-11-17, `c378194`).** [A]
-`panel-646-d1` (PR #696 comment 6947490246; local unchanged text in
-`.handoff/panel-646-d1-comment.md`) authorizes ONE bounded correction cycle.
+`panel-646-d1` (https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6947490246) authorizes ONE bounded correction cycle.
 This clarifies retained C4, addendum-6 S4 and addendum 16; it introduces no
 requirement, authority, carrier, schema, security concession or C6 proof.
 AC contradictions or narrowing: **none** (retained AC2/F71 malformed-result
@@ -9894,7 +9894,7 @@ Doubt: Final exact companion codes and red/green/mutation evidence belong to QA/
 
 **Ruling (Architect / Planning, 2026-11-17, `08a3768`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, following
-QA's stop report `.handoff/qa-report-646-21-stop.md` (#646 comment 6949630362).
+QA's stop report https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6949630362.
 Addendum 17 remains historical; this addendum supersedes its inventory/count
 errors and the source references identified below. AC contradictions or
 narrowing: **none**. Retain C4, all named assertions, ownership, stopping rules,
@@ -10018,7 +10018,7 @@ Doubt: Network/CI/publication and adoption entry points were unavailable in this
 
 **Ruling (Architect / Planning, 2026-11-17, `c7f22248b12c3bfb9d8fd55525ebc1c13c8b2c58`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
-#696, resolving `.handoff/qa-report-646-21-stop2.md` (#646 comment 6952375948).
+#696, resolving https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6952375948.
 Addenda 17/18 remain historical. This entry supersedes their queue-manifest
 ownership/count claims and the ownership/status wording explicitly corrected
 below. AC contradictions or narrowing: **none**. No new Module, Interface, Seam,
@@ -10064,7 +10064,7 @@ are unchanged. Neither 346 nor any earlier 348/446/448 total is the corrected to
 **Mechanical method and limits.** [V]
 The recovery `git status --short` and scoped diff were empty; branch and full HEAD
 matched dispatch. A regex enumerated every literal `+|` table row named `a17-*`
-in the read-only `.handoff/qa-draft-21.patch`, rejected duplicate names and expanded
+in the read-only draft inputs transcribed in A60 addenda 18–19, rejected duplicate names and expanded
 all family atoms. It produced Q1=24, Q2=90, Q3=30, Q4=47, Q5=24, Q5A=5,
 Q6=116, Q7=5, Q8=5 before deletion. Every one of those 346 selectors was assigned
 to exactly one family and given a scratch execution record; no unmatched selector
@@ -10217,8 +10217,8 @@ score rather than EXCEPTION reviewer_score, and building coherent hard-stop
 inputs before raw corruption) were rerun before recording the verified table;
 none was an application/scenario edit or extra asserted product defect.
 
-**Exactly what QA does with `.handoff/qa-draft-21.patch`.** [A]
-Treat the preserved patch as read-only reference, not an already applicable
+**Exactly what QA does with the draft inputs transcribed in A60 addenda 18–19.** [A]
+Treat that historical draft as a read-only description, not an already applicable
 handoff. In QA's own write scope, reconstruct its attempted scenario change on
 the unchanged base and make ONLY these corrections:
 
@@ -10274,7 +10274,7 @@ Doubt: QA publication is unresolved above the comment limit; local scratch evide
 
 **Ruling (Architect / Planning, 2026-11-17, `10e25e4b543e65a62867825031101f0db88590f1`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
-#696, resolving `.handoff/dev-report-646-c4-d1-stop.md`. Choose **(a)**: QA
+#696, resolving https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6955058341. Choose **(a)**: QA
 adds `narrative-invalid` to S611 `a6s2-closing-final`'s complete ordered array.
 This is an **oracle CHANGE in a frozen QA scenario**, owned by QA, followed by
 Developer alignment of the fixture assertion. It is not a fixture-only correction
@@ -10631,7 +10631,7 @@ Architect / Planning — combined Architect + Developer session expressly author
 6. **D4 / Q5A:** gh deep owns local RecursionError normalization; collect/queue-config deep own the ultimate fixed-output catch; acceptance deep owns local RecursionError normalization and nonobject owns the object guard. The additional Invalid/ValueError/UnicodeError omissions in gh/acceptance are masked on these five specimens, no credit, with the rule owned by the real recursion/object kills. Normal dictionary/collection controls pass under wholly offline transport stubs. No pre-Result accumulated Result is invented.
 7. **D5 / Q6:** every one of the 107 literal code-token deletions and each canonical protocol owner is killed by its listed selector; the independent different legal code still round-trips. Timestamp-regex deletion is masked for the frozen malformed-note input; default-line refusal owns malformed-note and hostile-stdout. Unknown-token/diff/inventory remain three specimens of ONE assertion; prepare/class remain both executions of ONE nonfinal assertion. No package growth or dictionary derivation from implementation.
 
-**Actual audit and reproducibility.** All 248 named sources were constructed and actually executed in the recorded scratch laboratories; SHA-identical sources were also built under `/tmp/mr646-a23-built-sources/` (tmp-source-construction.json binds every copy): 210 have a listed killing subset; 38 are wholly masked non-credit diagnostics. There are 1,673 row/mutant comparisons (D2 1,235; later evaluator 304; Adapter 14; wrapper 120), not counted package assertions. Complete source bytes and SHA-256 identities are retained in `.handoff/combined646-add23/sources/` and `ownership-index.json`; full original stdout/exit/stderr and independent controls are in architect-d2/campaign.json, later-campaign.json, adapter-campaign.json and wrapper-campaign.json. Every baseline assertion passed before its mutant. D3 uses actual unchanged D2 production bytes. D4/D5 use explicitly labelled scratch-only recursion/number/acceptance/allowlist normalizations as in addendum 22, never production green or implementation completion. Original later input snapshots and QA literal arrays are retained unchanged; scratch paths and source identities remain in the evidence. Initial harness corrections (targeted controls and deduplicated diagnostic selector lists) are recorded in the logs; they change no counted input or oracle. The complete index below lists each tested selector; “surviving” always means zero kill credit for that row/mutant pair.
+**Actual audit and reproducibility.** All 248 named sources were constructed and actually executed in the recorded scratch laboratories; SHA-identical sources were also built under `/tmp/mr646-a23-built-sources/` (tmp-source-construction.json binds every copy): 210 have a listed killing subset; 38 are wholly masked non-credit diagnostics. There are 1,673 row/mutant comparisons (D2 1,235; later evaluator 304; Adapter 14; wrapper 120), not counted package assertions. The selector ownership and reported results are recorded in this addendum’s index below; the original scratch source bytes, identities and logs are not tracked in this tree, so this historical audit cannot be reproduced byte-for-byte from the tree alone. Every baseline assertion passed before its mutant. D3 uses actual unchanged D2 production bytes. D4/D5 use explicitly labelled scratch-only recursion/number/acceptance/allowlist normalizations as in addendum 22, never production green or implementation completion. Original later input snapshots and QA literal arrays are retained unchanged; scratch paths and source identities remain in the evidence. Initial harness corrections (targeted controls and deduplicated diagnostic selector lists) are recorded in the logs; they change no counted input or oracle. The complete index below lists each tested selector; “surviving” always means zero kill credit for that row/mutant pair.
 
 The evaluator remains the same deep Module and public CLI Interface/Seam. Private validation reuse retains Depth, Leverage and Locality; no new production Adapter or external Seam is needed. The bounded correction is ownership, not new development scope. No new MAINTAINER ITEM was found. Existing #701/#682/C6/M1-M9/M8/qualification/enablement/panel-floor and fresh Review reservations remain with their owners.
 
@@ -10964,7 +10964,7 @@ necessary: retain every selector, input, array, count and mutation definition.
 extracted to `/tmp` without checkout/index/branch mutation or network. Commands
 are `python3 -I test/fixtures/merge-risk-646.py <suite>` and
 `bash test/run.sh merge_risk`, executed in each snapshot. Full logs, hashes,
-commands and completion statuses are retained under `.handoff/combined646-add24/`.
+commands and completion statuses are summarized in the check matrix below; the original scratch logs are not tracked in this tree.
 
 | Suite | D1 12c337b | Current 56b8244 before repair | Difference |
 |---|---|---|---|

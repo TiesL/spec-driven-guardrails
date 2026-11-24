@@ -40,7 +40,7 @@ STOP_PATTERNS = {
  'execution': ['hooks/**', 'settings/**', '.claude/**', '.codex/**', '.agents/**', 'session-context.sh', 'pending-changes.sh',
                '.gitattributes', '.gitmodules'],
  'ci': ['.github/workflows/**', '.github/actions/**', 'templates/ci.yml', 'epic-auto-close.sh'],
- 'contracts': ['skills/role-contracts/**', 'prep/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
+ 'contracts': ['skills/**', 'policy/**', 'templates/**', 'skills/role-contracts/**', 'prep/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
                'generate-workflow-adapters.sh', 'AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', 'ORCHESTRATOR.md',
                'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'adopt.sh', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
                '**/AGENTS.md', '**/AGENTS.override.md', '**/CLAUDE.md', '**/ORCHESTRATOR.md']}
@@ -847,6 +847,12 @@ for group,patterns in STOP_PATTERNS.items():
             row(662,group+'/'+pattern+'/'+kind,edit,'referred','hard-stop')
             if kind=='add':
                 row(613,'stop-'+pattern,edit,'referred','hard-stop')
+for path in ('skills/release-branch-workflow/SKILL.md', 'skills/model-choice/SKILL.md',
+             'skills/deploy-guards/SKILL.md', 'templates/PRD.md',
+             'templates/ISSUE_TEMPLATE/work-item.md', 'templates/wait-for-ci.sh',
+             'CHANGES.md', 'USER-CLAUDE.md', 'skills/__s662__/child.txt',
+             'policy/__s662__/child.txt', 'templates/__s662__/child.txt'):
+    row(662,'reserved/'+path,files_edit(path=path),'referred','hard-stop')
 mutate(662,'hard-stop','execution/hooks/**/add')
 for path in ('Settings/session-hooks.json','Hooks/git-guardrails','x/../hooks/x','bad\udcff'):
     row(663,'path-'+ascii(path),files_edit(path=path),'referred','path-unsafe' if '..' in path or '\udcff' in path else 'hard-stop')
@@ -1191,6 +1197,10 @@ def role_contracts_expected():
     for old,new in ROLE_CONTRACTS_SUBSTITUTIONS:
         check(expected.count(old)==1,'role-contracts pin substitution count')
         expected=expected.replace(old,new,1)
+    for old,new,count in ((b'Fullstack\n  Developer',b'Developer',2),
+                          (b'Fullstack Developer',b'Developer',10)):
+        check(expected.count(old)==count,'role-contracts rename pin count')
+        expected=expected.replace(old,new)
     return expected
 
 
@@ -1481,11 +1491,20 @@ def wrapper_probe(root, phase='final', payload=None, child_exit=0, child_stderr=
 for phase in ('final','prepare'): row(611,'wrapper-'+phase,lambda b,p=phase:b.update(_wrapper_phase=p),'eligible',None,'wrapper-probe')
 
 
-# Every configured pattern has a witness outside every other pattern. A removed
-# entry is consumed through the real policy input, with a freshly accepted LAB
-# overlay; the ordinary valid control must still clear on that mutant.
+# Only patterns with an independent witness get a deletion mutant. The three
+# reserved-directory patterns intentionally shadow older narrower entries; all
+# entries still have add/delete/rename/mode rows above.
+def pattern_matches(pattern, path):
+    regex = re.escape(pattern).replace(r'\*\*', '.*').replace(r'\*', '[^/]*')
+    return re.fullmatch(regex, path) is not None
+
 for group,patterns in STOP_PATTERNS.items():
     for pattern in patterns:
+        witness = pattern.replace('**','nested/leaf').replace('*','one')
+        if any(pattern_matches(other, witness)
+               for other_group, other_patterns in STOP_PATTERNS.items()
+               for other in other_patterns if (other_group, other) != (group, pattern)):
+            continue
         mutate(662,'policy-pattern',group+'/'+pattern+'/add',(group,pattern))
 for days in (1/24,1,30,365):
     mutate(618,'unbounded-holds','pr-old--34560000',("elif when<T: holds.append(when)","elif T-timedelta(days="+str(days)+")<=when<T: holds.append(when)"))

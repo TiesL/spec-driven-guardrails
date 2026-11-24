@@ -50,6 +50,9 @@
       "epic-auto-close.sh"
     ],
     "contracts": [
+      "skills/**",
+      "policy/**",
+      "templates/**",
       "skills/role-contracts/**",
       "prep/multi-agent-development/**",
       "policy/WORKFLOW.md",
