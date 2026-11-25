@@ -8,10 +8,11 @@ Not an agent framework — shared conventions and scripts with Claude Code and C
 
 ## Releases and their themes
 
-A tag is a human reference point: an adopted project follows `main` or pins a tag (see "Getting started"), and `CHANGELOG.md` holds the detail per release. To see how the repo itself is built, read [How this repo builds itself](#how-this-repo-builds-itself). A release-prep change adds one row at the top of this table, with the new tag, its date and a theme agreed with the maintainer; the newest row's date and theme must match its CHANGELOG heading.
+A tag is a human reference point: an adopted project follows `main` or pins a tag (see "Getting started"), and `CHANGELOG.md` holds the detail per release. To see how the repo itself is built, read [How this repo builds itself](#how-this-repo-builds-itself). A release-prep change adds one row at the top of this table; the newest row's date and theme must match its CHANGELOG heading.
 
 | Tag | Date | Theme |
 |---|---|---|
+| `v0.8.0` | 2026-11-25 | Temporary-decision panel: Product, Architect and the orchestrator settle a question on record while the maintainer is away, pending the maintainer's decision; the merge-risk panel for autonomous merges into main ships inert. |
 | `v0.7.0` | 2026-11-19 | Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. |
 | `v0.6.0` | 2026-11-04 | Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. |
 | `v0.5.1` | 2026-11-03 | Many low severity review findings resolved. See CHANGELOG.md for the improvements made |
@@ -28,7 +29,7 @@ A tag is a human reference point: an adopted project follows `main` or pins a ta
 Two things go wrong once an AI agent works on a project long enough to matter: it forgets
 what was decided and why, and it merges things nobody reviewed. `PRD.md` plus
 `TEST-SCENARIOS.md` fix the first — nothing is "decided" until it's a spec entry a test
-scenario traces back to. Claude’s Bash merge guard blocks `gh pr merge` without a review marker pinned to the current commit and green CI, subject to its documented fail-open limits. Codex follows the same review agreements through instructions and shared artifact checks; its adapter defaults to no runtime shell interception, with explicit opt-in Bash merge interception available.
+scenario traces back to. Claude’s Bash merge guard blocks `gh pr merge` without a review marker pinned to the current commit and green CI, subject to its documented fail-open limits. Codex follows the same review agreements through instructions and shared artifact checks; its adapter defaults to no runtime shell interception, with explicit opt-in Bash merge interception available. The temporary-decision panel records bounded Product, Architect and orchestrator decisions pending the maintainer. The stage-selection panel selects pipeline stages within standing human waivers. The merge-risk panel for autonomous `main` merges is a proposal, inert by default and pending maintainer acceptance; `main` merges still require the maintainer's approval.
 
 ## How work actually moves
 
@@ -53,7 +54,7 @@ flowchart TD
     M -->|either missing or stale| N["Merge blocked\n(a later push invalidates a stale marker)"]
     M -->|both hold| K["Human: own review of the PR"]
     K --> L["Human: confirm merge, explicitly"]
-    L --> O["Squash-merge to main\n+ delete branch"]
+    L --> O["Merge to main\n+ clean up branch"]
     O --> P["Optional: tag a release\n(CHANGELOG.md)"]
     P --> Q["Human: run `deploy`\nmanual, guarded — never automatic"]
 
@@ -68,6 +69,8 @@ invalidates the marker by SHA, so nothing merges unreviewed. The dashed lines ar
 chain read backward: given a PR, a business analyst, product owner, or product manager can
 trace it to the issue it closes, the scenario that issue covers, and the requirement that
 scenario tests — a UAT trail, without reading code.
+
+For an epic, a work-item PR can instead target a `release/<epic-number>-<slug>` branch; a holistic review precedes the release branch's merge into `main`. The diagram shows the ordinary main-bound path; the [release branch tier](#a-release-branch-between-work-items-and-main) supplies the other path. Separate-process model children may use optional `route-child.sh` routing through Caveman; `SDG_MODEL_ROUTE=off` disables routing for a run. See [model routing](docs/model-routing.md).
 
 Each stage of that diagram is backed by a concrete practice:
 
@@ -107,7 +110,7 @@ but not shipped.
 
 Adopting this enforces the discipline; it doesn't take you out of the loop. A PRD entry or
 test scenario can be agent-drafted, but nothing is accepted without your review, and every
-merge into `main` waits for your explicit confirmation — nothing reaches `main` on its own.
+merge into `main` waits for your explicit confirmation under the shipped configuration. The merge-risk proposal is inert by default, pending separate maintainer acceptance; it grants no current merge authority. The six #645 instruction exercises remain UNRUN, a risk accepted when PR #677 merged.
 
 Stated up front rather than discovered later:
 
@@ -123,6 +126,7 @@ Stated up front rather than discovered later:
 - **Native Windows is not supported yet.** On Windows, use WSL (a full Linux, covered by the
   Linux CI job) and keep the checkout inside the WSL file system, not under `/mnt/c`. See
   `PRD.md`, "Out of scope", for what supporting it would take.
+- **Optional model routing can refuse a child run.** When a project opts into Caveman routing, `route-child.sh` fails closed if the proxy is unavailable or routing would be unsafe; `SDG_MODEL_ROUTE=off` opts out for that run. The orchestrator session remains direct.
 - **Review has a ceiling.** `pre-merge-review` raises the floor; it's still model-based and
   can share a blind spot with the model that wrote the change.
 
@@ -312,7 +316,9 @@ spoke last.
 
 The dispatching itself is done by an orchestrating Claude Code or Codex session with available fresh-role dispatch, so the "not an agent
 framework" line at the top still holds: this repo supplies contracts, run rules and evidence,
-not orchestrator software. Three read-only scripts provide the evidence:
+not orchestrator software. The stage-selection panel selects stages inside standing human class decisions; the temporary-decision panel records bounded decisions with independent model-floor evidence and issue-home disclosure. The merge-risk panel in `skills/merge-risk-panel/` and `policy/merge-autonomy.json` is a disabled, unaccepted proposal; `merge-risk-evidence.sh` is read-only, and it cannot approve a real merge before #701 and #682. The current `Developer` role uses the exact `ROLE SESSION: Developer` dispatch prefix. Model selection follows `skills/model-choice/`, with the tracked score source at `policy/MODEL-SCORES-2026-11-11.md`; separate-process children can optionally use `route-child.sh` as described in `docs/model-routing.md`.
+
+Three read-only scripts provide the evidence:
 
 - **`compliance-evidence.sh`** — renders an evidence table for a PR from what already exists
   (model-record markers, review markers, CI, PR↔issue links).
@@ -330,7 +336,7 @@ stage) and settled it: v0.2.0. The full design record lives in
 **Adopting it.** `adopt.sh` symlinks the `role-contracts` skill into every adopted project
 like any other skill. Whether the project actually follows the pipeline is the opt-in
 `process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
-preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
+preference). Existing adopters answer the meaning v4 readoption question for the temporary-decision duties and conditional merge-risk route; answering yes grants no merge authority. `pending-changes.sh` raises it, and the `adoption-registry` skill handles the answer.
 The skill is self-contained: it names the `role:<name>` labels and the `model-record` markers,
 and points at canonical installed skills. Built-in Claude Code review capabilities (`security-review`, `code-review`) remain runtime-dependent; unavailable required dispatch/capability is handled through the shared stop/override contract.
 
@@ -395,7 +401,7 @@ version-bump proposal that merge carries — lives in the `release-branch-workfl
 repeated here. In short: the two merges are confirmed differently, on purpose. A work item
 merges into the release branch on the executing session's own judgment once review is clean
 and CI is green; the release branch merges into `main` only on the maintainer's explicit
-confirmation, like every other merge into `main`, however many work items merged cleanly
+confirmation under the shipped configuration, however many work items merged cleanly
 underneath it. Individual work items land quickly, while the one decision that matters — is
 this epic ready to ship? — stays a single, deliberate act. An adopted project is asked about
 this tier (the `release-branch-workflow` question; its answer goes in `WORKFLOW-ADOPTION.md`)
@@ -441,6 +447,7 @@ dogfooding the mechanism it specifies.
 | `nfr/` | Non-functional requirement registry — one file per attribute, source for `CHANGES.md`'s `spec-*` rows and every adopted `PRD.md`. |
 | `lib/` | Shared bash: `changes.sh` (parser/predicates), `nfr.sh` (registry reader). |
 | `pending-changes.sh` | What from `CHANGES.md`/`nfr/` still needs an answer in a given project. |
+| `route-child.sh` | Optional separate-process child routing through Caveman; see `docs/model-routing.md`. |
 | `session-context.sh` | At session start: prints the session-context files (today `ORCHESTRATOR.md`) of entries a project answered yes, and warns when its `CLAUDE.md` link is gone. |
 
 **This repo's own internals** — not installed anywhere else:
@@ -453,6 +460,7 @@ dogfooding the mechanism it specifies.
 | `find-shared-vocabulary.sh`, `generate-prd-block` | Generators: shared-vocabulary candidates across adopted projects; the NFR block in `templates/PRD.md` from `nfr/`. |
 | `epic-auto-close.sh` | Closes an epic from CI once every issue naming it is closed. |
 | `pipeline-override.sh` | Posts human waiver records (OR34). From the project checkout run `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh`; first read Running the pipeline in the installed `role-contracts` skill, including Stage-selection panel and Standing human class decisions. |
+| `merge-risk-evidence.sh`, `policy/merge-autonomy.json`, `policy/MODEL-SCORES-2026-11-11.md` | Read-only merge-risk evidence, disabled proposal configuration and tracked model-score source. |
 | `compliance-evidence.sh`, `role-label-staleness.sh`, `classify-review-depth.sh` | The multi-agent evidence scripts described in [How this repo builds itself](#how-this-repo-builds-itself). |
 | `ARCHITECTURE.md`, `PRD.md`, `TEST-SCENARIOS.md`, `CONTEXT.md`, `WORKFLOW-ADOPTION.md`, `CHANGELOG.md` | This repo's own filled-in copies — it adopts the workflow it defines. |
 | `test/` | This repo's own test suite (`run.sh`, `lib.sh`, `cases/`, `fixtures/`). |
