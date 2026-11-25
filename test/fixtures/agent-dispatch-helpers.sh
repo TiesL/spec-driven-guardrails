@@ -33,7 +33,7 @@ ad_prompt() {
   if [ -z "$stage" ]; then
     case "$role" in
       Product) stage=Discovery ;; Architect) stage=Planning ;; QA) stage=Test ;;
-      "Fullstack Developer") stage=Implementation ;; Reviewer) stage=Review ;;
+      Developer) stage=Implementation ;; Reviewer) stage=Review ;;
     esac
   fi
   printf 'ROLE SESSION: %s\n\nQuoted contract here.\n\n/clone/skills/pre-merge-review/model-record-emit.sh --stage %s --model <your id>\n' "$role" "$stage"
@@ -60,6 +60,5 @@ ad_run_core() {
 # ad_role_prompt <prefix role> [flag role]: role-only form, kept beside ad_prompt.
 ad_role_prompt() {
   local role="$1" flag_role="${2:-$1}"
-  [ "$flag_role" != "Fullstack Developer" ] || flag_role=Developer
   ad_prompt "$role" | sed "s/--stage [A-Za-z]*/--role $flag_role/"
 }

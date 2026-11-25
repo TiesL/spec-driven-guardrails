@@ -5,7 +5,7 @@
 # Seam: skills/role-contracts/ORCHESTRATOR.md OR11, the orchestrator-core.py
 # harness (its or11-wording check), orchestrator-rules.tsv, and
 # test/behavior/orchestrator-scenarios.md parsed by the S315 parser. No model
-# call (the paid run is S335). The S311 OR11 mutation lives in S311's own file.
+# call (the behavior-test run is S335). The S311 OR11 mutation lives in S311's own file.
 # New scenarios: OB64 advance approval honoured, OB65 finding fix lapses,
 # OB66 red CI fix lapses, OB67 update-only head survives, OB68 CI not yet
 # green on the updated head, OB69 fix on top of the update lapses, OB70

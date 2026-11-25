@@ -112,11 +112,11 @@ RULES = {534: [('canonical panel subsection', '### Stage-selection panel'),
 SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e3837105d5bb9faa64505',
  'lib/model-record.sh': '0348c95cd8f1347cf893b688c65dec9e2ba2d6dbe65826d72e40d7144875e870',
  'pipeline-override.sh': 'a107b7379b33e5f25225a9f8c5bce54fd93727f85f9c496d1e590d7bdb4b4998',
- 'skills/role-contracts/ORCHESTRATOR.md': 'a85d1ca59e0b06e87a1a77b0b640033fbf7c9de5d4d010e84d538645c2cabe88',
+ 'skills/role-contracts/ORCHESTRATOR.md': '7f9e938a251c1c8f67dc57d4bb65d6dfff14873c7fa5b7e17fdab0231cadd56e',
  'skills/role-contracts/orchestrator-rules.tsv': 'a41764d85b4392adcf557389d5d69d84fb8445750cff7bcfe8a1ad4771cd3f99',
- 'test/behavior/orchestrator-diff.stamp': 'c77f2e8db29dbbfc0081a3c6720f48f8ed5f481abce21316c083db5470dca568',
- 'test/behavior/orchestrator-scenarios.md': 'c2eaf345bf0e847e51914145dcce7be37a6eda1a5e14a06bd1a8222a0abfca40',
- 'test/fixtures/orchestrator-core-pins.tsv': 'c530682a65901dec340095667a78303308c3e184d24031a343623189b68ac667'}
+ 'test/behavior/orchestrator-diff.stamp': 'ef833815d861b434a555f19c302a97f52c82dca39ce524bda2b404ce406b4928',
+ 'test/behavior/orchestrator-scenarios.md': '35c9f032e3344764c2a919d25beb68c8169f3076a46a54d49368c6c7237eb638',
+ 'test/fixtures/orchestrator-core-pins.tsv': '2e1a30b503bd1c294db97e50111fc2759777592b8fffb8597b1cda3a514228d7'}
 errors = []
 
 SIX_SCOPES = ('single-session', 'skip=Discovery', 'skip=Planning', 'skip=Test', 'skip=Implementation', 'skip=Review')

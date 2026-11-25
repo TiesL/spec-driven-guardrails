@@ -4,7 +4,8 @@
 #
 # Seam: `session-context.sh --runtime claude --slot n <project>` output length
 # against CONTEXT_BUDGET_CHARS (sourced, never a literal), on the S309 worst-case
-# fixture, plus the slot-2 headroom floor and the A42 fallback consistency
+# fixture, plus the headroom floor in EACH slot (#652, A57: slot 1 carries the
+# CLAUDE.md-link warning on top of part 1, so it is the tighter one) and the A42 fallback consistency
 # (OR47/OR48 sit in one part, and the inventory and the core agree on which).
 
 set -uo pipefail
@@ -56,6 +57,8 @@ s2="$(slot_size "$wf" "$proj" 2)"
 echo "S318 sizes: slot1=$s1 slot2=$s2 budget=$CONTEXT_BUDGET_CHARS" >&2
 [ "$s1" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S318/slot-1 — slot 1 is $s1 characters, over the budget of $CONTEXT_BUDGET_CHARS"
 [ "$s2" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S318/slot-2 — slot 2 is $s2 characters, over the budget of $CONTEXT_BUDGET_CHARS"
+head1=$((CONTEXT_BUDGET_CHARS - s1))
+[ "$head1" -ge "$FLOOR" ] || fail "S318/headroom — slot 1 is $s1 characters, headroom $head1 is below the floor of $FLOOR (slot 2 is $s2)"
 head2=$((CONTEXT_BUDGET_CHARS - s2))
 [ "$head2" -ge "$FLOOR" ] || fail "S318/headroom — slot 2 is $s2 characters, headroom $head2 is below the floor of $FLOOR (slot 1 is $s1)"
 
@@ -105,5 +108,44 @@ PY2
 ps="$(slot_size "$pad" "$proj" 2)"
 [ "$ps" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S318/neg-floor — floor control grew past the budget itself ($ps)"
 [ $((CONTEXT_BUDGET_CHARS - ps)) -lt "$FLOOR" ] || fail "S318/neg-floor — headroom $((CONTEXT_BUDGET_CHARS - ps)) is not below the floor (control broken)"
+
+# Slot-1 floor control (#652): part 1 grown to headroom FLOOR-1 must be refused by the floor rule.
+# Slot 1 carries the CLAUDE.md-link warning, which names the clone path, so the padding is
+# sized from the unpadded copy measured in $pad itself, never from $s1 (the long clone path).
+(cd "$wf" && tar -cf - .) | (rm -rf "$pad" && mkdir -p "$pad" && cd "$pad" && tar -xf -)
+p0="$(slot_size "$pad" "$proj" 1)"
+extra1=$((CONTEXT_BUDGET_CHARS - FLOOR + 1 - p0))
+[ "$extra1" -ge 0 ] || extra1=0
+python3 -I - "$pad/skills/role-contracts/ORCHESTRATOR.md" "$extra1" <<'PY3'
+import sys
+p, n = sys.argv[1], int(sys.argv[2])
+t = open(p, encoding="utf-8").read()
+head, sep, tail = t.partition("<!-- session-context: slot -->\n")
+open(p, "w", encoding="utf-8").write(head.rstrip("\n") + "\n" + "x" * n + "\n" + sep + tail)
+PY3
+ps="$(slot_size "$pad" "$proj" 1)"
+[ "$ps" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S318/neg-floor-1 — slot-1 floor control grew past the budget itself ($ps)"
+[ $((CONTEXT_BUDGET_CHARS - ps)) -lt "$FLOOR" ] || fail "S318/neg-floor-1 — slot-1 headroom $((CONTEXT_BUDGET_CHARS - ps)) is not below the floor (control broken)"
+
+# One-character-edit control (#652 AC2): one non-whitespace character appended to the
+# part of the LARGER slot must still leave headroom >= FLOOR in both slots.
+if [ "$s1" -ge "$s2" ]; then big=1; else big=2; fi
+(cd "$wf" && tar -cf - .) | (rm -rf "$pad" && mkdir -p "$pad" && cd "$pad" && tar -xf -)
+python3 -I - "$pad/skills/role-contracts/ORCHESTRATOR.md" "$big" <<'PY4'
+import sys
+p, big = sys.argv[1], sys.argv[2]
+t = open(p, encoding="utf-8").read()
+m = "\n<!-- session-context: slot -->\n"
+if big == "1":
+    head, sep, tail = t.partition(m)
+    t = head + "x" + sep + tail
+else:
+    t = t.rstrip("\n") + "x\n"
+open(p, "w", encoding="utf-8").write(t)
+PY4
+for n in 1 2; do
+  ps="$(slot_size "$pad" "$proj" "$n")"
+  [ $((CONTEXT_BUDGET_CHARS - ps)) -ge "$FLOOR" ] || fail "S318/one-char — slot $n is $ps after a one-character edit to part $big: headroom $((CONTEXT_BUDGET_CHARS - ps)) is below the floor of $FLOOR"
+done
 
 test_done

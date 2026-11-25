@@ -152,6 +152,13 @@ if [ -x "$target/check-workflow-adapters.sh" ]; then
   fi
 fi
 
+if [ -f "$target/test/fixtures/old-role-name-allow.tsv" ]; then
+  echo "check: old role name"
+  if ! role_output="$(python3 -I "$target/test/fixtures/old-role-name-guard.py" "$target" 2>&1)"; then
+    report_error "$role_output"
+  fi
+fi
+
 # --- 3a. PR linkbacks in CHANGES.md / CHANGES-ARCHIEF.md (W21, F15) ---------
 # Without this linkback, an adopted project can't find out *why* a row is
 # in its own WORKFLOW-ADOPTIE.md (S32). CHANGES-ARCHIEF.md shares the same

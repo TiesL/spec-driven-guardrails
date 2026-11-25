@@ -527,16 +527,20 @@ the shared parser warns if it has no `Applies if`.
 
 ## process-multi-agent-roles
 
-- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
+- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Developer, Reviewer) instead of one agent session doing every stage?
 - **Default:** question
 - **Applies if:** always
-- **Meaning version:** 3 — #647 stage-selection rules and #651 epic stage inheritance
-  materially change what answering “yes” commits a project to (#663).
-  Projects answered under v2 re-confirm these obligations (#254).
-  The v2 strict whole-line records and override-value requirements from #427
-  (A31a/A34a) remain in force.
+- **Meaning version:** 4 — #645/PR #677 adds bounded temporary-decision and
+  record/disclosure obligations to the role contract; #646 adds the sole route
+  for a separately accepted and enabled `merge-risk-panel` delegation to allow
+  an opted-in orchestrator to merge into `main` without per-PR approval. The
+  shipped configuration is inert (`enabled:false`, `acceptance:null`);
+  installation or a `yes` answer grants no merge authority. Projects answered
+  under v3 re-confirm these obligations (#254). The v3 #647 stage-selection and
+  #651 epic stage-inheritance obligations (#663), and v2 #427 strict whole-line
+  records and override-value requirements, remain in force.
 - **Yes means:** each work item's stages are dispatched to the roles in the
-  `role-contracts` skill, in its fixed order, each with its own write/action
+  `role-contracts` skill, in its fixed order, using `ROLE SESSION: Developer` for Implementation, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
   start, the `SessionStart` hook prints the skill's `ORCHESTRATOR.md` (the run
   rules: what is a work item, stage order, fresh dispatch, human override,

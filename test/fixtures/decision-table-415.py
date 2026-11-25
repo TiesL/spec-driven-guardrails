@@ -189,6 +189,7 @@ elif scenario == "s280":
     for token in ("YYYY-MM-DD", "row", "decision"):
         require(token in template.group(), f"record template {token}")
     require("<!-- model-record" not in rec, "record carries a stage marker")
+    require("No `model-record` marker in any orchestrator record" in rec, "marker ban covers any orchestrator record (#652 AC4)")
     require("until change reaches `main`" in rec, "objection deadline: until the change reaches main")
     require(re.search(r"including after work-item merge into release branch", rec), "objection deadline covers release-branch work-item merge")
     require(not re.search(r"until the (release-branch )?merge\b", rec, re.I), "ambiguous merge deadline")
@@ -282,6 +283,7 @@ if not os.environ.get("DT415_NEGATIVE"):
             (", including after work-item merge into release branch", "", "release-branch coverage dropped"),
             ("Maintainer may object until change reaches `main`, including after work-item merge into release branch.", "Log it.", "log-only rule, no deadline"),
             ("Maintainer may object", "Objection rule pending Q2; maintainer may object", "pending wording"),
+            ("No `model-record` marker in any orchestrator record.", "No `model-record` marker in it.", "marker ban qualifier dropped (#652 AC4)"),
         ],
         "s281": [
             ("Before the decision is recorded", "After the decision is recorded", "pushback order"),

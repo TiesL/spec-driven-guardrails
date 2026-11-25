@@ -3,13 +3,11 @@ name: role-contracts
 description: >
   Opt-in (`process-multi-agent-roles`): apply only when this project's
   WORKFLOW-ADOPTION.md answers that question yes. The five role contracts
-  for the multi-agent workflow (Product, Architect, QA, Fullstack
-  Developer, Reviewer): responsibilities, per-role write/action scope (A4),
+  for the multi-agent workflow (Product, Architect, QA, Developer, Reviewer): responsibilities, per-role write/action scope (A4),
   floor-or-ceiling input scope (A8), Reviewer's security trigger list, and
   how to run the pipeline (stage order, labels, markers). Quoted directly
   into a role's dispatch prompt, by an orchestrating session or by hand.
-  Use when dispatching or reviewing a Product, Architect, QA, Fullstack
-  Developer, or Reviewer role in a project that opted in.
+  Use when dispatching or reviewing a Product, Architect, QA, Developer, or Reviewer role in a project that opted in.
 ---
 
 # Role descriptions and contracts
@@ -67,7 +65,7 @@ project that answers `process-multi-agent-roles` yes, the `SessionStart` hook pr
 into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
 the `model-choice` skill.
 
-**Abbreviated workflow.** The one named short track: `skip=Planning` and `skip=Test`. Discovery, Implementation and Review still run, and Review is still a fresh Reviewer; under the valid `skip=Test` record, no QA artifact or comparison applies and the Developer adds new scenario entries plus scenario text per the Fullstack Developer scope (A4) in the role contracts. Only the human grants it, in their own words, and those words are the `reason` of the record. The orchestrator posts it before the work item's first commit or PR open (never after the merge guard fires) with `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh <issue> --scope skip=Planning --scope skip=Test --decided-by <human> --reason '<their words>'`, run from the project's checkout, with `--reason` in single quotes. The script posts one record line per scope and refuses a value it cannot record as given (full list: `pipeline-override.sh --help`): the orchestrator then asks the human for other words and never edits theirs. The record is read only if the PR title or body carries the literal `Closes #<issue>`. Any other waiver is not this track and still needs the human's explicit words and its own record (OR34).
+**Abbreviated workflow.** The one named short track: `skip=Planning` and `skip=Test`. Discovery, Implementation and Review still run, and Review is still a fresh Reviewer; under the valid `skip=Test` record, no QA artifact or comparison applies and the Developer adds new scenario entries plus scenario text per the Developer scope (A4) in the role contracts. Only the human grants it, in their own words, and those words are the `reason` of the record. The orchestrator posts it before the work item's first commit or PR open (never after the merge guard fires) with `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh <issue> --scope skip=Planning --scope skip=Test --decided-by <human> --reason '<their words>'`, run from the project's checkout, with `--reason` in single quotes. The script posts one record line per scope and refuses a value it cannot record as given (full list: `pipeline-override.sh --help`): the orchestrator then asks the human for other words and never edits theirs. The record is read only if the PR title or body carries the literal `Closes #<issue>`. Any other waiver is not this track and still needs the human's explicit words and its own record (OR34).
 
 ### Temporary-decision panel
 
@@ -117,9 +115,10 @@ issues; transferring repository ownership or any novel unlisted action.
 Also reserved: pipeline-override markers; disabling guardrails; user config; hook-denied
 operations; sandbox-denied operations.
 Editing the panel's own rules is also reserved: any proposal whose target is contract
-text (anything under skills/, policy/, hooks/, settings/ and adapters/, the generated
-AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, and A54 D2) is referred to
-the maintainer, even when it would otherwise be an eligible docs edit or policy choice.
+text (by repository path: anything under skills/, policy/, hooks/, settings/, adapters/ and
+templates/, the generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47,
+CHANGES.md, USER-CLAUDE.md, and A54 D2) is referred to the maintainer, even when it would
+otherwise be an eligible docs edit or policy choice.
 A panel cannot overrule a role, waive a contract, retry a denied operation or
 manufacture human approval; use OR45 pushback and human decision where applicable.
 All security trade-offs remain reserved, both 2-1 and 3-0; refer them to the maintainer
@@ -319,7 +318,7 @@ see the note above.
 and acceptance criteria. Write the business case for a product, release, or feature.
 Determine product vision and releases; prioritize based on business/user value weighed
 against effort — effort is estimated by the roles that would do the work (Architect, QA,
-Fullstack Developer, and Reviewer, each for their own share of getting it done), never by
+Developer, and Reviewer, each for their own share of getting it done), never by
 Product itself, using an explicit prioritization framework (method TBD — e.g. an
 impact/effort matrix or WSJF, undecided as of 2026-09-25). Make trade-off and scope
 decisions.
@@ -366,7 +365,7 @@ for the design/architecture share of the work.
 [`mattpocock/skills`](https://github.com/mattpocock/skills), MIT: read the skill itself, don't
 work from a paraphrase). Use its vocabulary exactly: **Module**, **Interface**, **Seam**,
 **Depth**, **Leverage**, **Locality** — not "component," "service," or "boundary." Guards
-against the specific failure this was added for: a Fullstack Developer producing many small,
+against the specific failure this was added for: a Developer producing many small,
 shallow moving parts instead of a few deep ones. Concretely: apply the deletion test (does
 complexity vanish or resurface across callers?) and the two-adapters rule (don't introduce a
 seam for a hypothetical variation — only for one that's real) when reviewing or proposing a
@@ -404,7 +403,7 @@ see the note above.
 **Responsibilities:** determine test strategy (which kind of test fits —
 unit/integration/end-to-end/penetration/performance/load/etc.) and work out test
 scenarios/seams (seam placement itself is a decision, see `tdd-seams`: agree the seam before
-the test, not after). Does not execute tests itself — Fullstack Developer writes and runs
+the test, not after). Does not execute tests itself — Developer writes and runs
 them (red-before-green, see `tdd-seams`), CI re-runs them independently. QA verifies results
 against its own scenarios, identifies/reports defects, verifies functional and
 non-functional requirements, and guards quality gates before release — matching the
@@ -413,7 +412,7 @@ Reviewer entry below for the same principle applied to the final gate. Estimate 
 Product's prioritization (§ Product, above), for the testing share of the work.
 
 **Write/action scope (A4):** `TEST-SCENARIOS.md` entries and its own test-strategy comment —
-writes no test code itself (Fullstack Developer does, see Responsibilities above) and no application
+writes no test code itself (Developer does, see Responsibilities above) and no application
 code.
 
 **Before Implementation**, publish `git diff --full-index <base> -- TEST-SCENARIOS.md`
@@ -432,11 +431,11 @@ Apply `write-spec`'s historical-claim checks and evidence; QA writes no test cod
 
 **Evidence / gates it produces:** test strategy, test scenarios/seams, an assessment of test
 results against those scenarios (not the raw results themselves — those come from CI/
-Fullstack Developer, see Responsibilities above), QA assessment.
+Developer, see Responsibilities above), QA assessment.
 
 ---
 
-## Fullstack Developer
+## Developer
 
 *Builds a coherent, bounded unit end-to-end, including relevant tests and documentation.*
 
@@ -483,7 +482,7 @@ see the note above.
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
 traceability — same scope as the `pre-merge-review` and `code-review` skills. Stays a
-distinct role, never merged into QA or Fullstack Developer. Does not re-run tests itself —
+distinct role, never merged into QA or Developer. Does not re-run tests itself —
 checks CI's actual result (the independent, mechanical re-execution) and judges whether the
 test *strategy* was adequate, same principle as QA's entry above and the
 `pre-merge-review` skill, which reviews evidence rather than re-executing it. Estimate effort for
@@ -501,7 +500,7 @@ scenario entries as test fidelity.
 that tests exist and pass. Extends the already-decided split between mechanical and semantic checks (the
 traceability check verifies structurally that a scenario/functionality link exists; Reviewer judges semantically
 whether it's the *right* one) to test code specifically: the same kind of judgment a
-mechanical check can't make. Reviewer is the only role positioned after Fullstack Developer
+mechanical check can't make. Reviewer is the only role positioned after Developer
 in the standard path, so this check has nowhere else to live.
 
 **Write/action scope (A4):** read-only over the PR diff, CI results, and every prior role's
@@ -683,7 +682,7 @@ Reviewer is a fresh Reviewer for this dispatch. Non-Reviewer reuse remains
 TiesL/spec-driven-guardrails#412's decision. An overrule then gets the Architect's issue Risk note in the
 format above; this is the format referenced by TiesL/spec-driven-guardrails#410 AC6/S218.
 
-Product decides *what*; Architect decides *how*; Fullstack Developer executes; QA verifies it
+Product decides *what*; Architect decides *how*; Developer executes; QA verifies it
 works as intended; Reviewer independently confirms the whole chain before release. Conflict
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
 (A7). It escalates to the project's human decision-maker.

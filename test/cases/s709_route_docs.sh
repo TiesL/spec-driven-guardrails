@@ -237,7 +237,19 @@ grep -qiE "$terms" "$SANDBOX/WORKFLOW.md" || fail "S709/neg — a planted term i
 # --- the stamp still holds, no new OR rule -----------------------------------------
 python3 -I "$R/test/behavior/orchestrator_diff.py" stamp-check --repo "$R" >/dev/null 2>&1 \
   || fail "S709 — the behavior stamp check fails (a stamped file changed)"
-base_ref="$(git -C "$R" merge-base HEAD origin/main 2>/dev/null)"
+release_base=892dec572cb6232853ef28cb2d8d5fe4bfdc3499
+if git -C "$R" rev-parse --verify origin/main >/dev/null 2>&1 \
+  && git -C "$R" merge-base --is-ancestor "$release_base" HEAD; then
+  git -C "$R" merge-base --is-ancestor "$release_base" origin/main
+  main_ancestor_status=$?
+else
+  main_ancestor_status=0
+fi
+if [ "$main_ancestor_status" -eq 1 ]; then
+  base_ref="$release_base"
+else
+  base_ref="$(git -C "$R" merge-base HEAD origin/main 2>/dev/null)"
+fi
 if [ -n "$base_ref" ]; then
   for f in skills/role-contracts/ORCHESTRATOR.md test/behavior/orchestrator-scenarios.md skills/role-contracts/orchestrator-rules.tsv; do
     git -C "$R" diff --quiet "$base_ref" -- "$f" || fail "S709 — $f changed against the merge base"

@@ -13,21 +13,50 @@ point.
 
 ## Unreleased
 
-- #645: Document the temporary-decision panel proposal, allow-list, independent
-  model-floor evidence, issue-home records and grouped merge-approval disclosure;
-  decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
-  contract text, is reserved to the maintainer.
-- #713: Rename the tracked `wip/` directory (co-thinking sources such as
-  `wip/multi-agent-development/`) to `prep/`, so that `wip/` keeps one meaning:
-  the #706 branch prefix. Live pointers, test exclusions and the
-  `prep/<slug>/` co-thinking report convention in the installed `role-contracts`
-  skill now name `prep/`; history quotes (old locations in past tense, this
-  changelog) keep `wip/`. S593's byte pin on `hooks/` and `skills/pre-merge-review/`
-  admits exactly two documented substitutions (the `wip/` to `prep/` pointer on
-  one line in each of `skills/pre-merge-review/SKILL.md` and
-  `hooks/git-guardrails`); its merge base does not move. Adopters need no
-  action: `adopt.sh` installs nothing from this directory, and a project may
-  keep an existing `wip/<slug>/` folder of its own.
+## v0.8.0 — Temporary-decision panel: Product, Architect and the orchestrator settle a question on record while the maintainer is away, pending the maintainer's decision; the merge-risk panel for autonomous merges into main ships inert. (2026-11-25)
+
+- #645: Document the temporary-decision panel proposal, limited allow-list,
+  independent model-floor evidence, issue-home records and grouped merge-approval
+  disclosure. Decisions remain temporary and maintainer-pending; editing its
+  governing contract text remains maintainer-reserved. The six #645 instruction
+  exercises remain UNRUN; the risk was accepted when PR #677 merged.
+- #646: The merge-risk panel for autonomous merges into `main` ships as a
+  proposal, pending maintainer acceptance, inert by default (`enabled:false`,
+  `acceptance:null`). It adds the `merge-risk-panel` skill,
+  `policy/merge-autonomy.json` and read-only `merge-risk-evidence.sh` verifier.
+  No real merge can be approved by this gate until #701 and #682 are done;
+  neither is in this release, and the merge-risk exercises have not run.
+- #652 and #676: Give `ORCHESTRATOR.md` core budget headroom, restore the OR44
+  marker qualifier, and replace remaining “paid” behavior-run wording with
+  subscription wording (PR #692).
+- #678: Tighten the panel fixture oracle (items 1–6): null list fields give named
+  diagnostics; `prior[].result` is limited to `denied`/`none`; unresolved or
+  escalated records carry no dissent; the structured target is read for six
+  tokens; `unanimous-skip` facts match the `protected-work` row; PRD F68 reads
+  “the rest of ARCHITECTURE”. Fixture and spec wording only.
+- #679: Raise `process-multi-agent-roles` to meaning v4 for #645's bounded
+  temporary decisions and #646's conditional, inert delegation route. Existing
+  adopters answer one readoption question and record `(meaning v4)`; that answer
+  grants no merge authority. This repo's row was reconfirmed on 2026-11-24.
+- #681: Widen the maintainer-reserved contract-text class to `templates/`,
+  `CHANGES.md` and `USER-CLAUDE.md`, by repository path (no meaning bump).
+- #713: Rename the tracked `wip/` co-thinking directory to `prep/`, leaving
+  `wip/` for the #706 branch prefix. Live pointers and the co-thinking report
+  convention now use `prep/`; historical references remain historical. No
+  adopter action is needed because `adopt.sh` installs nothing from this directory.
+- #719: Sync `main` into the release branch (PR #725), preserving both sides'
+  specification sections and the #713/route-child v0.7.0 carry-over. The #685
+  Part A dispatch hook now denies `ROLE SESSION: Fullstack Developer` and
+  requires `ROLE SESSION: Developer` for Implementation; S593 records the three
+  bounded substitutions without moving its merge base.
+- #727: Correct the three deferred low findings from the #719 sync review
+  (PR #729).
+- #734: Resolve five holistic review findings (PR #736): align the disabled
+  merge-risk policy's contract hard stops with reserved paths, finish #685
+  Part B's live `Developer` wording, move the A58 addenda under A58, record
+  #646's debt, and replace the untracked model-score citation with tracked
+  `policy/MODEL-SCORES-2026-11-11.md`. A60 addenda 26–27 and S714–S717
+  document and check the resolutions. #646 remains disabled and unaccepted.
 
 ## v0.7.0 — Routed children: Claude and Codex runs launched as separate processes go through the Caveman proxy: opt-in per project, metered, text uncut, and fail-closed. The Orchestrator session stays direct for remote-control. (2026-11-19)
 

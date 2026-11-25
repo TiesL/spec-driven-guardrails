@@ -12,7 +12,7 @@ import time
 ROOT = Path(sys.argv[2])
 TMP = Path(sys.argv[3])
 ROWS = [('Product', 'Product', 'Discovery'), ('Architect', 'Architect', 'Planning'),
-        ('QA', 'QA', 'Test'), ('Fullstack Developer', 'Developer', 'Implementation'),
+        ('QA', 'QA', 'Test'), ('Developer', 'Developer', 'Implementation'),
         ('Reviewer', 'Reviewer', 'Review')]
 EMIT = 'skills/pre-merge-review/model-record-emit.sh'
 ORCH = 'skills/role-contracts/ORCHESTRATOR.md'
@@ -741,7 +741,7 @@ def round6_briefs():
           "Read the Reviewer's findings first. The report's first line is the output of\n"
           "model-record-emit.sh, which you'll run as:\n%s\n"
           "Don't paraphrase it; it's checked by the gate.\n")
-    dev = ("ROLE SESSION: Fullstack Developer\nFix the Reviewer's finding on PR #601.\n"
+    dev = ("ROLE SESSION: Developer\nFix the Reviewer's finding on PR #601.\n"
            "First line of the report: model-record-emit.sh output (it's mandatory):\n%s\n"
            "Then run the tests. Don't push; the orchestrator's session does.\n")
     rev = ("Review PR #601 at head 4ef7c95d398e. Run finding-carryforward-gate.sh 601 first.\n"
@@ -954,7 +954,8 @@ def agreement():
     denied(prompt('Product','--stage Planning'),['OR31'],'exact #595 stage-only mismatch')
     denied(prompt('Product','--role Product --stage Planning'),['OR31'],'contradictory flags')
     denied(prompt('Product','--role Architect'),['OR31'],'prefix versus role')
-    allowed(prompt('Fullstack Developer','--role Developer'),'Fullstack Developer alias')
+    denied(prompt('Fullstack Developer','--role Developer'),['OR8'],'Fullstack Developer alias')
+    allowed(prompt('Developer','--role Developer'),'Developer prefix')
     for suffix in TERMINATORS:
         for flags in ['--stage Planning','--role Architect']:
             denied(terminated_prompt(flags,suffix),['OR31'],'mismatch '+flags+' terminator '+repr(suffix or 'EOL'))
@@ -1146,7 +1147,7 @@ def doc_errors(root):
     if '--stage' in line and not re.search(r'compatib|old|legacy',line,re.I):errors.append('OR31 unlabelled legacy stage')
     if re.search(r'model-record: stage=|stage="',text):errors.append('ORCHESTRATOR grammar copy')
     for l in text.splitlines():
-        if not l.startswith('- OR5 ') and re.search(r'(Discovery/Product|Planning/Architect|Implementation/Fullstack Developer)',l):errors.append('stage table duplicated outside OR5')
+        if not l.startswith('- OR5 ') and re.search(r'(Discovery/Product|Planning/Architect|Implementation/Developer)',l):errors.append('stage table duplicated outside OR5')
     for path,role in [('skills/model-choice/SKILL.md','<Role>'),('skills/pre-merge-review/SKILL.md','Reviewer')]:
         t=' '.join((root/path).read_text().split())
         if not re.search(r'model-record-emit\.sh --role '+re.escape(role),t):errors.append(path+' instructs role')

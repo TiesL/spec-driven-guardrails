@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# S335 — the advance-approval rule holds under a real model, and the stamp is refreshed once after all edits (#516 AC4-AC6; A43; needs a paid run)
+# S335 — the advance-approval rule holds under a real model, and the stamp is refreshed once after all edits (#516 AC4-AC6; A43; needs a behavior-test run)
 # Covers: F55
 #
-# The paid run itself is ./test/behavior/orchestrator-diff.sh (subscription, no
+# The behavior-test run itself is ./test/behavior/orchestrator-diff.sh (subscription, no
 # spend approval), made once after the OR11 text and scenarios are final. This
 # test is what ./check can say about it with no model call: the committed stamp
 # matches ORCHESTRATOR.md plus the scenario file (so no edit came after the
