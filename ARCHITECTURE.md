@@ -11333,6 +11333,63 @@ accepted before activation.
 the inert-state constraint. It changes F72's concrete SDG mapping only after
 the proper Product edit and maintainer acceptance of the proposed narrowing.
 
+### A60 addendum 27 — Hard-stop A54 D2 by its containing path (#734; resolves `f68-a54-d2-not-in-hard-stops`; amends addendum 26)
+
+**Decision.** [A] Add the exact anchored `ARCHITECTURE.md` path to the SDG
+`contracts` hard stops in `policy/merge-autonomy.json`. A54 D2 is reserved by
+F68/#681, but the path matcher sees changed paths, not Markdown sections; a
+pattern cannot protect D2 while leaving other entries in this file eligible.
+An entire-file stop is the finite, testable implementation of that reservation.
+It deliberately narrows F72's autonomous candidate class for *the rest* of
+`ARCHITECTURE.md`, which F68 still treats as `other` for the distinct #645
+temporary-decision panel. Do not change that panel's target classification.
+The coverage cost of this additional narrowing is unmeasured. A candidate
+editing this file must follow the human merge path even when its edit is
+outside A54 D2 and two risk reviewers clear it.
+
+**Complete F68 class audit.** The six reserved directories are `skills/`,
+`policy/`, `hooks/`, `settings/`, `adapters/` and `templates/`, at any depth.
+The first, second and sixth have the broad `skills/**`, `policy/**` and
+`templates/**` patterns from addendum 26; the others have `hooks/**`,
+`settings/**` and `adapters/**`. The generated `AGENTS.md` and `WORKFLOW.md`,
+`ORCHESTRATOR.md` including OR47/OR43/OR45, `CHANGES.md` and `USER-CLAUDE.md`
+have exact root patterns. A54 D2 is in the newly stopped root
+`ARCHITECTURE.md`. This exhausts F68's closed named class; no named item is
+deliberately excluded. Existing extra patterns and overlapping directory
+patterns do not weaken the match. The root `PRD.md` (including F68/F72), the
+rest of `ARCHITECTURE.md`, and root `TEST-SCENARIOS.md` are spec content under
+F68, not newly reserved panel contract text. F72 and the S662/S590 scenarios
+do govern these panels, but that role does not silently enlarge F68's closed
+class: F72 retains substantive review and its indirect-weakening referral for
+unlisted paths. The whole-file `ARCHITECTURE.md` stop is disclosed as an
+additional SDG instance restriction, not a reclassification of F68.
+
+**Maintainer acceptance point.** Product must disclose the exact
+`ARCHITECTURE.md` pattern, the whole-file effect on otherwise eligible spec
+entries, and the unmeasured coverage cost alongside addendum 26's mapping
+before asking the maintainer to accept F72/M1. The maintainer must expressly
+accept this further narrowing as part of that acceptance. This decision,
+tests and a release-branch merge do not accept or enable #646; preserve
+`enabled:false` and `acceptance:null`.
+
+**Follow-on work.** Product amends only F72's mapping/disclosure, leaving F68's
+closed class intact. QA first makes the S662 one-file A54 D2 candidate red
+against the current config, then adds old/new-path, deletion and rename-side
+assertions for `ARCHITECTURE.md`, with an ordinary root `PRD.md` or
+`TEST-SCENARIOS.md` candidate as the outside-pattern control. Test the shipped
+disabled/null state separately from a configured laboratory evaluator; a
+deletion mutant of the exact pattern must be killed by its own witness.
+Developer adds only `ARCHITECTURE.md` to the `contracts` array and the
+corresponding fixture, without a second matcher or panel-target oracle.
+The existing path-policy Module and matcher Interface suffice; a new Seam
+would scatter one finite mapping across callers without added Leverage.
+
+**AC consistency.** #734 AC1 is satisfied by closing the missing named item.
+F72's current claim that existing patterns cover the rest of F68's class is
+false until this change; Product must correct that sentence and disclose the
+extra whole-file narrowing. F68's eligibility of other architecture entries
+for the #645 panel remains unchanged.
+
 ### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
 
 - **Decision.** [A] The Orchestrator session talks to its provider directly. A
