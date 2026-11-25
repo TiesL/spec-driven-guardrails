@@ -42,7 +42,7 @@ STOP_PATTERNS = {
  'ci': ['.github/workflows/**', '.github/actions/**', 'templates/ci.yml', 'epic-auto-close.sh'],
  'contracts': ['skills/**', 'policy/**', 'templates/**', 'skills/role-contracts/**', 'prep/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
                'generate-workflow-adapters.sh', 'AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', 'ORCHESTRATOR.md',
-               'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'adopt.sh', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
+               'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'ARCHITECTURE.md', 'adopt.sh', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
                '**/AGENTS.md', '**/AGENTS.override.md', '**/CLAUDE.md', '**/ORCHESTRATOR.md']}
 
 
@@ -853,6 +853,13 @@ for path in ('skills/release-branch-workflow/SKILL.md', 'skills/model-choice/SKI
              'CHANGES.md', 'USER-CLAUDE.md', 'skills/__s662__/child.txt',
              'policy/__s662__/child.txt', 'templates/__s662__/child.txt'):
     row(662,'reserved/'+path,files_edit(path=path),'referred','hard-stop')
+for path in ('PRD.md', 'TEST-SCENARIOS.md'):
+    row(662,'outside/'+path,files_edit(path=path))
+for kind in ('add', 'delete', 'rename-in', 'rename-out'):
+    row(662,'a54-d2/'+kind,
+        files_edit(path='src/renamed.py' if kind=='rename-out' else 'ARCHITECTURE.md',
+                   prev='ARCHITECTURE.md' if kind=='rename-out' else 'src/old.py' if kind=='rename-in' else None,
+                   mode='000000' if kind=='delete' else '100644'), 'referred', 'hard-stop')
 mutate(662,'hard-stop','execution/hooks/**/add')
 for path in ('Settings/session-hooks.json','Hooks/git-guardrails','x/../hooks/x','bad\udcff'):
     row(663,'path-'+ascii(path),files_edit(path=path),'referred','path-unsafe' if '..' in path or '\udcff' in path else 'hard-stop')
@@ -1505,7 +1512,9 @@ for group,patterns in STOP_PATTERNS.items():
                for other_group, other_patterns in STOP_PATTERNS.items()
                for other in other_patterns if (other_group, other) != (group, pattern)):
             continue
-        mutate(662,'policy-pattern',group+'/'+pattern+'/add',(group,pattern))
+        if (group, pattern) != ('contracts', 'ARCHITECTURE.md'):
+            mutate(662,'policy-pattern',group+'/'+pattern+'/add',(group,pattern))
+mutate(662,'policy-pattern','a54-d2/add',('contracts','ARCHITECTURE.md'))
 for days in (1/24,1,30,365):
     mutate(618,'unbounded-holds','pr-old--34560000',("elif when<T: holds.append(when)","elif T-timedelta(days="+str(days)+")<=when<T: holds.append(when)"))
 mutate(618,'unbounded-holds','pr-old--1',('elif when<T: holds.append(when)',"elif when<T and len(b['issue_comments'])>1: holds.append(when)"))

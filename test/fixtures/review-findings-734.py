@@ -3,8 +3,10 @@ import json
 import hashlib
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,10 +35,13 @@ def s662():
     reserved += ['skills/release-branch-workflow/SKILL.md', 'skills/model-choice/SKILL.md',
                  'skills/deploy-guards/SKILL.md', 'templates/PRD.md',
                  'templates/ISSUE_TEMPLATE/work-item.md', 'templates/wait-for-ci.sh',
-                 'CHANGES.md', 'USER-CLAUDE.md']
+                 'CHANGES.md', 'USER-CLAUDE.md', 'ARCHITECTURE.md']
     for path in reserved:
         check(any(mapped(pattern, path) for pattern in patterns), 'S662/reserved/' + path)
     check(not any(mapped(pattern, 'docs/ordinary-notes.md') for pattern in patterns), 'S662/unreserved-control')
+    check('ARCHITECTURE.md' in config['hard_stops']['contracts'], 'S662/exact-architecture-pattern')
+    for path in ('PRD.md', 'TEST-SCENARIOS.md', 'docs/ARCHITECTURE.md'):
+        check(not any(mapped(pattern, path) for pattern in patterns), 'S662/outside/' + path)
 
 def s714():
     # Inventory only current contract surfaces. Historical quotations and negative
@@ -69,6 +74,28 @@ def s714():
     check(re.search(r'^## Developer\s*$', roles, re.M) is not None, 'S714/developer-heading')
     for name in ('test/fixtures/oracle-contract-pins.py','test/fixtures/skip-test-qa-exemption-pins.py'):
         check("'Fullstack Developer'" not in read(name), 'S714/heading-consumer/' + name)
+    guard = ROOT / 'test/fixtures/old-role-name-guard.py'
+    with tempfile.TemporaryDirectory(prefix='s714-old-role-') as tmp:
+        scratch = Path(tmp)
+        allow = scratch / 'test/fixtures/old-role-name-allow.tsv'
+        allow.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / 'test/fixtures/old-role-name-allow.tsv', allow)
+        failures = []
+        for name in ('PRD.md', 'test/behavior/orchestrator-scenarios.md', 'ARCHITECTURE.md'):
+            target = scratch / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(read(name) + '\nFullstack ' + 'Developer\n')
+            result = subprocess.run(['python3', '-I', str(guard), str(scratch)],
+                                    text=True, capture_output=True)
+            ok = result.returncode == 1 and name in result.stderr
+            if not ok:
+                print('FAIL S714/old-role-guard/' + name + ': exit=' + str(result.returncode)
+                      + ' stderr=' + result.stderr.strip())
+                failures.append(name)
+            else:
+                print('PASS S714/old-role-guard/' + name)
+            target.unlink()
+        check(not failures, 'S714/old-role-guard/all')
 
 def s715():
     for name in ('PRD.md','ARCHITECTURE.md','TEST-SCENARIOS.md'):
