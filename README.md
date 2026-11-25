@@ -8,7 +8,7 @@ Not an agent framework — shared conventions and scripts with Claude Code and C
 
 ## Releases and their themes
 
-A tag is a human reference point: an adopted project follows `main` or pins a tag (see "Getting started"), and `CHANGELOG.md` holds the detail per release. To see how the repo itself is built, read [How this repo builds itself](#how-this-repo-builds-itself). The v0.8.0 row is release preparation; its tag is placed only after the maintainer merges the release branch into `main` and authorizes tagging. Its date and theme match the CHANGELOG heading; if the merge date changes, both are updated together.
+A tag is a human reference point: an adopted project follows `main` or pins a tag (see "Getting started"), and `CHANGELOG.md` holds the detail per release. To see how the repo itself is built, read [How this repo builds itself](#how-this-repo-builds-itself). A release-prep change adds one row at the top of this table; the newest row's date and theme must match its CHANGELOG heading.
 
 | Tag | Date | Theme |
 |---|---|---|
