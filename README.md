@@ -70,7 +70,7 @@ chain read backward: given a PR, a business analyst, product owner, or product m
 trace it to the issue it closes, the scenario that issue covers, and the requirement that
 scenario tests — a UAT trail, without reading code.
 
-For an epic, a work-item PR can instead target a `release/<epic-number>-<slug>` branch; a holistic review precedes the release branch's merge into `main`. This release uses a merge commit for that final merge. The diagram shows the ordinary main-bound path; the [release branch tier](#a-release-branch-between-work-items-and-main) supplies the other path. Separate-process model children may use optional `route-child.sh` routing through Caveman; `SDG_MODEL_ROUTE=off` disables routing for a run. See [model routing](docs/model-routing.md).
+For an epic, a work-item PR can instead target a `release/<epic-number>-<slug>` branch; a holistic review precedes the release branch's merge into `main`. The diagram shows the ordinary main-bound path; the [release branch tier](#a-release-branch-between-work-items-and-main) supplies the other path. Separate-process model children may use optional `route-child.sh` routing through Caveman; `SDG_MODEL_ROUTE=off` disables routing for a run. See [model routing](docs/model-routing.md).
 
 Each stage of that diagram is backed by a concrete practice:
 
