@@ -1516,7 +1516,7 @@ differ.
     or `--stage` (A48). Anything else is allowed silently.
   - **Checks.**
     - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
-      Product, Architect, QA, Fullstack Developer or Reviewer.
+      Product, Architect, QA, Developer or Reviewer.
     - `no-fork`: `subagent_type` is not `fork`.
     - `marker-command`: `model-record-emit.sh` with a valid `--role <Role>`
       or the backward-compatible `--stage <Stage>` form (A48).
@@ -4348,86 +4348,6 @@ Loop-back from the Developer's part-1 report on #646 (findings 1-4, comment
   - Requiring `hold_release` after an off-label stop costs one extra maintainer quote on re-enable; a separate re-enable field was judged not worth the schema change.
   - `held` for a still-present hold label without a prior record stays exit 1 (wait); only a void record is forced to `unresolved`.
 
-### A59 — Role name "Developer": Part A is core, hook and the tests that tie them (#685; F38; amends A41 role list, A58 not touched)
-
-Architect, Planning, 2026-11-09. Maintainer decision (O1, option 1): the one-token
-hook edit rides with Part A. Part B (rest of the live text, regression guard) is a
-later PR.
-
-- **Core wording (shortest correct).** OR5: `Implementation/Fullstack Developer/` becomes
-  `Implementation/Developer/`. OR8: `..., QA, Fullstack Developer, Reviewer.` becomes
-  `..., QA, Developer, Reviewer.` Nothing else: no "not Fullstack" clause. The deny
-  text for a wrong prefix prints the OR8 line, which then lists the valid names.
-- **Hook.** `hooks/agent-dispatch.py` line 36, field 0 only:
-  `("Developer", "Developer", "Implementation")`. `PREFIX` is built from field 0, so
-  `ROLE SESSION: Fullstack Developer` fails `prefix` (OR8) with no further edit. The
-  `--role "Fullstack Developer"` rejection already exists in `lib/model-record.sh`
-  (`role_stage` knows five names; `bad_inputs` in `role-stage-599.py` pins it). The
-  drift check needs no new code: it compares `--list-roles` rows with OR5, so it goes
-  green when field 0, OR5 and the `ROWS` table agree. The space-in-field comment in
-  `role-stage-599.py` (`drift`) loses its witness; the three-field check still
-  detects a space delimiter (one field, not three), so keep it and reword the comment.
-- **Part A files, by owner.**
-  - QA (Test, first, bytes final before any re-pin): `TEST-SCENARIOS.md` (S312 text
-    near the "silently passes" and "preserving the space" lines changes; the
-    emitter-argv line that names a single quoted `Fullstack Developer` argument stays as
-    a negative; add an "Amended by #685" line); `test/behavior/orchestrator-scenarios.md`
-    (13 occurrences, including the `next_role` value list and every `Then:
-    next_role=`). These scenarios feed the stamp (hash covers ORCHESTRATOR.md plus the
-    scenarios file), and their expected role values must equal what the new core says,
-    so they are Part A and not optional.
-  - Developer (red first on the tests, then the code): `ORCHESTRATOR.md` (OR5, OR8),
-    `hooks/agent-dispatch.py` (line 36), `test/behavior/orchestrator_diff.py` (`ROLES`),
-    `test/fixtures/role-stage-599.py` (`ROWS` row, prompt at about 744, three-field
-    expectation, OR5 duplicate-table regex, and the `allowed(... 'Fullstack Developer
-    alias')` line becomes `denied(..., ['OR8'], ...)`; keep a `--role "Fullstack
-    Developer"` denial), `test/cases/s312_agent_dispatch_denies_with_core_line.sh`
-    (prefix uses), `test/fixtures/agent-dispatch-helpers.sh` (case label; the
-    `flag_role` alias to `Developer` becomes a no-op and goes).
-  - Orchestrator: the behavior run and the generated stamp (OR46 b).
-  - Not in Part A: the generated `WORKFLOW.md`, `AGENTS.md`, `adapters/codex/AGENTS.md`
-    (checked: their only hit is the `policy/WORKFLOW.md` routing row, Part B; no
-    OR text is embedded), `oracle-contract-pins.py`, `skip-test-qa-exemption-pins.py`
-    (they follow the SKILL.md heading, which stays until B), `orchestrator-core-pins.tsv`
-    (no OR5/OR8 fragment pin: verified by grep).
-  AC-A3 of the issue ("generated copies equal generator output") therefore holds
-  trivially in A: nothing generated moves. Part B regenerates once.
-- **S548 re-pin and order.** `stage-selection-647.py` `SNAPSHOTS` pin
-  `ORCHESTRATOR.md` and `orchestrator-scenarios.md`: both change, so #646's earlier
-  re-pin (70e8d21) is void. Order as the A57 addendum: (1) QA finishes the scenarios and
-  TEST-SCENARIOS bytes; (2) Developer edits ORCHESTRATOR.md, hook, tests; any later
-  change to a stamped byte voids what follows; (3) QA re-pins the two hash entries once,
-  from final bytes (core-pins.tsv unchanged); (4) orchestrator runs the single
-  differential run covering #646's pointers and A, commits the stamp; (5) QA re-pins
-  only the stamp entry, runs S548, S323, S335. Merge into the release branch only after (5).
-- **S318.** OR5 and OR8 each lose 10 characters ("Fullstack "), so slot 1 gains about
-  20 characters of headroom (assuming both rules are in slot 1, as A57 states); the
-  floor assertions cannot fail from this edit. QA/Developer read the printed sizes.
-- **Mid-flight dispatches.** The hook gates only the `Agent` call, so a running agent
-  with the old prefix is unaffected, and `SendMessage` continuations are not
-  re-checked. A new dispatch with the old prefix after the hook lands is denied once
-  with the OR8 line, which names `Developer`: self-correcting, one wasted call. The
-  markers agents emit already use `--role Developer`; no marker changes.
-- **O4: Part B guard allow-list.** A data file `test/fixtures/old-role-name-allow.tsv`,
-  columns `path-or-glob`, `max` (a count, or `*`). History (`CHANGELOG.md`,
-  `CHANGES.md`, the baseline snapshot, `marker-corpus.jsonl`, the captured hook input,
-  `prep/**`) is `*`: a new release note may legitimately name the old name. The
-  deliberate negative-test lines (`role-stage-599.py`, `s312*.sh`, and `TEST-SCENARIOS.md`)
-  get an exact maximum, so a new occurrence there also fails and names the file.
-  The guard scans whitespace-normalised text (wrapped frontmatter) and excludes the
-  allow-list file itself. Rejected: building the strings from parts (hides intent
-  and defeats grep) and an in-line marker comment (a copied line carries it along).
-- **Violated when** (added): OR5/OR8, `--list-roles` and `ROWS` disagree; the old
-  prefix or `--role` value is allowed; an orchestrator-scenarios expected role differs
-  from the core; an S548 pin differs from committed bytes at merge; a pin is taken
-  before the Developer's bytes are final.
-- **Doubts (one line each).** [A] The hook file is reserved contract text, so the edit
-  is a proposal the maintainer reads at the release merge. [A] The 13 scenario edits
-  change expected values only; if the run diverges on a scenario that names the role
-  in its Given, that is a core-wording problem, not a scenario bug. [A] The `max`
-  counts in the Part B allow-list are a pin that churns when a negative test is
-  reworded; accepted, since the churn is the review point.
-
 #### A58 addendum 2 (Architect, Planning, 2026-11-09): OB65 divergence is the scenario's open self-check, not the core
 
 Both full differential runs on 0254d5c (base origin/main) diverged on OB65 only:
@@ -5299,10 +5219,90 @@ allowed-path references; this session's environment.
   - Whole-tree F2 makes any stray local edit in the executor checkout refuse; that is the safe direction, at the cost of a refresh.
 
 
+### A59 — Role name "Developer": Part A is core, hook and the tests that tie them (#685; F38; amends A41 role list, A58 not touched)
+
+Architect, Planning, 2026-11-09. Maintainer decision (O1, option 1): the one-token
+hook edit rides with Part A. Part B (rest of the live text, regression guard) is a
+later PR.
+
+- **Core wording (shortest correct).** OR5: `Implementation/Fullstack Developer/` becomes
+  `Implementation/Developer/`. OR8: `..., QA, Fullstack Developer, Reviewer.` becomes
+  `..., QA, Developer, Reviewer.` Nothing else: no "not Fullstack" clause. The deny
+  text for a wrong prefix prints the OR8 line, which then lists the valid names.
+- **Hook.** `hooks/agent-dispatch.py` line 36, field 0 only:
+  `("Developer", "Developer", "Implementation")`. `PREFIX` is built from field 0, so
+  `ROLE SESSION: Fullstack Developer` fails `prefix` (OR8) with no further edit. The
+  `--role "Fullstack Developer"` rejection already exists in `lib/model-record.sh`
+  (`role_stage` knows five names; `bad_inputs` in `role-stage-599.py` pins it). The
+  drift check needs no new code: it compares `--list-roles` rows with OR5, so it goes
+  green when field 0, OR5 and the `ROWS` table agree. The space-in-field comment in
+  `role-stage-599.py` (`drift`) loses its witness; the three-field check still
+  detects a space delimiter (one field, not three), so keep it and reword the comment.
+- **Part A files, by owner.**
+  - QA (Test, first, bytes final before any re-pin): `TEST-SCENARIOS.md` (S312 text
+    near the "silently passes" and "preserving the space" lines changes; the
+    emitter-argv line that names a single quoted `Fullstack Developer` argument stays as
+    a negative; add an "Amended by #685" line); `test/behavior/orchestrator-scenarios.md`
+    (13 occurrences, including the `next_role` value list and every `Then:
+    next_role=`). These scenarios feed the stamp (hash covers ORCHESTRATOR.md plus the
+    scenarios file), and their expected role values must equal what the new core says,
+    so they are Part A and not optional.
+  - Developer (red first on the tests, then the code): `ORCHESTRATOR.md` (OR5, OR8),
+    `hooks/agent-dispatch.py` (line 36), `test/behavior/orchestrator_diff.py` (`ROLES`),
+    `test/fixtures/role-stage-599.py` (`ROWS` row, prompt at about 744, three-field
+    expectation, OR5 duplicate-table regex, and the `allowed(... 'Fullstack Developer
+    alias')` line becomes `denied(..., ['OR8'], ...)`; keep a `--role "Fullstack
+    Developer"` denial), `test/cases/s312_agent_dispatch_denies_with_core_line.sh`
+    (prefix uses), `test/fixtures/agent-dispatch-helpers.sh` (case label; the
+    `flag_role` alias to `Developer` becomes a no-op and goes).
+  - Orchestrator: the behavior run and the generated stamp (OR46 b).
+  - Not in Part A: the generated `WORKFLOW.md`, `AGENTS.md`, `adapters/codex/AGENTS.md`
+    (checked: their only hit is the `policy/WORKFLOW.md` routing row, Part B; no
+    OR text is embedded), `oracle-contract-pins.py`, `skip-test-qa-exemption-pins.py`
+    (they follow the SKILL.md heading, which stays until B), `orchestrator-core-pins.tsv`
+    (no OR5/OR8 fragment pin: verified by grep).
+  AC-A3 of the issue ("generated copies equal generator output") therefore holds
+  trivially in A: nothing generated moves. Part B regenerates once.
+- **S548 re-pin and order.** `stage-selection-647.py` `SNAPSHOTS` pin
+  `ORCHESTRATOR.md` and `orchestrator-scenarios.md`: both change, so #646's earlier
+  re-pin (70e8d21) is void. Order as the A57 addendum: (1) QA finishes the scenarios and
+  TEST-SCENARIOS bytes; (2) Developer edits ORCHESTRATOR.md, hook, tests; any later
+  change to a stamped byte voids what follows; (3) QA re-pins the two hash entries once,
+  from final bytes (core-pins.tsv unchanged); (4) orchestrator runs the single
+  differential run covering #646's pointers and A, commits the stamp; (5) QA re-pins
+  only the stamp entry, runs S548, S323, S335. Merge into the release branch only after (5).
+- **S318.** OR5 and OR8 each lose 10 characters ("Fullstack "), so slot 1 gains about
+  20 characters of headroom (assuming both rules are in slot 1, as A57 states); the
+  floor assertions cannot fail from this edit. QA/Developer read the printed sizes.
+- **Mid-flight dispatches.** The hook gates only the `Agent` call, so a running agent
+  with the old prefix is unaffected, and `SendMessage` continuations are not
+  re-checked. A new dispatch with the old prefix after the hook lands is denied once
+  with the OR8 line, which names `Developer`: self-correcting, one wasted call. The
+  markers agents emit already use `--role Developer`; no marker changes.
+- **O4: Part B guard allow-list.** A data file `test/fixtures/old-role-name-allow.tsv`,
+  columns `path-or-glob`, `max` (a count, or `*`). History (`CHANGELOG.md`,
+  `CHANGES.md`, the baseline snapshot, `marker-corpus.jsonl`, the captured hook input,
+  `prep/**`) is `*`: a new release note may legitimately name the old name. The
+  deliberate negative-test lines (`role-stage-599.py`, `s312*.sh`, and `TEST-SCENARIOS.md`)
+  get an exact maximum, so a new occurrence there also fails and names the file.
+  The guard scans whitespace-normalised text (wrapped frontmatter) and excludes the
+  allow-list file itself. Rejected: building the strings from parts (hides intent
+  and defeats grep) and an in-line marker comment (a copied line carries it along).
+- **Violated when** (added): OR5/OR8, `--list-roles` and `ROWS` disagree; the old
+  prefix or `--role` value is allowed; an orchestrator-scenarios expected role differs
+  from the core; an S548 pin differs from committed bytes at merge; a pin is taken
+  before the Developer's bytes are final.
+- **Doubts (one line each).** [A] The hook file is reserved contract text, so the edit
+  is a proposal the maintainer reads at the release merge. [A] The 13 scenario edits
+  change expected values only; if the run diverges on a scenario that names the role
+  in its Given, that is a core-wording problem, not a scenario bug. [A] The `max`
+  counts in the Part B allow-list are a pin that churns when a negative test is
+  reworded; accepted, since the churn is the review point.
+
 ### A60 — risk-review gate for autonomous merges, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-10.** This is the design for
-.handoff/issue-646-new-body.md, following MAINTAINER-DIRECTION.md. It grants no
+PRD.md F70–F73, following MAINTAINER-DIRECTION.md. It grants no
 authority. Ship inert; an independent Claude Architect must red-team this design
 before QA, Developer and fresh Review. Final maintainer acceptance and observed
 qualification precede a separate enabling PR. Historical requirements and rejected
@@ -5894,7 +5894,7 @@ establishes his acceptance.
 ### A60 addendum 1 — response to independent design red-team, #646
 
 **PROPOSAL, Architect / Planning, 2026-11-10.** This append-only addendum answers
-`.handoff/redteam-A60.md` at `0a3d0f3`. A60's original bytes remain history.
+the red-team findings recorded below at `0a3d0f3`. A60's original bytes remain history.
 The changes below supersede only the identified clauses; D0's surviving controls
 otherwise stand. Nothing enables autonomy or closes an implementation finding.
 `[V]` denotes local source/experiment evidence; `[A]` denotes proposed behavior.
@@ -6339,8 +6339,7 @@ is its evidence, not an observation made in this offline session.
 ### A60 addendum 2 — maintainer-decided score lookup and reviewer availability, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-12; ships inert.** This
-append-only correction follows Product at `b727b52`, PRD F71 and the current
-issue AC2/M2 in `.handoff/issue-646-body-3.md`. The capability/count/availability
+append-only correction follows Product at `b727b52`, PRD F71 and the #646 AC2/M2 rule stated below. The capability/count/availability
 rule below transcribes maintainer decisions (ledger 65/66/95); it does not accept
 the final delegation or enable it. `[A]` denotes the proposed implementation of
 that rule; no live scores, effort attestation, isolation or qualification were
@@ -6383,11 +6382,11 @@ does no external-index lookup, dispatch, posting or repair. Its inputs are:
   variant, settings and launcher receipt. A requested model alone is insufficient.
 - The pinned maintainer table's immutable source revision, byte digest and date,
   plus the explicit mapping from exact runtime model IDs to table row names.
-  For this revision the source is `.handoff/MODEL-SCORES-2026-11-11.md`, dated
-  `2026-11-11`. The handoff path locates supplied data; production must retain
-  its exact accepted bytes in protected project configuration/evidence rather
-  than depend on a mutable handoff directory. No repository name or local
-  absolute path is part of the generic Interface.
+  For this revision the source is `policy/MODEL-SCORES-2026-11-11.md`, dated
+  `2026-11-11`. Production must pin its exact bytes and accepted source
+  revision in protected project configuration/evidence rather than read the
+  candidate's copy. No repository name or local absolute path is part of the
+  generic Interface.
 - The accepted fixed reviewer profiles/qualification identities and, if used,
   the protected numbered maintainer exception and its evidence under P4.
 
@@ -6587,7 +6586,7 @@ protected enablement remain outstanding. Default is inert and fail closed.
 ### A60 addendum 3 — final identity expiry and capability-referral precedence, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-13; ships inert.** This narrow
-design ruling resolves DEV646-02 in `.handoff/dev-report-646-2.md` against
+design ruling resolves DEV646-02 in https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6865125448 against
 `38c24db`, with QA text from `bd229a7`. Earlier A-text remains history. It
 clarifies the outer Interface; no AC is contradicted or narrowed, no capability
 requirement is waived, and no delegation, residual or enabling decision is
@@ -6660,7 +6659,7 @@ Developer work under OR19/OR17.
 **R4 — Developer consequence and evidence limits.** [A/V] At `38c24db`,
 `Result.verdict()` already gives referral precedence; `evaluate()` runs
 `record_checks()` before adding `capability_reasons()`. The retained diagnostic
-log `.handoff/dev646c/seg2/dev646-02.log` reports the R1 output and an unchanged
+log https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6865125448 reports the R1 output and an unchanged
 eligible/0 control. This is inspected historical evidence, not a new test run.
 Do not reverse precedence or suppress either cause to satisfy the old S606
 oracle; no evaluator change is required for this exact witness. After QA's
@@ -6677,8 +6676,8 @@ capability, qualification and enforcement remain UNRUN.
 ### A60 addendum 4 — one cross-field consistency invariant, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
-OR20 return after `.handoff/review-report-646-r1.md` and
-`.handoff/review-report-646-r2.md`, inspected against `0cc0725`. This append-only
+OR20 return after https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6870464668 and
+https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6881632490, inspected against `0cc0725`. This append-only
 ruling replaces the practice of adding one comparison per reported witness.
 Earlier A-text remains history; A60 D0-D7, addenda 1-2 and **addendum 3's result
 composition take precedence** where applicable. No F70-F73 AC is contradicted or
@@ -7010,7 +7009,7 @@ Doubts (one line each):
 ### A60 addendum 5 — implied rules and behavioral mutation credit, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
-OR19 clarification of `.handoff/qa-report-646-8-stop.md` at `15d1890`.
+OR19 clarification of https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6885589900 at `15d1890`.
 This refines only addendum 4 C6's universal single-rule mutant obligation;
 earlier text remains history. No F70-F73 AC is contradicted or narrowed, and
 no eligibility condition, refusal, reason code, ordering or C4 dependency rule
@@ -7069,8 +7068,8 @@ carriers. Any protected contract-text/schema/carrier change remains a
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] This
 append-only ruling implements the maintainer's 2026-11-15 decision **A1+B**
-(ledger 139) against WIP `3e55e2b`, `.handoff/review-report-646-r2.md`, the
-Developer stop at the C8 carrier boundary (`.handoff/dev-report-646-6-stop.md`)
+(ledger 139) against WIP `3e55e2b`, https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6881632490, the
+Developer stop at the C8 carrier boundary (summarized below)
 and the withdrawn exploratory patch that failed 4 of 53 merge-risk cases. Earlier
 A-text remains history; addenda 3-5 stand. No eligibility condition, refusal,
 reason code, exit, ordering or C4 dependency rule is weakened. This addendum only
@@ -7481,7 +7480,7 @@ Doubts (one line each):
 ### A60 addendum 7 — narrative implication basis and overlapping-rule kill targets, #646
 
 **Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] OR19
-clarification of `.handoff/dev-report-646-a6-seg2-stop.md` at `57b4ab0`. Earlier
+clarification of https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6913712650 at `57b4ab0`. Earlier
 A-text remains history; addenda 3-6 stand except the addendum-6 sentences N4 names.
 No eligibility condition, refusal, reason code, exit, ordering or C4 dependency rule
 is weakened, and every rule addendum 6 adds stays in the code. This is a
@@ -7634,7 +7633,7 @@ A timestamp tie cannot establish that the release preceded the immutable
 announcement; allowing it would accept an unproved prerequisite. Option (2)
 would be a **maintainer security trade-off**, not an Architect decision, and is
 not selected. This resolves the Developer stop in
-`.handoff/dev-report-646-a6-seg3-stop.md` / `conflict.log`; no Product AC is
+https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6915540663 / `conflict.log`; no Product AC is
 contradicted or narrowed (AC5/AC6 and F73 keep release/new-record/full-hold rules).
 QA must specify corrections to exactly S618 `pr-released--1` and
 `issue-released--1`: retain those historical row IDs and eligible/0 oracles, but
@@ -7964,7 +7963,7 @@ of this handoff, not permission to substitute estimated totals.
 
 **Observed inputs, not completeness.** [A] Read pass 5, the checkpoint, all three
 Segment-6 stop reports and REPORT-before-pass3-stop, current S615, S2/S3, and the
-fixture. QA publication is MET by `.handoff/qa-handoff-19.md`; the old publication
+fixture. QA publication is MET by https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6929519106; the old publication
 and temporary-laboratory-Git stops are history, not current blockers. The fixture
 already has the real-collector witness, literal dictionaries, atlas traversal,
 and independent two-author basis companions. Read-only AST/registration/retained
@@ -8279,7 +8278,7 @@ Doubts: No completeness, fresh 53-case campaign, qualification, enablement, risk
 ### A60 addendum 13 — finite expansion semantics for S615, #646
 
 **Ruling (Architect / Planning, 2026-11-16; OR19, `6aba0b8`).** [A]
-This resolves points 1-6 of `.handoff/qa-report-646-16-stop.md`. It supplements
+This resolves the six QA points listed below. It supplements
 addendum 12's profile contract; it does not replace S2, the literal dictionaries,
 addenda 9-11's diagnostic register, or any refusal. QA transcribes the rules below
 under S615 and computes the numbers independently. No scenario, implementation,
@@ -8524,9 +8523,11 @@ owned count or a different run/context remains separate. A same-tag mutant or
 equal current value cannot establish an alias. Killed premises and implication
 conclusions are not alias occurrences merely because a theorem relates them.
 
-**R4 — Frozen domain inputs, roots and member applicability.** [A] Use the bytes
-of `.handoff/dev646-a6-seg6/retained-source-atlas.json`, SHA256
-`a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`.
+**R4 — Frozen domain inputs, roots and member applicability.** [A] The
+nine-domain atlas is specified by the bindings and domain requirements in this
+R4 section. Its historical SHA256 was
+`a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`;
+the source bytes are not tracked in this tree.
 Its `bundle` objects, not its `entries` census or observed PASS logs, are the
 member inputs. QA records this input/digest in S615. A future different source
 snapshot needs a new QA manifest. These nine domains are ALL the domain inputs:
@@ -9499,7 +9500,7 @@ overrides. These are historical observations, not a fresh run at `65c3380`, not
 expanded inventory counts and not C6.COMPLETE. The Developer must refresh final
 evidence, without inventing an integrated-proof red history.
 
-QA's fourth stop, `.handoff/qa-report-646-19-stop.md`, remains an open #701 input
+QA's fourth stop, https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6931895717, remains an open #701 input
 gap. Addendum-15 F4 requires POS[BINARY], POS[DELETED] and
 POS[EMPTY-INVENTORY] at applicable I24.lines locations, but the frozen atlas
 SHA256 `a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34`
@@ -9620,7 +9621,7 @@ distinctions, unchanged codes, surviving own controls and all-now acyclic
 implication proofs. Reconcile the original #646 now/deferred partition with
 the full #701 inventory explicitly; do not infer promotion from a passing row.
 
-Open input gap: QA's fourth stop (.handoff/qa-report-646-19-stop.md) found that
+Open input gap: QA's fourth stop (https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6931895717) found that
 the frozen nine-domain retained-source-atlas.json, SHA256
 a9812779dd52ec0afba6d3d5c50b0d120e7d5690a829075d87001df73f369a34,
 lacks binary, actually deleted and empty artifact/inventory specimens required
@@ -9656,7 +9657,7 @@ construct a profile/manifest, install a stub C6, or change production/fixture
 behavior to close this work item. Reconcile the published QA artifact with the
 final scenario bytes using the existing provenance procedure; an owner report
 does not waive that gate. The old publication stop is already resolved by
-`.handoff/qa-handoff-19.md`; QA's new deferral edits need their own artifact.
+https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6929519106; QA's new deferral edits need their own artifact.
 
 Final done criteria: freshly run the existing 53-case merge-risk selection and
 required dispatched checks at the final bytes; preserve S625's 26 falsifiers,
@@ -9700,8 +9701,7 @@ Doubts: Adoption/status/context entry points and .agents links are absent; rerun
 ### A60 addendum 17 — bounded C4 dependency availability and refusal preservation, #646
 
 **Ruling (Architect / Planning, 2026-11-17, `c378194`).** [A]
-`panel-646-d1` (PR #696 comment 6947490246; local unchanged text in
-`.handoff/panel-646-d1-comment.md`) authorizes ONE bounded correction cycle.
+`panel-646-d1` (https://github.com/TiesL/spec-driven-guardrails/pull/696#issuecomment-6947490246) authorizes ONE bounded correction cycle.
 This clarifies retained C4, addendum-6 S4 and addendum 16; it introduces no
 requirement, authority, carrier, schema, security concession or C6 proof.
 AC contradictions or narrowing: **none** (retained AC2/F71 malformed-result
@@ -9894,7 +9894,7 @@ Doubt: Final exact companion codes and red/green/mutation evidence belong to QA/
 
 **Ruling (Architect / Planning, 2026-11-17, `08a3768`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, following
-QA's stop report `.handoff/qa-report-646-21-stop.md` (#646 comment 6949630362).
+QA's stop report https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6949630362.
 Addendum 17 remains historical; this addendum supersedes its inventory/count
 errors and the source references identified below. AC contradictions or
 narrowing: **none**. Retain C4, all named assertions, ownership, stopping rules,
@@ -10018,7 +10018,7 @@ Doubt: Network/CI/publication and adoption entry points were unavailable in this
 
 **Ruling (Architect / Planning, 2026-11-17, `c7f22248b12c3bfb9d8fd55525ebc1c13c8b2c58`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
-#696, resolving `.handoff/qa-report-646-21-stop2.md` (#646 comment 6952375948).
+#696, resolving https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6952375948.
 Addenda 17/18 remain historical. This entry supersedes their queue-manifest
 ownership/count claims and the ownership/status wording explicitly corrected
 below. AC contradictions or narrowing: **none**. No new Module, Interface, Seam,
@@ -10064,7 +10064,7 @@ are unchanged. Neither 346 nor any earlier 348/446/448 total is the corrected to
 **Mechanical method and limits.** [V]
 The recovery `git status --short` and scoped diff were empty; branch and full HEAD
 matched dispatch. A regex enumerated every literal `+|` table row named `a17-*`
-in the read-only `.handoff/qa-draft-21.patch`, rejected duplicate names and expanded
+in the read-only draft inputs transcribed in A60 addenda 18–19, rejected duplicate names and expanded
 all family atoms. It produced Q1=24, Q2=90, Q3=30, Q4=47, Q5=24, Q5A=5,
 Q6=116, Q7=5, Q8=5 before deletion. Every one of those 346 selectors was assigned
 to exactly one family and given a scratch execution record; no unmatched selector
@@ -10217,8 +10217,8 @@ score rather than EXCEPTION reviewer_score, and building coherent hard-stop
 inputs before raw corruption) were rerun before recording the verified table;
 none was an application/scenario edit or extra asserted product defect.
 
-**Exactly what QA does with `.handoff/qa-draft-21.patch`.** [A]
-Treat the preserved patch as read-only reference, not an already applicable
+**Exactly what QA does with the draft inputs transcribed in A60 addenda 18–19.** [A]
+Treat that historical draft as a read-only description, not an already applicable
 handoff. In QA's own write scope, reconstruct its attempted scenario change on
 the unchanged base and make ONLY these corrections:
 
@@ -10274,7 +10274,7 @@ Doubt: QA publication is unresolved above the comment limit; local scratch evide
 
 **Ruling (Architect / Planning, 2026-11-17, `10e25e4b543e65a62867825031101f0db88590f1`).** [A]
 SHORT OR19 correction inside the ONE bounded cycle of `panel-646-d1`, #646 / PR
-#696, resolving `.handoff/dev-report-646-c4-d1-stop.md`. Choose **(a)**: QA
+#696, resolving https://github.com/TiesL/spec-driven-guardrails/issues/646#issuecomment-6955058341. Choose **(a)**: QA
 adds `narrative-invalid` to S611 `a6s2-closing-final`'s complete ordered array.
 This is an **oracle CHANGE in a frozen QA scenario**, owned by QA, followed by
 Developer alignment of the fixture assertion. It is not a fixture-only correction
@@ -10631,7 +10631,7 @@ Architect / Planning — combined Architect + Developer session expressly author
 6. **D4 / Q5A:** gh deep owns local RecursionError normalization; collect/queue-config deep own the ultimate fixed-output catch; acceptance deep owns local RecursionError normalization and nonobject owns the object guard. The additional Invalid/ValueError/UnicodeError omissions in gh/acceptance are masked on these five specimens, no credit, with the rule owned by the real recursion/object kills. Normal dictionary/collection controls pass under wholly offline transport stubs. No pre-Result accumulated Result is invented.
 7. **D5 / Q6:** every one of the 107 literal code-token deletions and each canonical protocol owner is killed by its listed selector; the independent different legal code still round-trips. Timestamp-regex deletion is masked for the frozen malformed-note input; default-line refusal owns malformed-note and hostile-stdout. Unknown-token/diff/inventory remain three specimens of ONE assertion; prepare/class remain both executions of ONE nonfinal assertion. No package growth or dictionary derivation from implementation.
 
-**Actual audit and reproducibility.** All 248 named sources were constructed and actually executed in the recorded scratch laboratories; SHA-identical sources were also built under `/tmp/mr646-a23-built-sources/` (tmp-source-construction.json binds every copy): 210 have a listed killing subset; 38 are wholly masked non-credit diagnostics. There are 1,673 row/mutant comparisons (D2 1,235; later evaluator 304; Adapter 14; wrapper 120), not counted package assertions. Complete source bytes and SHA-256 identities are retained in `.handoff/combined646-add23/sources/` and `ownership-index.json`; full original stdout/exit/stderr and independent controls are in architect-d2/campaign.json, later-campaign.json, adapter-campaign.json and wrapper-campaign.json. Every baseline assertion passed before its mutant. D3 uses actual unchanged D2 production bytes. D4/D5 use explicitly labelled scratch-only recursion/number/acceptance/allowlist normalizations as in addendum 22, never production green or implementation completion. Original later input snapshots and QA literal arrays are retained unchanged; scratch paths and source identities remain in the evidence. Initial harness corrections (targeted controls and deduplicated diagnostic selector lists) are recorded in the logs; they change no counted input or oracle. The complete index below lists each tested selector; “surviving” always means zero kill credit for that row/mutant pair.
+**Actual audit and reproducibility.** All 248 named sources were constructed and actually executed in the recorded scratch laboratories; SHA-identical sources were also built under `/tmp/mr646-a23-built-sources/` (tmp-source-construction.json binds every copy): 210 have a listed killing subset; 38 are wholly masked non-credit diagnostics. There are 1,673 row/mutant comparisons (D2 1,235; later evaluator 304; Adapter 14; wrapper 120), not counted package assertions. The selector ownership and reported results are recorded in this addendum’s index below; the original scratch source bytes, identities and logs are not tracked in this tree, so this historical audit cannot be reproduced byte-for-byte from the tree alone. Every baseline assertion passed before its mutant. D3 uses actual unchanged D2 production bytes. D4/D5 use explicitly labelled scratch-only recursion/number/acceptance/allowlist normalizations as in addendum 22, never production green or implementation completion. Original later input snapshots and QA literal arrays are retained unchanged; scratch paths and source identities remain in the evidence. Initial harness corrections (targeted controls and deduplicated diagnostic selector lists) are recorded in the logs; they change no counted input or oracle. The complete index below lists each tested selector; “surviving” always means zero kill credit for that row/mutant pair.
 
 The evaluator remains the same deep Module and public CLI Interface/Seam. Private validation reuse retains Depth, Leverage and Locality; no new production Adapter or external Seam is needed. The bounded correction is ownership, not new development scope. No new MAINTAINER ITEM was found. Existing #701/#682/C6/M1-M9/M8/qualification/enablement/panel-floor and fresh Review reservations remain with their owners.
 
@@ -10964,7 +10964,7 @@ necessary: retain every selector, input, array, count and mutation definition.
 extracted to `/tmp` without checkout/index/branch mutation or network. Commands
 are `python3 -I test/fixtures/merge-risk-646.py <suite>` and
 `bash test/run.sh merge_risk`, executed in each snapshot. Full logs, hashes,
-commands and completion statuses are retained under `.handoff/combined646-add24/`.
+commands and completion statuses are summarized in the check matrix below; the original scratch logs are not tracked in this tree.
 
 | Suite | D1 12c337b | Current 56b8244 before repair | Difference |
 |---|---|---|---|
@@ -11265,6 +11265,131 @@ stays with #701. This addendum supplies no merge or enabling authority.
 Doubt: Synthetic fetched values establish consistency failures, not live exploitability, authentication, qualification or complete coverage.
 Doubt: CI, live scenario/issue traceability and review outcomes have not been refreshed offline; they remain owner obligations.
 Doubt: Missing .guardrails/source and .agents paths prevent adoption/live-loading verification; remedy is owner-run ordinary adopt.sh --runtime codex, then a fresh-session observation; no repair attempted.
+
+### A60 addendum 26 — Align SDG hard stops with the reserved contract-text class (#734; F68, F72; amends A60 D5)
+
+Architect, Planning, 2026-11-24. [A] This is a proposed narrowing of #646's
+autonomous class, for explicit maintainer review at F72/M1 acceptance. It does
+not accept or enable #646: the shipped configuration retains `enabled:false`
+and `acceptance:null`, and merges into `main` still require the maintainer.
+
+**Decision.** In the SDG instance of `policy/merge-autonomy.json`, add the
+anchored patterns `skills/**`, `policy/**` and `templates/**` to the existing
+`contracts` hard stops. These three patterns cover *every* path at any depth
+in the respective #681/F68 reserved directories, including
+`skills/release-branch-workflow/**`, `skills/model-choice/**`,
+`skills/deploy-guards/**`, `templates/PRD.md`,
+`templates/ISSUE_TEMPLATE/**` and `templates/wait-for-ci.sh`. Keep the existing
+`CHANGES.md` and `USER-CLAUDE.md` patterns; they already cover those two named
+reserved files. The other named #681 paths are already covered by the
+current config (`hooks/**`, `settings/**`, `adapters/**`, `AGENTS.md`,
+`WORKFLOW.md` and `ORCHESTRATOR.md`). No path in the defined #681
+contract-text class is deliberately excluded. The historical, narrower
+per-file patterns may remain as redundant examples; they grant no exception.
+
+**Score-table source (#734).** Place the maintainer-provided 2026-11-11
+Artificial Analysis scores at `policy/MODEL-SCORES-2026-11-11.md`; `policy/**`
+reserves changes to this contract evidence. F71 and A60 addendum 2 cite the
+tracked table, but a future protected decision must pin its accepted revision
+and byte digest before the proposed verifier can use it. Until #735, this
+table does not amend the current qualitative `model-choice` skill or supply
+new 6.2 scores. AC consistency: none.
+
+**Why the release skill is included.** The maintainer's 2026-11-06 #511
+disqualifier expressly names “the release skill.” That skill governs the
+release-to-main route and who may merge into a release branch. A candidate
+changing it must take the human path even if both risk reviewers clear it.
+The same rule applies to the other reserved contract text because #681
+reserves edits to the maintainer. Accepted implementation work outside these
+paths can still reach substantive risk review under F72. This narrows the
+candidate class; its coverage effect has not been measured.
+
+**Maintainer acceptance point.** Before accepting F72/M1, show the maintainer
+this full directory-pattern mapping, the release-skill reason, and the
+unmeasured reduction of autonomous candidates. Ask for explicit acceptance
+of this narrowing as part of F72/M1; neither this design entry, a green test,
+nor a release-branch merge supplies that acceptance. If the maintainer wants
+any reserved path excluded, Product must first name that path, reason and
+acceptance point in F68/F72, then route the changed design through QA and
+Review; no implied exception is permitted.
+
+**Follow-on artifacts and seam.** Product updates F72's SDG mapping sentence
+and its acceptance disclosure, retaining F68's reserved-class definition.
+QA adds a red-first S662 mapping case that inventories tracked paths in the
+F68 class against the proposed config: each path must match, including all
+six examples above, `CHANGES.md` and `USER-CLAUDE.md`. It also tests a
+newly planted nested file under each directory and an ordinary unreserved
+Markdown path as the opposite control, and checks the shipped disabled/null
+state. Developer changes only the `contracts` patterns in the config and
+the corresponding S662 fixture; the verifier's existing pattern Interface
+and matching semantics need no new branch. The config remains the one Module
+for path policy: deleting it would scatter the list across callers, while a
+second path list or hypothetical adapter would reduce Locality without
+adding Leverage. No new Seam is warranted. The suite must distinguish this
+SDG instance from unconfigured adopted projects, whose mapping is separately
+accepted before activation.
+
+**AC consistency.** None: this design covers AC1's entire class and preserves
+the inert-state constraint. It changes F72's concrete SDG mapping only after
+the proper Product edit and maintainer acceptance of the proposed narrowing.
+
+### A60 addendum 27 — Hard-stop A54 D2 by its containing path (#734; resolves `f68-a54-d2-not-in-hard-stops`; amends addendum 26)
+
+**Decision.** [A] Add the exact anchored `ARCHITECTURE.md` path to the SDG
+`contracts` hard stops in `policy/merge-autonomy.json`. A54 D2 is reserved by
+F68/#681, but the path matcher sees changed paths, not Markdown sections; a
+pattern cannot protect D2 while leaving other entries in this file eligible.
+An entire-file stop is the finite, testable implementation of that reservation.
+It deliberately narrows F72's autonomous candidate class for *the rest* of
+`ARCHITECTURE.md`, which F68 still treats as `other` for the distinct #645
+temporary-decision panel. Do not change that panel's target classification.
+The coverage cost of this additional narrowing is unmeasured. A candidate
+editing this file must follow the human merge path even when its edit is
+outside A54 D2 and two risk reviewers clear it.
+
+**Complete F68 class audit.** The six reserved directories are `skills/`,
+`policy/`, `hooks/`, `settings/`, `adapters/` and `templates/`, at any depth.
+The first, second and sixth have the broad `skills/**`, `policy/**` and
+`templates/**` patterns from addendum 26; the others have `hooks/**`,
+`settings/**` and `adapters/**`. The generated `AGENTS.md` and `WORKFLOW.md`,
+`ORCHESTRATOR.md` including OR47/OR43/OR45, `CHANGES.md` and `USER-CLAUDE.md`
+have exact root patterns. A54 D2 is in the newly stopped root
+`ARCHITECTURE.md`. This exhausts F68's closed named class; no named item is
+deliberately excluded. Existing extra patterns and overlapping directory
+patterns do not weaken the match. The root `PRD.md` (including F68/F72), the
+rest of `ARCHITECTURE.md`, and root `TEST-SCENARIOS.md` are spec content under
+F68, not newly reserved panel contract text. F72 and the S662/S590 scenarios
+do govern these panels, but that role does not silently enlarge F68's closed
+class: F72 retains substantive review and its indirect-weakening referral for
+unlisted paths. The whole-file `ARCHITECTURE.md` stop is disclosed as an
+additional SDG instance restriction, not a reclassification of F68.
+
+**Maintainer acceptance point.** Product must disclose the exact
+`ARCHITECTURE.md` pattern, the whole-file effect on otherwise eligible spec
+entries, and the unmeasured coverage cost alongside addendum 26's mapping
+before asking the maintainer to accept F72/M1. The maintainer must expressly
+accept this further narrowing as part of that acceptance. This decision,
+tests and a release-branch merge do not accept or enable #646; preserve
+`enabled:false` and `acceptance:null`.
+
+**Follow-on work.** Product amends only F72's mapping/disclosure, leaving F68's
+closed class intact. QA first makes the S662 one-file A54 D2 candidate red
+against the current config, then adds old/new-path, deletion and rename-side
+assertions for `ARCHITECTURE.md`, with an ordinary root `PRD.md` or
+`TEST-SCENARIOS.md` candidate as the outside-pattern control. Test the shipped
+disabled/null state separately from a configured laboratory evaluator; a
+deletion mutant of the exact pattern must be killed by its own witness.
+Developer adds only `ARCHITECTURE.md` to the `contracts` array and the
+corresponding fixture, without a second matcher or panel-target oracle.
+The existing path-policy Module and matcher Interface suffice; a new Seam
+would scatter one finite mapping across callers without added Leverage.
+
+**AC consistency.** #734 AC1 is satisfied by closing the missing named item.
+F72's current claim that existing patterns cover the rest of F68's class is
+false until this change; Product must correct that sentence and disclose the
+extra whole-file narrowing. F68's eligibility of other architecture entries
+for the #645 panel remains unchanged.
+
 ### A61 — Model routing for process-launched children: one wrapper, opt-in by adoption answer, off-only switch, refuse instead of fall back (#707; F75)
 
 - **Decision.** [A] The Orchestrator session talks to its provider directly. A

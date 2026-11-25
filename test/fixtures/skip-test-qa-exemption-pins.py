@@ -39,13 +39,13 @@ PINS = [
      'Reviewer verifies the log line for the reviewed head.'),
     ('reviewer-log', 'Reviewer / Lead Developer', r'log[^.]*not-applicable|not-applicable[^.]*log',
      'Reviewer checks the not-applicable log instead of a QA comparison.'),
-    ('developer-valid-record', 'Fullstack Developer', r'only.*valid.*skip=Test.*record',
+    ('developer-valid-record', 'Developer', r'only.*valid.*skip=Test.*record',
      'Only under a valid skip=Test record (OR34) may the Developer use this exception.'),
-    ('developer-add-only', 'Fullstack Developer', r'(append|add).*new.*### <ID>.*(entries|heading).*scenario.*test files.*(adds|added).*work item',
+    ('developer-add-only', 'Developer', r'(append|add).*new.*### <ID>.*(entries|heading).*scenario.*test files.*(adds|added).*work item',
      'Developer may append new ### <ID> entries and scenario text for test files it adds in this work item.'),
-    ('developer-existing-bytes', 'Fullstack Developer', r'existing.*(text|scenario).*byte.identical',
+    ('developer-existing-bytes', 'Developer', r'existing.*(text|scenario).*byte.identical',
      'Existing scenario text stays byte-identical.'),
-    ('developer-stop', 'Fullstack Developer', r'OR19.*(stop|appl)|stop.*OR19',
+    ('developer-stop', 'Developer', r'OR19.*(stop|appl)|stop.*OR19',
      'OR19 and the A49 conflict stop still apply.'),
 ]
 

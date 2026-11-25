@@ -527,7 +527,7 @@ the shared parser warns if it has no `Applies if`.
 
 ## process-multi-agent-roles
 
-- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
+- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Developer, Reviewer) instead of one agent session doing every stage?
 - **Default:** question
 - **Applies if:** always
 - **Meaning version:** 4 — #645/PR #677 adds bounded temporary-decision and
@@ -540,7 +540,7 @@ the shared parser warns if it has no `Applies if`.
   #651 epic stage-inheritance obligations (#663), and v2 #427 strict whole-line
   records and override-value requirements, remain in force.
 - **Yes means:** each work item's stages are dispatched to the roles in the
-  `role-contracts` skill, in its fixed order, each with its own write/action
+  `role-contracts` skill, in its fixed order, using `ROLE SESSION: Developer` for Implementation, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
   start, the `SessionStart` hook prints the skill's `ORCHESTRATOR.md` (the run
   rules: what is a work item, stage order, fresh dispatch, human override,

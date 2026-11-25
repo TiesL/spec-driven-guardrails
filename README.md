@@ -304,7 +304,7 @@ about as well: the five-role pipeline (see "Adopting it" below) and the release-
 Since v0.2.0 (epic #295), a change to this repo is carried by five separately dispatched
 agent roles rather than one session doing everything: **Product** (are we building the right
 thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
-works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
+works?), **Developer** (builds it, tests included), and **Reviewer** (independent
 final gate). Each role gets a quotable contract — responsibilities, what it may write, and
 Reviewer's security triggers — in the installed `role-contracts` skill.
 When roles disagree, the conflict escalates to a human instead of being settled by whichever role

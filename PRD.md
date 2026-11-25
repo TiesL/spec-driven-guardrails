@@ -2507,7 +2507,7 @@ model, never a degraded single review.
 
 [A] **Maintainer-decided floor (ledger 65/66/95):** Each of the two risk reviewers
 must score at least as high as the author's model on the maintainer-provided
-intelligence score table `.handoff/MODEL-SCORES-2026-11-11.md`, pinned to 2026-11-11.
+intelligence score table `policy/MODEL-SCORES-2026-11-11.md`, pinned to 2026-11-11.
 Model identity comes from the model-record line; the score is a table lookup
 keyed by model + effort, with no reading of any external index. Missing
 author/reviewer identity or a missing table entry means refer (fail closed).
@@ -2582,8 +2582,32 @@ project controls. Changes to the autonomy machinery, guard/preflight, hooks/runt
 CI, contracts/adoption controls refer even with two clears and green quality/CI.
 SDG's instance retains A60 D5's mapping plus E1's exact additions:
 `lib/markdown.sh`, `lib/changes.sh`, `test/run.sh`, `adopt.sh`, `.gitattributes`,
-`.gitmodules`, `epic-auto-close.sh`. No recursive completeness claim returns.
-Indirect self-change/weakening outside the mapping still refers when found.
+`.gitmodules`, `epic-auto-close.sh`; A60 addenda 26 and 27 also add the anchored
+`skills/**`, `policy/**` and `templates/**` and the exact anchored
+`ARCHITECTURE.md` path contract hard stops. These stop
+every path at any depth in those three F68 reserved directories, including
+`skills/release-branch-workflow/**`, `skills/model-choice/**`,
+`skills/deploy-guards/**`, `templates/PRD.md`,
+`templates/ISSUE_TEMPLATE/**` and `templates/wait-for-ci.sh`.
+Add the exact anchored `ARCHITECTURE.md` contract hard stop because F68 reserves
+A54 D2 within that file and the path matcher cannot isolate a Markdown section.
+Existing patterns stop the other F68 named paths, including `CHANGES.md` and
+`USER-CLAUDE.md`; with `ARCHITECTURE.md` added, no defined F68 contract-text
+path is deliberately excluded. The whole-file stop also removes the rest of
+`ARCHITECTURE.md` from SDG's autonomous candidate class, although F68 leaves
+those entries eligible for the separate #645 temporary-decision panel.
+The release skill governs release merging and was expressly named in #511's
+maintainer disqualifier, so changes to it take the human path. This mapping
+narrows #646's autonomous candidate class, and its coverage cost is unmeasured.
+Before F72/M1 acceptance, show the maintainer the full directory mapping, the
+exact `ARCHITECTURE.md` pattern and its whole-file effect on otherwise eligible
+spec entries, the release-skill reason, and the unmeasured reduction of
+autonomous candidates; obtain explicit acceptance of this narrowing as part
+of F72/M1. This proposed text, a green
+test or a release-branch merge supplies no acceptance. #646 stays disabled
+and unaccepted; merges into `main` still require maintainer approval. No
+recursive completeness claim returns. Indirect self-change/weakening outside
+the mapping still refers when found.
 
 [A] Match old/new paths and patterns with `NFC(casefold(NFC(value)))`, pinned
 Unicode version and anchored segment `*`/depth `**` semantics. Before checkout,
@@ -3108,6 +3132,7 @@ epics still apply, detached from the execution history in which they arose.
 
 | What | Why acceptable for now | Trigger to address |
 |---|---|---|
+| #646 merge-risk oracle size (test/fixtures/merge-risk-646.py, about 7,910 lines) and A58/A60 addendum sprawl (about 7,300 lines) | Retain the tested single oracle and historical decision trail for this release; splitting or deleting either now would disturb the inert #646 evidence and require a fresh scenario/ownership audit | When #646 is activated or a new merge-risk requirement changes the oracle, split it by scenario family and move superseded addenda to a tracked, cross-linked archive with preserved provenance |
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
 | The record readers cannot track edits to the PR description: #427/#428/#429 require timestamp ordering (F27/F34/F35, A37), but the description is dated at PR creation | GitHub supplies no description-edit history in these inputs; edits must not be treated as new evidence via `updated_at` | When a reliable description-edit history is available, or a real work item requires edits to change the latest candidate |
 | Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so a Review recorded under an alias is never treated as the same model as Implementation (F39, #392); gate 2 reports `unverifiable-from-artifacts`, never a pass. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
