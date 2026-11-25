@@ -58,4 +58,17 @@ if [ -s "${TMPDIR:-/tmp}/s286.$$" ]; then
 fi
 rm -f "${TMPDIR:-/tmp}/s286.$$"
 
+# Arm 6: the release-table overview stays true after the newest release is tagged.
+overview="$(awk '/^## Releases and their themes$/{in_overview=1; next} in_overview && /^\| Tag \|/{exit} in_overview{print}' "$r/README.md")"
+grep -Fq "newest row's date and theme must match its CHANGELOG heading" <<<"$overview" ||
+  fail "S286 — readme-tag-overview-goes-stale-at-tag: README overview lacks the general newest-row/CHANGELOG-heading rule"
+if grep -Eq 'v[0-9]+\.[0-9]+\.[0-9]+' <<<"$overview"; then
+  fail "S286 — readme-tag-overview-goes-stale-at-tag: README overview names a specific release instead of stating an evergreen tag rule"
+fi
+
+# Arm 7: the evergreen workflow section must not describe a specific release's merge.
+if grep -Fq 'This release uses' "$r/README.md"; then
+  fail "S286 — readme-release-specific-merge-method: README contains 'This release uses'"
+fi
+
 test_done
