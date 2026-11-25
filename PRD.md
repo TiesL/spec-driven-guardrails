@@ -2582,20 +2582,28 @@ project controls. Changes to the autonomy machinery, guard/preflight, hooks/runt
 CI, contracts/adoption controls refer even with two clears and green quality/CI.
 SDG's instance retains A60 D5's mapping plus E1's exact additions:
 `lib/markdown.sh`, `lib/changes.sh`, `test/run.sh`, `adopt.sh`, `.gitattributes`,
-`.gitmodules`, `epic-auto-close.sh`; A60 addendum 26 also adds the anchored
-`skills/**`, `policy/**` and `templates/**` contract hard stops. These stop
+`.gitmodules`, `epic-auto-close.sh`; A60 addenda 26 and 27 also add the anchored
+`skills/**`, `policy/**` and `templates/**` and the exact anchored
+`ARCHITECTURE.md` path contract hard stops. These stop
 every path at any depth in those three F68 reserved directories, including
 `skills/release-branch-workflow/**`, `skills/model-choice/**`,
 `skills/deploy-guards/**`, `templates/PRD.md`,
-`templates/ISSUE_TEMPLATE/**` and `templates/wait-for-ci.sh`. Existing
-patterns stop the rest of F68's named class, including `CHANGES.md` and
-`USER-CLAUDE.md`; no defined F68 contract-text path is deliberately excluded.
+`templates/ISSUE_TEMPLATE/**` and `templates/wait-for-ci.sh`.
+Add the exact anchored `ARCHITECTURE.md` contract hard stop because F68 reserves
+A54 D2 within that file and the path matcher cannot isolate a Markdown section.
+Existing patterns stop the other F68 named paths, including `CHANGES.md` and
+`USER-CLAUDE.md`; with `ARCHITECTURE.md` added, no defined F68 contract-text
+path is deliberately excluded. The whole-file stop also removes the rest of
+`ARCHITECTURE.md` from SDG's autonomous candidate class, although F68 leaves
+those entries eligible for the separate #645 temporary-decision panel.
 The release skill governs release merging and was expressly named in #511's
 maintainer disqualifier, so changes to it take the human path. This mapping
 narrows #646's autonomous candidate class, and its coverage cost is unmeasured.
 Before F72/M1 acceptance, show the maintainer the full directory mapping, the
-release-skill reason and that unmeasured reduction, and obtain explicit
-acceptance of the narrowing as part of F72/M1. This proposed text, a green
+exact `ARCHITECTURE.md` pattern and its whole-file effect on otherwise eligible
+spec entries, the release-skill reason, and the unmeasured reduction of
+autonomous candidates; obtain explicit acceptance of this narrowing as part
+of F72/M1. This proposed text, a green
 test or a release-branch merge supplies no acceptance. #646 stays disabled
 and unaccepted; merges into `main` still require maintainer approval. No
 recursive completeness claim returns. Indirect self-change/weakening outside
