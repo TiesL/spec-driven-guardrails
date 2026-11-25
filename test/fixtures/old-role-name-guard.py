@@ -14,8 +14,9 @@ for line in allow_file.read_text().splitlines():
 
 old_name = re.compile(r'Fullstack\s+Developer')
 paths = [root / p for p in ('CHANGELOG.md', 'CHANGES.md', 'WORKFLOW.md', 'AGENTS.md',
-                            'README.md', 'ARCHITECTURE.md', 'TEST-SCENARIOS.md')]
-for directory in ('skills', 'policy', 'adapters', 'test/fixtures', 'prep'):
+                            'README.md', 'PRD.md', 'ARCHITECTURE.md', 'TEST-SCENARIOS.md')]
+for directory in ('skills', 'policy', 'adapters', 'templates', 'hooks', 'lib',
+                  'test/behavior', 'test/fixtures', 'prep'):
     paths.extend(p for p in (root / directory).rglob('*') if p.is_file())
 paths.extend((root / 'test/cases').glob('s312*.sh'))
 bad = []
