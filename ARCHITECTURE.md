@@ -12692,3 +12692,97 @@ S548, which S627 consumes; orchestrator commits generated output. D6 then
 validates the final clean committed head before promotion and a fresh
 Reviewer. Planning arithmetic neither closes the findings nor proves live
 obedience. S412/#728 remains the reported unrelated local-only failure.
+
+#### A64 addendum 3 — Make refusal and startup hints WIP-first (2026-11-26)
+
+**Decision.** Resolve Review round 1's `stale-feature-checkout-hints` at
+`0138f38f716b33c795b872abc94fa388eab1b13c`. Extend Developer scope to
+`pending-changes.sh` and `skills/write-spec/SKILL.md` for the exact text
+below. No AC is contradicted or narrowed; D1–D8 and the existing validation,
+publication and adoption rules remain. The messages use the adopter's issue
+and branch names without prescribing this repository's runner or templates.
+“Validation” refers to the full existing promotion requirement, not a new
+or reduced check.
+
+**Exact replacements.** Replace each complete named assignment, preserving
+the indentation and blank lines shown:
+
+~~~sh
+REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Create the issue first, then work on WIP:
+
+         git checkout -b wip/<issue>-<name>
+
+       Commit and checkpoint WIP; promote only after validation."
+~~~
+
+~~~sh
+REASON_BRANCH_NO_ISSUE="every feature/fix/wip branch names its issue, e.g.
+       wip/123-short-desc. Create the issue first (see write-spec), then:
+
+         git checkout -b wip/<issue-number>-<short-desc>"
+~~~
+
+In `pending-changes.sh`, replace only the two echoes inside the existing
+main-branch condition:
+
+~~~sh
+  echo "You are on main. Create the issue first, then work on WIP:"
+  echo "  git checkout -b wip/<issue-number>-<name>"
+~~~
+
+In `skills/write-spec/SKILL.md`, replace numbered item 2 in full:
+
+~~~text
+2. Work is split from the PRD into GitHub issues: one `Epic` issue for the
+   whole, `Work item` issues per part to be built (see
+   `templates/ISSUE_TEMPLATE/`). Create the issue before development.
+   Work on `wip/<issue-number>-<short-desc>`; reserve `feature/...` and
+   `fix/...` for validated PR publication. See `WORKFLOW.md`, "Branch strategy".
+~~~
+
+**Structure.** Retain the existing guard Module and shared message-data
+Seam: PreToolUse and native hooks are its two real adapters. Moving their
+messages apart would duplicate the same requirement across callers under
+the deletion test. No new Interface or helper is needed; Depth, Leverage
+and Locality remain. Startup and authoring guidance retain their current
+locations and execution conditions.
+
+**QA handoff and reserved pins.** S593 pins all `hooks/` bytes, including
+both messages. In `test/fixtures/wip-706-substitutions.json`, keep base
+`97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581` and the existing regex pair.
+Add a count-1 pair from that base's complete `REASON_COMMIT_ON_MAIN`
+assignment to the first assignment above. Replace the existing
+`REASON_BRANCH_NO_ISSUE` prefix pair with one pair from that base's complete
+assignment to the second assignment above. Do not stack overlapping prefix
+and whole-assignment pairs. Retain every unrelated pair. S593 still uses
+`b22b4760fa3dcfd79a1c2557899bd735c6fafefc` plus its existing allowances;
+S725 reconstructs from its unchanged table base. Both must accept exactly
+the new assignments and reject omitted pairs, wrong replacements and an
+extra byte in the protected file. QA reconciles S593/S725 scenario prose
+and reviews these as exact reserved-protection allowances, never a repin.
+
+Neither `pending-changes.sh` nor `skills/write-spec/SKILL.md` is covered by
+those freezes; neither needs a new historical allowance. S709 protects
+core/scenarios/inventory, so these bytes require no S709 pair or allowance.
+Its post-integration defect remains QA-owned and independent.
+
+Extend S720/S722 loaded-text coverage to all four sites with independent
+positive witnesses and per-site deletion/reversion controls; a surviving
+correct hint elsewhere must not mask a stale one. Reject executable hint
+commands using `checkout -b feature/` or `fix/`, and the old write-spec
+working-branch instruction. Strengthen S54's observed startup output to
+require the WIP command and issue-first wording; retain S55's no-hint,
+exit-0 and stderr controls. Exercise both refusal messages through existing
+guard/native fixture Interfaces, retaining statuses and D8 lookup controls.
+The local four-witness probe exits 1 on `0138f38`: all four WIP witnesses
+are absent; the Review grep independently finds three stale commands.
+
+**Execution scope.** Developer changes only the three source paths above
+and QA-authored executable assertions/allowances in the existing affected
+cases and fixtures. QA owns scenario text and literal expectations. Target
+S47/S50/S54/S55/S81, S96–S101 and S718, S720/S722/S725 and S593.
+Keep `ORCHESTRATOR.md`, inventory, behavior scenarios and stamp unchanged:
+no new behavior run or stamp allowance is needed for this text correction.
+The independent S709 repair needs no behavior run if those inputs remain
+unchanged. Deferred OR40 lows stay deferred; exact-head D6 and fresh Review
+still follow implementation.
