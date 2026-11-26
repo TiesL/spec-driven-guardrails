@@ -252,7 +252,19 @@ else
 fi
 if [ -n "$base_ref" ]; then
   for f in skills/role-contracts/ORCHESTRATOR.md test/behavior/orchestrator-scenarios.md skills/role-contracts/orchestrator-rules.tsv; do
-    git -C "$R" diff --quiet "$base_ref" -- "$f" || fail "S709 — $f changed against the merge base"
+    python3 -I - "$R" "$base_ref" "$f" <<'PY706'
+from pathlib import Path
+import runpy,subprocess,sys
+root,base,path=sys.argv[1:]
+a=runpy.run_path(str(Path(root)/'test/fixtures/wip-706-substitutions.py'))
+before=subprocess.check_output(['git','-C',root,'show',base+':'+path])
+expected=a['controls'](path,before)
+actual=(Path(root)/path).read_bytes()
+if actual!=expected:
+    print('FAIL: S709/#706 exact core allowance mismatch: '+path)
+    sys.exit(1)
+PY706
+    [ "$?" -eq 0 ] || fail "S709 — $f differs from historical bytes plus exact #706 allowances"
   done
 else
   echo "S709 — origin/main is not available; the merge-base comparison was skipped (stamp-check still ran)" >&2

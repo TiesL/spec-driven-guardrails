@@ -14,6 +14,9 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+# #706: exact QA-owned substitutions; never derive freezes from candidate bytes.
+import runpy
+WIP706 = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
 RULES = {534: [('canonical panel subsection', '### Stage-selection panel'),
        ('canonical class subsection', '### Standing human class decisions')],
  535: [('ordinary panel record',
@@ -678,6 +681,11 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
         catalogue(running(ROOT))
         for path, digest in SNAPSHOTS.items():
             content = (ROOT / path).read_bytes()
+            if path in WIP706['TABLE']:
+                try:
+                    content = WIP706['restore'](path, content)
+                except AssertionError as exc:
+                    check(False, 'S548/#706 exact allowances: '+str(exc))
             check(hashlib.sha256(content).hexdigest() == digest, 'S548/unchanged ' + path)
             check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
         print('CONTROL: S548 frozen production hashes and byte mutants PASS')

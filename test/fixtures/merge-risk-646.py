@@ -24,6 +24,9 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
+# #706: exact QA-owned substitutions; never derive freezes from candidate bytes.
+import runpy
+WIP706 = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
 ASSETS = ROOT / 'test/fixtures/merge-risk-v2'
 A = '51178851a1f6fba76e87d046788339c02f874f03'
 REPO = 'laboratory/product'
@@ -1208,7 +1211,7 @@ def role_contracts_expected():
                           (b'Fullstack Developer',b'Developer',10)):
         check(expected.count(old)==count,'role-contracts rename pin count')
         expected=expected.replace(old,new)
-    return expected
+    return WIP706['controls']('skills/role-contracts/SKILL.md', expected)
 
 
 def role_contracts_assert(data,scenario):

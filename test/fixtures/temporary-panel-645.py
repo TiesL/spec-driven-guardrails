@@ -9,6 +9,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+# #706: exact QA-owned substitutions; never derive freezes from candidate bytes.
+import runpy
+WIP706 = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
 IDENT = int(sys.argv[1])
 ERRORS = []
 COUNTS = {'positive': 0, 'mutation': 0}
@@ -2143,6 +2146,7 @@ def preservation_checks():
             old, new = SUBSTITUTIONS[path]
             check(baseline.count(old) == 1, '593/substitution/applies-once-at-merge-base/' + path)
             expected = baseline.replace(old, new, 1)
+        expected = WIP706['controls'](path, expected)
         digest = hashlib.sha256(expected).digest()
         oracle = lambda data: [] if hashlib.sha256(data).digest() == digest else ['593/protected-byte/' + path]
         check(not oracle(expected), 'preserved assertion green at merge base ' + path)

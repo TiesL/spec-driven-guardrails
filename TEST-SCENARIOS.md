@@ -12673,3 +12673,79 @@ The public seams are the shipped policy JSON, live contract text, tracked spec c
 - When: PRD.md's Technical debt table is inspected.
 - Then: the #646 row names the oracle size and addendum sprawl, explains why they remain for this release, and triggers a split by scenario family and archive when #646 activates or the oracle changes.
 - Case file: `test/cases/s717_review_findings_734.sh`. Green at 9674d248; red at 832f7e2.
+
+## #706 — WIP checkpoints and exact-head PR promotion (epic #742; A64)
+
+QA seams: explicit candidate guard invocation with local gh stubs, native hook
+symlinks in disposable fixture repositories, local bare origins, loaded instruction
+text, the closed behavior-scenario schema and historical byte freezes. No test
+changes live hook links/settings, invokes a real gh or proves runtime activation.
+AC7 remains a post-epic observation; it is not a merge gate. The nonexistent-issue
+lookup conflict in AC9/S97 versus S97b/S99 remains maintainer-pending. Those rows
+and assertions are unchanged; new WIP CLOSED/OPEN/unavailable controls do not
+choose a verified-absence classifier.
+
+### S718 — WIP creation and native commits use the existing issue-first boundary (#706 AC8–AC11)
+**Covers:** F19, F76
+- Given: a fixture repo and the candidate guard; both `checkout -b` and `switch -c`, malformed `wip/no-number`, uppercase/empty/nested slugs, and `wip/706-example` with local OPEN/CLOSED/unavailable stubs.
+- When: the explicit guard receives each command; a fixture-linked candidate native pre-commit hook receives commits on malformed and numbered WIP names.
+- Then: malformed creation exits 2; numbered OPEN WIP queries issue 706 and passes; verified CLOSED exits 2; missing gh or unsuccessful lookup warns and allows. Native malformed WIP commits refuse with `REASON_BRANCH_NO_ISSUE`, numbered WIP commits pass syntax offline, and the fixture-only escape hatch bypasses naming.
+- Falsifiers: dropping the creation selector loses malformed/CLOSED/lookup/warning assertions; dropping the regex alternative rejects the independently checked numbered WIP syntax; dropping the native selector permits the malformed native commit. Native execution must be through a fixture symlink, never direct execution of the hook file.
+- Preservation controls: feature/fix malformed, OPEN, CLOSED and unavailable outcomes in both creation forms; release/scratch creation; plain checkout/switch for all branch families; native feature/fix/release/scratch, unborn main, established main refusal and escape hatch. These are expected green controls, not red-before-green evidence. They must also run on the future actual PR/main merge base before preservation is claimed.
+- Case file: `test/cases/s96_s101_issue_first_branching.sh`; original AC9 lookup rows remain byte-identical. New-behavior assertions are red on 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581 because WIP is absent from the three guard boundaries.
+
+### S719 — Checkpoints move WIP while explicit SHA publication moves only the PR ref (#706 AC5/AC6)
+**Covers:** F18, F76
+- Given: a local bare origin, checked-out `wip/706-example`, separate `feature/706-example` at an earlier SHA, and an unrelated current directory.
+- When: the real PostToolUse hook runs after a commit and the configured SessionEnd command runs after the next commit.
+- Then: each checkpoints the committed WIP head to the same-named ref; the PR ref retains its prior SHA. Explicit fast-forward `git push origin <sha>:refs/heads/feature/706-example` advances only PR, without checking it out or force-pushing. A remote PR base merge causes divergent publication to refuse until its remote head is merged into WIP; the reconciled head can fast-forward PR.
+- Preservation controls: commit, HEAD push and explicit PR SHA push pass the candidate guard; the S12-style explicit main destination still blocks. Existing S56/S57/S86/S91 preserve no-origin, divergence, main, cwd and timeout/visibility behavior. This case is expected green on the supplied head because checkpoint mechanics are unchanged. It is not red-before-green proof and no future merge-base pass is asserted.
+- Case file: `test/cases/s719_wip_checkpoint_isolation.sh`. This verifies configured hooks/local Git ref effects, not live hook activation or CI triggers.
+
+### S720 — Every session receives the WIP/publication rule (#706 AC1–AC4)
+**Covers:** F76
+- Given: canonical `policy/WORKFLOW.md`, whose runtime copies are generated through the existing generator.
+- When: the common rule is loaded as text.
+- Then: all roles share WIP and its same-named remote, feature/fix are publication refs, publication uses explicit fast-forward SHA pushes, PRs including drafts never attach to WIP, the PR branch is never checked out for work (including `gh pr checkout`), and the PR opens on first promotion before Review. Replace the old feature-branch checkpoint and undifferentiated regular-push instructions; appending a contradictory rule is insufficient.
+- Falsifier: any individual obligation is removed. The independent compliant witness and one-obligation-deletion controls must discriminate each requirement without reading PRD/A64 as a substitute for delivered instructions.
+- Case file: `test/cases/s720_wip_publication_rule.sh`, fixture `wip-promotion-706.py`. Every new loaded-text obligation is red on the supplied head. Generation equality and S309/S310/S318 budgets remain separate existing consumers; tests do not hand-edit generated copies.
+
+### S721 — Promotion evidence belongs to the exact clean committed head (#706 D6; AC1–AC4)
+**Covers:** F76
+- Given: partial/red-first history checkpointed to WIP and a proposed publication head.
+- When: the documented promotion condition is inspected.
+- Then: D6 requires that exact committed head and a clean tree; `./check --no-tests` and every affected `./test/run.sh <fragment>` named in the Developer brief exit 0; OR48(1)'s required behavior evidence is current for that commit. Record the full SHA, exact commands and results in the Pipeline log or PR comment. Commit generated artifacts before final validation. Later commits need their own evidence. Partial/failing segments only checkpoint; doc-only checkpoints still need D6 to promote.
+- Falsifier: deleting any one condition passes the text oracle. Retain OR48's at-most-once full-check limit and the distinction between doc-only commit checks and publication validation. This documents the promotion rule; it introduces no mechanical green-push refusal or new nudge.
+- Case file: `test/cases/s721_exact_head_promotion_evidence.sh`. Individual obligations are red on the supplied head; independent witness/deletion controls are green.
+
+### S722 — Role handoffs promote and compare one confirmed PR identity (#706 AC2/AC4)
+**Covers:** F38, F60, F62, F76
+- Given: the Shared A11, Developer, Stage-selection, OR46 and OR48 instruction scopes.
+- When: a complete Developer segment returns or an orchestrator prepares a Review round.
+- Then: A11 checkpoints the shared WIP branch; Developer promotes only a completed D6-green segment; WIP-only commits count for the first-commit deadline. OR46 permits promotion of existing green commits, confirms the remote PR head equals the promoted SHA, and uses that same head for QA comparison, Review and the Pipeline log. Failed promotion or a moved head prevents Review. OR48 distinguishes checkpoint checks from D6 promotion checks.
+- Falsifier: dropping an individual obligation passes; widening the closed OR46 list to a sixth kind or authored edits passes. Keep repair dispatch, generated-file-only commits, ordinary stage handoffs, valid skip=Test exemption and single-session provenance distinctions.
+- Case files: `test/cases/s722_promotion_role_handoffs.sh`, changed S317, and S724. New obligations are red on the supplied head. S311/S317/S322/S466 and OB55–OB58, OB60–OB62, OB75–OB81 remain preservation consumers.
+
+### S723 — Base merges and post-merge cleanup preserve WIP work (#706 AC6)
+**Covers:** F76
+- Given: a remote PR head moved by a base merge, or a confirmed merged PR with a remote WIP ref that may have later work or an active user.
+- When: the documented recovery/wrap-up procedure is loaded.
+- Then: merge the remote PR head into WIP, revalidate D6 and retry without force. Delete remote WIP explicitly only after confirmed PR merge and durable reporting, after checking for later work/active users. Retain and reconcile moved/active refs; squash ancestry alone cannot prove safe deletion. Finish on the integration branch so SessionEnd cannot recreate WIP. Dispatched roles gain no destructive-git authority.
+- Falsifier: omitting any individual recovery/deletion safeguard passes the oracle. Broader cleanup remains #726; this test never deletes a real remote ref.
+- Case file: `test/cases/s723_wip_recovery_cleanup.sh`. Loaded-text obligations are red on the supplied head; the Git reconciliation control in S719 is green.
+
+### S724 — Promotion behavior scenarios retain inventory and provenance distinctions (#706 AC2/AC4)
+**Covers:** F38, F60, F76
+- Given: QA-owned OB84–OB91 in the existing closed behavior schema, with matching Intended changes entries citing #706.
+- When: the scenario parser and rule inventory are checked.
+- Then: each heading's rule has reciprocal `covered_by` entries. OB84 permits existing green SHA promotion; OB85 routes partial code to Developer; OB86 promotes before a WIP-only comparison can lead to Review; OB87 rechecks a moved head; OB88 requires D6 on a later doc-only head; OB89 preserves valid skip=Test; OB90 routes a differing comparison to its owner; OB91 dispatches authored base-merge reconciliation without force.
+- Falsifier: one inventory edge is absent, a scenario is unlisted, or an unauthorized field/value is used. A real final behavior run must exercise all scenarios required by the whole-file stamp; parsing alone proves no model obedience.
+- Case file: `test/cases/s724_promotion_behavior_inventory.sh`. Missing inventory edges are red on the supplied head. QA-authored schema/Then checks are green controls, not claims of an executed model run.
+
+### S725 — Historical freezes admit only the exact #706 amendments (#706 AC8–AC11/AC2)
+**Covers:** F19, F38, F60, F76
+- Given: original historical freeze bases and the literal before/after pairs in `test/fixtures/wip-706-substitutions.json`, anchored to 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581.
+- When: S593 reconstructs hooks/inventory, S626/S659 reconstruct role contracts, S548 checks its core snapshot, and S709 compares core/scenario/inventory bytes.
+- Then: apply only the declared pairs, once each, above the existing historical allowances. Reject each omitted pair, wrong or extra bytes; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions.
+- Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment, or hand-writing a stamp. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
+- Case file: `test/cases/s725_exact_freeze_allowances.sh`; amended freeze consumers remain strict. Exact substitution values are a concrete Developer implementation target; any owning-role change needs QA reconciliation of these oracles, not loosening them to candidate bytes.
