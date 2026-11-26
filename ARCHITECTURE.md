@@ -2672,6 +2672,35 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   drift tests, parsing the hook's three-field output by tab. S419 keeps
   instructing-doc and grammar-owner pins, with
   OR31 and its existing stamp untouched.
+- **S412 historical fixture addendum (#728, 2026-11-26):** [A] Supersede
+  "historical comparisons only where available" above for round 6. Track an
+  immutable byte-for-byte copy of `hooks/agent-dispatch.py` from
+  `2d93c255f06c3f89afde70b2625c1926a09754a5` at
+  `test/fixtures/role-stage-599-previous.py`; SHA-256 of the source bytes is
+  `de151be376dacf6ac1dde3807bc85ae6537af5afabda98b8a8566394fbbc5e71`.
+  Developer extracts it once from the available local object; runtime uses
+  only the tracked fixture, verifies its digest and fails on missing or
+  altered bytes, never skips or falls back to Git. Keep provenance outside
+  the snapshot so its bytes remain exact. Replace only the scratch hook as
+  before; use the checkout's ORCHESTRATOR.md and rules inventory. This is
+  historical hook behavior under current policy inputs, not a reconstruction
+  of the entire old checkout. Preserve every current-hook oracle and the
+  executable historical comparisons, including the explicit Reviewer cases
+  and observation probes. [V] Product's replay found two historical
+  differences among 165 prose/brief cases: both Developer briefs return
+  `deny OR8`, because the snapshot recognizes the retired role-name
+  prefix. [A] Record those two historical verdicts separately from
+  current `allow` (matching role with comment) and `deny OR31` (other role).
+  Other pinned historical verdicts retain equality; do not rewrite prompts
+  or current expectations to erase the differences. QA owns the S412 text
+  and oracle handoff. No archive publication, production hook change or new
+  A-number is needed: this repairs A48's existing regression evidence.
+  Exact historical bytes cannot be reworded to satisfy the retired-name
+  guard. As with other captured fixtures, QA adds the snapshot's own row
+  to `test/fixtures/old-role-name-allow.tsv` (a test fixture): path
+  `test/fixtures/role-stage-599-previous.py`, count `1`, tab-separated.
+  Preserve this row when #685 (epic #742) later widens the guard; the
+  snapshot remains immutable and its single historical occurrence allowed.
 - **QA handoff, new cases:** [A] Add the round-7 bullet, numbered, dollar
   prompt, blockquote, `Run:`, `cd ... &&` and `bash -c` introduction shapes
   with correct, missing-prefix and mismatching commands; apostrophes
