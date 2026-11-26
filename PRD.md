@@ -721,13 +721,13 @@ then has nothing to push. Two additions close that gap on both sides:
   (exit 0, nothing on stderr).
 - **Push as soon as something is committed** (W25). A `PostToolUse` hook
   pushes the current branch after a successful `git commit`. It's the same
-  action `SessionEnd` already does, just earlier and more often — no new
-  branch names, no mutation nobody asked for. `WORKFLOW.md` already
-  prescribes "push regularly"; this makes that mechanical instead of
+  action `SessionEnd` already does, just earlier and more often. Under F76, the checked-out branch is the shared
+  WIP branch, so these pushes checkpoint work without advancing the PR ref.
+  `WORKFLOW.md` already prescribes "push regularly"; this makes that mechanical instead of
   something that has to be remembered. Without network or `origin`, it
   reports that and doesn't hold anything up.
 
-### F19 — Issue-first branching (issue #212)
+### F19 — Issue-first branching (issues #212, #706)
 
 Link 3 (`check-pr-issue-link.sh`, W19b) already hard-blocks a PR that
 references no issue — but only at PR time, which is after the branch,
@@ -738,24 +738,31 @@ already named for destructive commands applies here too: catching a
 problem late doesn't stop the work that happened before it.
 
 **Decision:** the branch name itself carries the issue number —
-`feature/<issue-number>-<short-desc>` / `fix/<issue-number>-<short-desc>`,
-replacing the previous `feature/<short-desc>` convention. Requiring the
-number forces the issue to exist before the branch can even be named;
-there's no way to "forget" it the way a free-text branch name allows.
+`feature/<issue-number>-<short-desc>` / `fix/<issue-number>-<short-desc>` /
+`wip/<issue-number>-<short-desc>` (#706 D7). The first two replaced the
+previous `feature/<short-desc>` convention; F76 adds the WIP checkpoint
+branch. Creating an issue first remains required. The numbered name makes
+that link explicit, but mechanical enforcement does not guarantee existence:
+D8 accepts the failed-lookup risk described below.
 
 Enforcement follows F17's three-layer shape, adapted to what's actually
 checkable at each layer (branch names don't survive a squash-merge, so
 CI can't be the third layer here the way it is for F17):
 
 - **`hooks/git-guardrails` (PreToolUse)** blocks `git checkout -b`/
-  `git switch -c` for a `feature/`/`fix/` branch whose name doesn't match
-  `^(feature|fix)/[0-9]+-[a-z0-9-]+$`. When it does match, one `gh issue
-  view <n> --json state` call (fail-open: no `gh`/no network → warn and
-  allow, exactly the merge guard's `check_merge_guard`/`check_ci_guard`
-  pattern from F8) blocks branch creation against a closed or
-  nonexistent issue.
+  `git switch -c` for a `feature/`/`fix/`/`wip/` branch whose name doesn't match
+  `^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$`. When it does match, one `gh issue
+  view <n> --json state` call permits OPEN and blocks a successfully
+  observed non-OPEN state. A failed, empty or unavailable lookup warns and
+  allows, including a nonexistent issue that produces such a failure.
+  [maintainer decision D8](https://github.com/TiesL/spec-driven-guardrails/issues/706#issuecomment-7186930378) accepts option A
+  and its risk from [panel-706-d1](https://github.com/TiesL/spec-driven-guardrails/issues/706#issuecomment-7186787989): a mistyped or
+  invented issue number can pass with a warning whenever lookup fails.
+  This is the fail-open pattern from F8; no verified-absence classification
+  is required. D7 applies the same checks to feature, fix and wip.
+  QA reconciles S97/S97b/S99 to this resolved boundary.
 - **The native `pre-commit` hook** re-checks the same pattern, syntax
-  only, on every commit on a non-main branch — no network call, so this
+  only, on commits on `feature/*`, `fix/*` and `wip/*` — no network call, so this
   hook keeps its existing offline character, and it's the layer that
   covers branch/commit activity outside Claude Code (plain terminal, an
   IDE), the same coverage argument as F17.
@@ -770,10 +777,23 @@ one-source-of-truth arrangement F17 already established for
 `MAIN_BRANCH`. Same escape hatch as every guard here:
 `CLAUDE_WORKFLOW_GUARDRAILS_OFF=1`.
 
-Not retroactive: only *creation* of a new branch is judged, so branches
-that already exist (on another machine, from before this change) are
-never blocked mid-work — the same "when in doubt, allow" ground rule
-`git-guardrails` follows throughout.
+Plain checkout/switch of an existing branch does not invoke creation-time
+validation. Native commit-time syntax checks still apply, including to a
+pre-existing malformed WIP branch after D7. Release and unrelated branch
+families remain outside issue-first validation; main's separate protections
+and the native unborn-HEAD exception remain. F76 does not add a green-push
+check to either hook.
+
+Preservation evidence is source lookup, not a test-pass claim: at supplied
+main `255040eb0802798a2f81ff408be4008826873b61`, `hooks/rules.sh`,
+`check_branch_creation` in `hooks/git-guardrails` and `hooks/pre-commit`
+select feature/fix only. The lookup warns/allows on nonzero or empty output.
+QA must run `./test/run.sh s96_s101` and `./test/run.sh s12_` on the actual
+PR/main merge base and candidate, recording both SHAs. Expect preserved
+feature/fix results, plain checkout/switch and unrelated-branch allowances,
+main protection and escape-hatch behavior; add both creation forms and
+native coverage for WIP separately. Reconcile the nonexistent-issue row to
+D8's failed-lookup warn/allow boundary; no preservation pass is claimed.
 
 ### F20 — Epic auto-close (issues #219, #683)
 
@@ -2081,7 +2101,10 @@ alternative. Empty diffs are explicit. A local working tree alone is insufficien
 After the Developer returns, the orchestrator performs a read-only OR46(c)
 comparison of the whole committed scenario file byte for byte against the
 reconstructed QA file and logs the command, artifact link, compared identities
-and result. If the branch merged `main` after handoff, QA's unified diff must
+and result. Under F76, promotion precedes this comparison and every Review
+round. The compared commit, OR15 Review brief and Pipeline log all name the
+confirmed remote PR head SHA; a WIP-only head cannot supply that identity.
+If the branch merged `main` after handoff, QA's unified diff must
 be re-applied to the new base before comparing the whole file; an apply failure
 leaves the handoff unresolved. Every difference must match a disclosed finding
 and its resolution through the owning role; disclosure alone does not authorize
@@ -2182,8 +2205,9 @@ and the Developer's append-only scope for new scenario entries and text;
 
 Both the completed panel record and applicable waiver posting must precede
 both the first work-item commit and PR opening. This includes spec-only,
-test-only, empty and later-squashed commits across sessions; inherited base
-or release commits do not start that deadline. The Pipeline log retains the
+test-only, empty and later-squashed commits across sessions, including the
+first commit present only on the F76 WIP branch. Inherited base or release
+commits do not start that deadline. The Pipeline log retains the
 initial base SHA, first work-item commit identity (or `none yet`), record
 identities and creation times, and PR identity and creation time when known.
 Unknown ordering or equal times leave timeliness unresolved. A late record
@@ -2874,6 +2898,93 @@ runner refuses an inherited non-first-party `ANTHROPIC_BASE_URL`. A note in
 limits. The wrapper runs on macOS `/bin/bash` 3.2 without a `timeout`
 binary and reads JSON with `python3 -I`. A live smoke test through the real
 proxy (AC12) is separate from the offline tests.
+
+### F76 — Checkpoint WIP and promote a validated PR head (issue #706; epic #742)
+
+**Serves:** #706 AC1–AC7; F19 covers AC8–AC11. A64 defines the design.
+D1–D7 remain settled. This rule keeps partial and red-first work recoverable
+across computers while reducing PR CI runs that cannot yet provide useful
+feedback. The unit of validation is the promoted head; earlier red commits
+may remain in its history.
+
+All roles share one working branch, `wip/<issue>-<slug>`, and commit and push
+logical steps to its same-named remote branch. The publication branch is
+`feature/<issue>-<slug>` or `fix/<issue>-<slug>` with the same issue and slug.
+Never attach a PR to WIP, including a draft. Draft PR branches follow the
+same promotion rule as other PR branches. State this common rule in
+`policy/WORKFLOW.md` and its generated workflow/runtime instructions;
+Shared A11 and the Developer scope must agree on checkpoint and promotion
+targets. F62's first-commit deadline includes WIP-only commits.
+
+Never check out the PR branch for work, including through `gh pr checkout`:
+that lets automatic checkpoint pushes advance the PR head prematurely.
+Resume WIP on another computer and merge the remote PR branch into it when
+that head has moved. Update the PR ref only by explicit fast-forward SHA
+push, for example `git push origin <full-sha>:refs/heads/feature/<issue>-<slug>`.
+Never force-push. Open the PR at the first promotion, before Review.
+
+**Promotion condition (D6).** On the exact committed head with a clean
+working tree, `./check --no-tests` and every affected
+`./test/run.sh <fragment>` named by the Developer brief must exit 0, and
+any behavior run required by OR48(1) must be current for that commit.
+Commit generated artifacts before final validation. Record the full SHA,
+exact commands and results in the promotion's Pipeline log line, or a PR
+comment without an orchestrator. A later commit needs evidence for its own
+SHA. Keep OR48(2)'s limit of at most one full `./check` before PR opening;
+projects with a fast check may run it fully every time. WIP commits retain
+their commit-time checks; a doc-only checkpoint still needs D6 to promote.
+These checks do not guarantee platform-specific, unaffected-case or PR
+merge-result CI success.
+
+The Developer promotes at the end of a completed segment that meets D6.
+A partial or failing segment only checkpoints. Immediately before every
+Review round, the orchestrator promotes existing already-green commits as
+an OR46 no-agent step. It may run checks and report failures; repairs still
+require owning-role dispatch. Confirm the remote PR head equals the
+promoted SHA before the applicable F60 QA comparison, Review brief and
+Pipeline log name that same head. Failed promotion, a moved head or an
+unresolved comparison prevents Review. Preserve the valid skip=Test
+exemption and its not-applicable log; promotion grants no provenance waiver.
+
+A PR base merge can make the next promotion non-fast-forward. Merge the
+remote PR head into WIP, resolve through the owning role, validate the new
+head under D6 and retry without force. After confirmed PR merge and durable
+reporting, the orchestrator (or working session without a pipeline) deletes
+the remote WIP ref explicitly; deleting the PR branch does not delete WIP.
+First verify it has no later work or active user. Retain and reconcile a
+moved or active ref; squash-merge ancestry alone is not a safe deletion test.
+Finish on the integration branch after preserving work so SessionEnd does
+not recreate WIP. Dispatched roles gain no merge/destructive-git authority.
+Broader clone/worktree cleanup belongs to #726.
+
+This is a documented promotion rule (D3), with no new blocking green-push
+guard or advisory nudge. F18's push hook and SessionEnd configuration stay
+unchanged; Codex without runtime hooks checkpoints explicitly. D4 retains
+no meaning-version bump; A64 uses existing instruction delivery with no
+new CHANGES.md entry, default or adoption switch. D5 keeps CI trigger and
+concurrency changes outside this item.
+
+**Verification and limits.** Supplied main is
+`255040eb0802798a2f81ff408be4008826873b61`; no future PR/main merge-base
+identity or preservation pass is claimed. Concrete lookup in
+`hooks/push-after-commit` shows current-branch pushes, and
+`settings/session-hooks.json` shows SessionEnd pushing `origin HEAD` off
+main. On the actual merge base and candidate, QA runs the S56/S57/S86/S91
+cases (each `./test/run.sh s<number>_` must exit 0) and adds local bare-origin
+WIP/PR ref-isolation checks: both checkpoint mechanisms advance only WIP;
+explicit SHA promotion advances only PR. Verify reconciliation after a base
+merge and safe post-merge deletion. Text and behavior checks must reject
+missing D6 evidence, partial-work promotion and WIP-only/mismatched Review
+heads, and preserve OR48 limits and F60 provenance. Configured-hook tests
+and loaded-text checks do not prove live runtime activation or obedience.
+QA owns new scenario IDs and Covers fields.
+
+AC7 is post-epic observation, never a merge gate. Compare failed-run share
+with the supplied #696 count (123/180 failed runs; 16/90 fully green heads),
+separating failures D6 would have caught. That evidence may trigger a
+separate advisory-nudge item: network-free, adoption-gated, visible to the
+agent, never a refusal or open-PR lookup. Reconsider concurrency separately.
+No such follow-up is implemented here.
 
 ## Non-functional characteristics
 

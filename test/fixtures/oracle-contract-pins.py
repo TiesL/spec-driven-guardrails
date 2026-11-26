@@ -68,7 +68,8 @@ PINS = {
     ('qa-scope', ROLES, 'QA', r'(no test.code|writes no test code)', 'QA writes no test code itself.'),
 ],
 466: [
-    ('no-agent-compare', ORCH, 'OR46', r'\(c\).*compar.*(QA|artifact).*committed', '(c) Read-only comparison of the QA artifact and committed Developer head.'),
+    ('no-agent-compare', ORCH, 'OR46', r'\(c\) read.only git/gh and QA comparison;', '(c) read-only git/gh and QA comparison;'),
+    ('no-agent-compare-head', ORCH, 'OR46', r'before each Review compare applicable QA artifact to that head', 'Before each Review compare applicable QA artifact to that head.'),
     ('compare-command', ROLES, '', r'git apply', 'Reconstruct with git apply outside the repository.'),
     ('compare-inputs', ROLES, '', r'repository identity.*(comment ID|report ID).*(head SHA|Developer head).*(base SHA|base)', 'Inputs: repository identity, selected comment ID, full head SHA and applicable base SHA.'),
     ('compare-reconstruct', ROLES, '', r'git show.*TEST-SCENARIOS\.md.*outside.*repositor.*(both|two).*hash', 'Read git show <base>:TEST-SCENARIOS.md; apply outside the repository and verify both hashes.'),

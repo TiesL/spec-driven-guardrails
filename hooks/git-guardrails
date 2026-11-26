@@ -162,7 +162,7 @@ check_branch_creation() {
   [ -n "$branch" ] || return 0
 
   case "$branch" in
-    feature/*|fix/*) ;;
+    feature/*|fix/*|wip/*) ;;
     *) return 0 ;;
   esac
 

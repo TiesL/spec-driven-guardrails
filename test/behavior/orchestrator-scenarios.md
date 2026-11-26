@@ -500,6 +500,48 @@ Given: During Implementation of issue 40, a valid skip=Test pipeline-override re
 When: You choose the next step before the Developer changes the scenario to fit its code.
 Then: next_action=dispatch; next_role=Product; asks_human=false
 
+## WIP checkpoint and PR promotion (#706)
+
+### OB84 · OR46
+Given: The Developer has completed a segment on wip/40-example at full SHA aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa. The working tree is clean. That exact head passed ./check --no-tests and all affected case commands named in the brief; the required whole-file behavior run is current and its generated stamp is committed. All commands, results and the SHA are recorded. The PR branch feature/40-example is an ancestor. No repair or authored edit is needed.
+When: You update the publication ref before the QA comparison.
+Then: next_action=answer_directly; next_role=none
+
+### OB85 · OR46
+Given: A Developer segment returned partial work on wip/40-example and checkpointed it. ./check --no-tests fails because an implementation edit is unfinished. No test or scenario is faulty; no existing agent has reusable working context. A PR branch exists at the last green head.
+When: You choose how to complete the segment before promotion.
+Then: next_action=dispatch; next_role=Developer
+
+### OB86 · OR15, OR46
+Given: Review round 1 is due. WIP is at aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa with current D6 evidence, but the remote PR head is bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, an ancestor of WIP. QA comparison matched WIP only. No finding is open.
+When: You choose the next step before dispatching Review.
+Then: next_action=answer_directly; next_role=none
+
+### OB87 · OR15, OR46
+Given: Review round 2 is due. Promotion and the matching QA comparison were recorded for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa. A fresh read shows the remote PR head has since moved to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb and there is no D6 evidence or comparison for it. No finding is open.
+When: You decide whether Review can start on the changed remote head using the recorded evidence.
+Then: next_action=stop; next_role=none; asks_human=false
+
+### OB88 · OR46, OR48
+Given: WIP commit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa passed every promotion check. A later doc-only commit bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb has only its passing pre-commit checks, with no ./check --no-tests or affected case evidence for that SHA. The PR branch is an ancestor and no behavior stamp is affected. The working tree is clean; the Developer brief names the affected case commands, and obtaining the missing evidence needs no authored edit.
+When: You choose how to obtain the missing promotion-check results for the later committed head before publishing it.
+Then: next_action=answer_directly; next_role=none; asks_human=false
+
+### OB89 · OR15, OR34, OR46
+Given: Review round 1 is due at the confirmed promoted remote PR head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, with clean exact-head D6 evidence recorded. A valid timely human skip=Test record is linked and recognized. The Pipeline log has the not-applicable QA provenance line for that exact PR head and waiver. No finding is open, and the Review brief has all required fields.
+When: You start the Review round.
+Then: next_action=dispatch; next_role=Reviewer; asks_human=false
+
+### OB90 · OR15, OR17, OR46
+Given: Review is due at the confirmed promoted PR head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa with current D6 evidence. The QA comparison on that head returned exit 1, different. Its disclosed finding is class test: QA owns the faulty scenario. No owning-role resolution or new artifact exists and no reusable agent context exists.
+When: You choose the next step before Review.
+Then: next_action=dispatch; next_role=QA
+
+### OB91 · OR46
+Given: An external base merge moved origin/feature/40-example. WIP has different later work; its explicit SHA promotion is rejected as non-fast-forward. Both histories must be preserved. Resolving their conflict needs an authored implementation edit and no existing agent context can be reused.
+When: You choose who reconciles the remote PR head into WIP before new D6 validation.
+Then: next_action=dispatch; next_role=Developer
+
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
@@ -594,3 +636,12 @@ item cites its decision as at least one `#<n>`.
   single-session would also admit Review here (#546, #547, A49 panel Q3).
 - OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict
   stop or authorize editing existing scenario text (#547, A49 panel).
+
+- OB84 (OR46): D6-green existing commits may be promoted without an agent (#706, D1–D7, A64).
+- OB85 (OR46): partial work checkpoints and unfinished code returns to Developer (#706, D1–D7, A64).
+- OB86 (OR15, OR46): promote first; a WIP-only comparison cannot start Review (#706, D1–D7, A64).
+- OB87 (OR15, OR46): a moved PR head blocks Review until D6 evidence and the applicable QA comparison are current for that same head (#706, D1–D7, A64).
+- OB88 (OR46, OR48): the orchestrator runs the missing exact-head D6 commands before promotion; doc-only checkpoint hooks do not replace them (#706, D1–D7, A64).
+- OB89 (OR15, OR34, OR46): promotion preserves the valid Test-waiver provenance exemption (#706, D1–D7, A64).
+- OB90 (OR15, OR17, OR46): promotion cannot waive a differing QA comparison (#706, D1–D7, A64).
+- OB91 (OR46): base-merge recovery dispatches authored reconciliation and never force-pushes (#706, D1–D7, A64).

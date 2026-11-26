@@ -1097,7 +1097,7 @@ something new is being added.
 **Covers:** F18
 - Given: an adopted project with `main` checked out
 - When: a session starts
-- Then: a message appears naming `main` and suggesting `git checkout -b`
+- Then: a message names `main`, says "Create the issue first, then work on WIP:", and suggests exactly `git checkout -b wip/<issue-number>-<name>`; no feature/fix checkout hint appears, exit is 0 and stderr is empty
 - And: that's before there's any work — the commit block from F7 only
   kicks in afterward, once branching no longer feels free
 
@@ -1291,12 +1291,16 @@ something new is being added.
 - Then: `git-guardrails` blocks it, pointing at creating the issue
   first and naming the branch after its number
 
-### S97 — Branch creation against a closed or nonexistent issue is blocked
+### S97 — Branch creation blocks a successfully observed non-OPEN issue state
 **Covers:** F19
-- Given: a branch name that does match the pattern, but the numbered
-  issue is closed or doesn't exist (`gh issue view <n> --json state`)
-- When: the command runs
-- Then: `git-guardrails` blocks it
+- Given: a syntactically valid feature/fix/wip branch and a successful,
+  nonempty `gh issue view <n> --json state --jq .state` lookup
+- When: the observed state is not OPEN (including CLOSED)
+- Then: `git-guardrails` blocks creation
+- S97b (D8): if a nonexistent issue 999999 instead exits 1 with stderr
+  `GraphQL: Could not resolve to an issue or pull request with the number of 999999. (repository.issue)`,
+  the guard warns and allows. Both `checkout -b` and `switch -c` must
+  actually query that number for feature/fix/wip; failure is not verified absence.
 
 ### S98 — Branch creation against a real, open issue succeeds
 **Covers:** F19
@@ -1305,13 +1309,16 @@ something new is being added.
 - When: the command runs
 - Then: the command goes through, unblocked
 
-### S99 — The issue-first guard fails open without gh or network
+### S99 — Failed, empty or unavailable issue lookup warns and allows
 **Covers:** F19
-- Given: `gh` is missing, or the `gh issue view` call fails (no
-  network/access)
-- When: a branch name matching the pattern is created
-- Then: a warning appears that the issue-existence check was skipped
-- And: the command is allowed
+- Given: a syntactically valid feature/fix/wip branch and missing `gh`, a
+  failed lookup (including nonexistent issue, network or access failure),
+  or a successful lookup with empty output
+- When: `checkout -b` or `switch -c` creates it
+- Then: a warning says the issue check was skipped and the command is allowed
+- And: failed lookup still warns/allows if stdout says CLOSED; only a
+  successfully observed non-OPEN state blocks (S97). Under accepted D8,
+  a mistyped or invented issue number may pass with this warning.
 
 ### S100 — Non-Claude commits are covered by the native pre-commit hook
 **Covers:** F19
@@ -8831,6 +8838,8 @@ and S380's #590 live-evidence boundary.
 - Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
 - Best-effort pins: seven known permissive rewrites survive (listed in TiesL/spec-driven-guardrails#657); the live instruction exercises there are the real check.
 - Amended by #652 (A57): the frozen byte hashes of `ORCHESTRATOR.md`, `orchestrator-scenarios.md` and `orchestrator-core-pins.tsv` are re-pinned to the bytes of the bundled #652/#676 edit, because that edit must change them (cuts, OR44 qualifier, wording). The `orchestrator-diff.stamp` pin changes only when the stamp does: after the behavior run, QA re-pins that one entry in a follow-up Test dispatch (the orchestrator commits the generated stamp, OR46 b, and does not hand-edit the fixture). Until then S548 stays green on the stamp pin and red only if the stamp is refreshed first. The waiver-authority and permissive-rewrite mutation controls are unchanged. Falsifier: a re-pin taken before the Developer's bytes are final, or a stamp pin left stale after the refresh.
+- Amended by #706 (A64 addendum 2; S725): retain every non-stamp historical SNAPSHOTS digest and mutation/authority check; restore only the shared exact #706 pairs before the core/scenario/inventory hash comparisons. The stamp entry alone sanctions the genuine final whole-file-run artifact digest after final core/scenario edits (both arms, N=3); S627 reads this same entry. No candidate-byte re-pin or independently chosen stamp digest is allowed.
+
 
 ## Epic child inheritance (#651; A52–A53)
 
@@ -9121,6 +9130,8 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 - Falsifier: [A] an enumerated exact-pin/byte/structured protection contradiction passes its mechanical diagnostic, including Discovery/Review skips, or `S593-authority-meaning` authorizes a protected skip/override from panel pressure, treats a forged-looking record as authentication or reports structural GREEN as observed obedience. Report mechanical results and instruction-exercise results separately, including unrun exercises and unverifiable evidence; no new enforcement or malicious-session resistance is claimed.
 - Added by #678 (item 5; A54 addendum 2026-11-09, amends D6): [A] the `unanimous-skip` embedded `protected` facts are tied to the `protected-work` row: `adds_scenario`, `executable_diff`, `doc_only` and `requires` (as a set) must be equal; `selected` is not tied. Any difference, whichever row differs, returns exactly `593/protection/unanimous-skip`. The base control rows agree (doc-only work). Agreeing doc-only and explicit executable-work variants (executable diff, adds scenario, both) are mirrored on both rows and pass; requires order does not matter. Existing single-row fixtures are mirrored on both rows, not loosened. Fixture names `593/tie/*`.
 - Amended by #652 (A57 addendum 2): S593 no longer pins `skills/role-contracts/ORCHESTRATOR.md`'s bytes to the recorded merge base (an authorised core edit by a later epic would otherwise break S593 with no real authority change). Instead S593 asserts that S548's `SNAPSHOTS` (`test/fixtures/stage-selection-647.py`) holds a pin entry for `ORCHESTRATOR.md`; drift of the core bytes is guarded by S548, `stamp-check` and `orchestrator-core-pins.tsv`. Mutation control: remove the `ORCHESTRATOR.md` entry from S548's `SNAPSHOTS` (in a scratch copy); S593 is red, naming the missing pin. Valid control: the entry present passes. The other S593 byte pins (`pipeline-override.sh`, `orchestrator-rules.tsv`, `hooks/`, `skills/pre-merge-review/`) and every other S593 assertion stay as written. Falsifier: S593 passes with no `ORCHESTRATOR.md` pin in S548's `SNAPSHOTS`, S593 still compares `ORCHESTRATOR.md` to the recorded merge base after a merge of #652, or another S593 path loses its byte pin.
+- Amended by #706 (A64 addenda 2–3; S725): layer only the shared count-1 #706 hooks/inventory pairs over the existing merge-base substitutions; retain b22b476, every other protected path and S548's sole core pin authority. Omitted pairs and extra bytes still fail.
+- A64 addendum 3: retain S593's `b22b4760fa3dcfd79a1c2557899bd735c6fafefc` base and every existing allowance. In `hooks/rules.sh`, additionally admit the shared table's exact complete commit-on-main assignment pair and replace the branch-reason prefix allowance with its exact complete assignment pair. Keep the regex pair; require count-1 application, exact reverse restoration and independent omitted/wrong-pair and extra-byte rejection. No baseline replacement or new stamp allowance.
 
 ## Release-aware epic auto-close (#683; A55)
 
@@ -10632,14 +10643,15 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Test seam: byte/loader-capture/install seams; 16,000 and 16,001-byte fixtures including multibyte text. Kill per-file cap and explicit full-load check; insert SDG identity/list or edit role-contracts in scratch and fail the respective assertion.
 - Case file: `test/cases/s626_merge_risk_skill_own_file.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
+- Amended by #706 (A64 addendum 2; S725): after the two existing count-1 role-contract substitutions on A, allow only the shared exact #706 role-contract pairs. Core preservation uses S627's exact core allowance; no other byte, floor, loader or marker freeze changes. Omitted pairs and extra bytes still fail.
 
 ### S627 — Branch core snapshot, pointers, budget and projection evidence (#646; A60 + addendum 1)
 **Covers:** F74
 - Amended by A60: continuing requirement; supersedes this scenario's A58 mechanism-specific assertions.
 - Given: recorded A60 input A (5117885), its four protected core/scenario/pin/stamp artifacts and branch-added OR6/OR11/OR43/WORKFLOW accepted-delegation pointers; final #646 bytes. These are B branch-state checks, not an assertion that the added pointers or these complete artifact bytes existed on M or R.
 - When: compare protected bytes against that input and remeasure S318 slot 1 with configured CONTEXT_BUDGET_CHARS; check existing textual pins/generated projections.
-- Then: all four artifacts remain byte-identical; existing #511/accepted-delegation pointers cover this proposal, no new core procedure/re-pin/differential-run claim. Slot 1 has >=500 characters headroom within sourced budget; slots 2/K unchanged; projections reproduce from sources, no hand edit or meaning-version change (#679). Unexpected needed core edit stops and returns to Architect before action; old stamp covers only its unchanged inputs.
-- Falsifier: core drift accepted by re-pinning, a stale projection passes, or floor fails on one temp path while passing another.
+- Then: retain A=51178851a1f6fba76e87d046788339c02f874f03 and verify all four protected A blobs equal the shared #706 table's historical base. Core/scenarios equal A plus only that table's exact #706 pairs, each once; orchestrator-core-pins.tsv stays byte-identical. The stamp admits only the genuine final-run artifact digest sanctioned by S548's SNAPSHOTS entry, reusing that single authority. Existing #511/accepted-delegation pointers cover this proposal; the #706 core change requires a new genuine whole-file run (both arms, N=3) after final core/scenario bytes. Slot 1 has >=500 characters headroom within sourced budget; slots 2/K unchanged; projections reproduce from sources, no hand edit or meaning-version change (#679). Unexpected needed core edit stops and returns to Architect before action; the prior stamp covers only its original inputs and cannot certify the amended core.
+- Falsifier: accepting an omitted #706 amendment, arbitrary replacement stamp, one extra byte, moved A or candidate-derived expectation; core drift accepted by re-pinning, a stale projection passes, or floor fails on one temp path while passing another. Separate omission, arbitrary-stamp and extra-byte controls must reject each change; preserve every pointer, projection, relative-floor, boundary and short-path control.
 - Test seam: existing measurement/projection seams; preserve relative mutation: measure s1_copy in the same scratch copy, grow OR11 by CONTEXT_BUDGET_CHARS-500+1-s1_copy to fail and one fewer to pass. Both short 19-character and long macOS temp paths must agree. Kill fixed-growth substitution, removed #511 and hand-edited projection. The #511 token alone is P on M; accepted-delegation wording, full artifact equality, pointer geometry, relative-growth sample and delegation projections are B on A. Budget/projection behavior must be measured by Developer on the named snapshot; no main-base headroom or generation pass is implied.
 - Case file: `test/cases/s627_merge_risk_core_edit_pointer_headroom.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
@@ -11637,6 +11649,7 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 - Q5 malformed is truncated JSON; deep1100 is the bounded 2201-byte nested array, retained as original source bytes at the named consumer. Each owning use has its independent valid isolated companion (uncounted); evaluator inputs add a valid raw refer peer, except config instead sets the outer evidence schema invalid, with cfg-dependent checks unavailable. Do not insert cfg defaults or replace accumulated codes with verifier-crash. A60 addendum 23 owning mutants omit only ValueError for malformed JSON or only RecursionError for deep JSON at the selected consumer use; Invalid-only and UnicodeError-only omissions are masked non-credit on these specimens, with the rule owned by those real class kills. Typed-refusal alternatives have only the killing subsets in addendum 23; exception invalid-candidate refusal removal is masked by decode-continue and earns no credit; site-target shared parse_manifest/retained_json handling to that use, retaining the other consumers and independent peer/evidence-schema causes. A masking second emitter or deletion of a whole evaluator/consumer loop earns no credit. An eligible canonical companion must survive each applicable mutant; reader valid companions retain their own successful headers. Known parse failure and natural recursion failure are distinct from injected Q3 evidence.
 
 - Q5 decision retains a malformed/deep accepted decision body with recomputed reference digest and all honest config/qualification/capability floor/record capture copies; the still-readable table/mapping/marker/effort rows remain complete, so only capability-table-invalid precedes raw referral. mapping retains the original schema-valid frozen announcement, then changes only the mapping to malformed/deep bytes and its honest protected pin/decision/current source references; missing row derivation is unavailable, capability-table-invalid and capability-identity-missing survive along with frozen identity-binding. Keep independently accepted qualification/brief/runtime and source evidence consistent; no manufactured capability-entry/profile/effort refusal. For revocation/exception use a claimed, otherwise valid preference-only numbered exception on an already qualifying pair: corrupt only the relevant ledger block; valid other entries remain readable, but the claim cannot satisfy capability-exception-invalid, and frozen disclosed exception/outcome produces identity-binding. Numeric exception-score substitutes 10**400 at EXCEPTION reviewer_score in that same claimed exception; no schema overflow escapes or fills a missing-data claim. Owning mutants omit only mapping-local normalization at 999-1000, revocation-local normalization at 1071-1072 (or ledger_ok=False), exception-local normalization at 1077-1078 (or invalid-candidate refusal at 1079/1092), or D4 safe finite-number conversion at shape:164 for exception schema; independent no-claim eligible/0 [] and valid applicable-exception control survive. Decision separately owns site-targeted retained_json:864-865 normalization for its use at 994, retaining its decision requirement at 996/1002; preserve the ordinary table/mapping. No whole-loop deletion or masked same-code emitter earns credit. No new exception trust/lifecycle relation.
+- Amended by #706 (A64 addendum 2; S725): the ordinary role-contract source alone adds the shared exact #706 pairs after its existing A-based substitutions. All other ordinary floor/model/effort-free-marker sources remain byte-identical to A; every capability and no-merge outcome stays unchanged. Omitted pairs and extra bytes still fail.
 
 ### S660 — Candidate-influenced prose never reaches the credentialed model (#646; A60 + addendum 1)
 **Covers:** F71, F73
@@ -12600,6 +12613,7 @@ Shared seams for S701-S708 and S710-S711 (decided by QA, agreed before the tests
 - Test seam: file reads, the existing stamp check (S316), the decision-entry format check (S94) and the shared not-yes wording checker. Kill individually, each as a planted copy that must turn the case red: each statement dropped; doc in the wrong place; location list drift; Codex selection list drift on either side (an item dropped from the doc block; an item added to the wrapper's list only; round 3: `--ignore-user-config` dropped from the doc block; `openai_base_url` added to the wrapper's list only; the same drop from both sides, caught by the exact item set; the `17517e6` items `profiles.*` and `model_providers*` restored on both sides); the first-segment or attached statement dropped; the settings statement reduced to `ANTHROPIC_BASE_URL`; the credential statement without "plain HTTP", without the bearer or API key, or without "identify"; round 4: the Codex environment statement dropped, or naming only one of `NO_PROXY` and `no_proxy`, or moved into the Claude sentence (`NO_PROXY` and `no_proxy` named only next to a Claude-only variable); round 5: the `.env` statement dropped, naming only one of `NO_PROXY` and `no_proxy`, or without the refusal; the `d51ba0d` sentence "the opt-out (answer `process-model-routing` no)" restored without a compression sentence; a planted "Answer process-model-routing no to run children direct."; routing text in `WORKFLOW.md`.
 - Case file: `test/cases/s709_route_docs.sh` (Developer-owned).
 - Red-before-green: fails first with no doc; the "none of the terms" half is red when any one term is planted in a copy of `ORCHESTRATOR.md` or `WORKFLOW.md`. At `d51ba0d` these are red: there is no Codex selection block and no wrapper list to compare; the settings statement names only `ANTHROPIC_BASE_URL`; no credential statement exists (`grep -niE 'credential|oauth|token|bearer'` hits only the `--bare` note, review round 1); and (n3) fails because the doc names the `no` answer only as "the opt-out" and mentions compression of Codex children only as "before this change". Round 3, at `17517e6` (doc and wrapper unchanged since): the item-set assertion is red (both sides still hold `profiles.*` and `model_providers*` and lack `--local-provider`, `--ignore-user-config`, `openai_base_url` and `chatgpt_base_url`), and the first-segment and attached statements are red (the doc describes a trailing-`*` prefix match and no attached form); the side-to-side comparison itself is green there. Round 4, at `8d32203` (the doc at `a393e0b`): the Codex environment statement is red, because the only Codex sentence in "What a routed child gets" names the header override and no variable, and every sentence naming `NO_PROXY` and `no_proxy` is about a Claude child or a settings file and also names a Claude-only variable. Every earlier S709 statement is a green regression guard there. Round 5, at `5497e47` (the doc at `75a43e9`): the `.env` statement is red, because the doc contains no `.env` at all. Every earlier S709 statement is a green regression guard there.
+- Amended by #706 (A64 addenda 2–3; S725): keep the release baseline and routing prohibitions; core/scenario/inventory comparisons add only the shared exact #706 pairs. Stamp-check still requires a genuine current whole-file run after final edits; no arbitrary stamp or further changed byte is admitted. On a dynamic merge base that already contains #706 (including HEAD == origin/main), compare unchanged sanctioned bytes without reapplying the amendments. Exercise both pre-integration and post-integration baselines; in each state independently reject every omitted/wrong pair and an extra byte in each protected core/scenario/inventory path. Fixed historical freeze consumers still apply their pairs strictly once.
 
 ### S710 — The behavior runner stays direct and refuses an inherited proxy URL (#707; AC11, runner half)
 **Covers:** F75
@@ -12673,3 +12687,79 @@ The public seams are the shipped policy JSON, live contract text, tracked spec c
 - When: PRD.md's Technical debt table is inspected.
 - Then: the #646 row names the oracle size and addendum sprawl, explains why they remain for this release, and triggers a split by scenario family and archive when #646 activates or the oracle changes.
 - Case file: `test/cases/s717_review_findings_734.sh`. Green at 9674d248; red at 832f7e2.
+
+## #706 — WIP checkpoints and exact-head PR promotion (epic #742; A64)
+
+QA seams: explicit candidate guard invocation with local gh stubs, native hook
+symlinks in disposable fixture repositories, local bare origins, loaded instruction
+text, the closed behavior-scenario schema and historical byte freezes. No test
+changes live hook links/settings, invokes a real gh or proves runtime activation.
+AC7 remains a post-epic observation; it is not a merge gate. Maintainer decision
+D8 reconciles AC9/S97/S97b/S99: failed, empty or unavailable lookup warns/allows,
+including a nonexistent issue producing lookup failure. Successfully observed
+non-OPEN blocks; the accepted risk permits mistyped or invented numbers with a warning.
+
+### S718 — WIP creation and native commits use the existing issue-first boundary (#706 AC8–AC11)
+**Covers:** F19, F76
+- Given: a fixture repo and the candidate guard; both `checkout -b` and `switch -c`, malformed `wip/no-number`, uppercase/empty/nested slugs, and `wip/706-example` with local OPEN/CLOSED/failed/empty/unavailable stubs and the real nonexistent-issue diagnostic.
+- When: the explicit guard receives each command; a fixture-linked candidate native pre-commit hook receives commits on malformed and numbered WIP names.
+- Then: malformed creation exits 2; numbered OPEN WIP queries issue 706 and passes; verified CLOSED exits 2; failed, empty or unavailable lookup warns and allows, including nonexistent-issue failure under D8. Native malformed WIP commits refuse with `REASON_BRANCH_NO_ISSUE`, numbered WIP commits pass syntax offline, and the fixture-only escape hatch bypasses naming.
+- Falsifiers: dropping the creation selector loses malformed/CLOSED/lookup/warning assertions; dropping the regex alternative rejects the independently checked numbered WIP syntax; dropping the native selector permits the malformed native commit. Native execution must be through a fixture symlink, never direct execution of the hook file.
+- Preservation controls: feature/fix malformed, OPEN, CLOSED and unavailable outcomes in both creation forms; release/scratch creation; plain checkout/switch for all branch families; native feature/fix/release/scratch, unborn main, established main refusal and escape hatch. These are expected green controls, not red-before-green evidence. They must also run on the future actual PR/main merge base before preservation is claimed.
+- Case file: `test/cases/s96_s101_issue_first_branching.sh`; AC9 lookup rows follow D8; successful non-OPEN blocks and lookup failure warns/allows. New-behavior assertions are red on 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581 because WIP is absent from the three guard boundaries.
+
+### S719 — Checkpoints move WIP while explicit SHA publication moves only the PR ref (#706 AC5/AC6)
+**Covers:** F18, F76
+- Given: a local bare origin, checked-out `wip/706-example`, separate `feature/706-example` at an earlier SHA, and an unrelated current directory.
+- When: the real PostToolUse hook runs after a commit and the configured SessionEnd command runs after the next commit.
+- Then: each checkpoints the committed WIP head to the same-named ref; the PR ref retains its prior SHA. Explicit fast-forward `git push origin <sha>:refs/heads/feature/706-example` advances only PR, without checking it out or force-pushing. A remote PR base merge causes divergent publication to refuse until its remote head is merged into WIP; the reconciled head can fast-forward PR.
+- Preservation controls: commit, HEAD push and explicit PR SHA push pass the candidate guard; the S12-style explicit main destination still blocks. Existing S56/S57/S86/S91 preserve no-origin, divergence, main, cwd and timeout/visibility behavior. This case is expected green on the supplied head because checkpoint mechanics are unchanged. It is not red-before-green proof and no future merge-base pass is asserted.
+- Case file: `test/cases/s719_wip_checkpoint_isolation.sh`. This verifies configured hooks/local Git ref effects, not live hook activation or CI triggers.
+
+### S720 — Every session receives the WIP/publication rule (#706 AC1–AC4)
+**Covers:** F76
+- Given: canonical `policy/WORKFLOW.md`, whose runtime copies are generated through the existing generator, plus the commit-on-main refusal in `hooks/rules.sh` and the startup hint in `pending-changes.sh`.
+- When: the common rule is loaded as text.
+- Then: all roles share WIP and its same-named remote, feature/fix are publication refs, publication uses explicit fast-forward SHA pushes, PRs including drafts never attach to WIP, the PR branch is never checked out for work (including `gh pr checkout`), and the PR opens on first promotion before Review. Replace the old feature-branch checkpoint and undifferentiated regular-push instructions; appending a contradictory rule is insufficient. Each of the two hint sites independently delivers its exact A64 addendum 3 issue-first WIP hint; executable feature/fix checkout hints fail. Independent literal positive witnesses, site deletion and historical reversion controls must discriminate each site even while every other hint remains correct.
+- Falsifier: any individual obligation is removed. The independent compliant witness and one-obligation-deletion controls must discriminate each requirement without reading PRD/A64 as a substitute for delivered instructions.
+- Case file: `test/cases/s720_wip_publication_rule.sh`, fixture `wip-promotion-706.py`. Original new obligations were red at 97a3a61. A64 addendum 1 changes only the exact core lines; common policy obligations remain. Generation equality and S309/S310/S318 budgets remain separate existing consumers; tests do not hand-edit generated copies.
+
+### S721 — Promotion evidence belongs to the exact clean committed head (#706 D6; AC1–AC4)
+**Covers:** F76
+- Given: partial/red-first history checkpointed to WIP and a proposed publication head.
+- When: the documented promotion condition is inspected.
+- Then: D6 requires that exact committed head and a clean tree; `./check --no-tests` must exit 0, and every affected project check named in the Developer brief under OR48(2) must exit 0; OR48(1)'s required behavior evidence is current for that commit. Record the full SHA, exact commands and results in the Pipeline log or PR comment. Commit generated artifacts before final validation. Later commits need their own evidence. Partial/failing segments only checkpoint; doc-only checkpoints still need D6 to promote.
+- Falsifier: deleting any one condition passes the text oracle. Retain OR48's at-most-once full-check limit and the distinction between doc-only commit checks and publication validation. This documents the promotion rule; it introduces no mechanical green-push refusal or new nudge.
+- Case file: `test/cases/s721_exact_head_promotion_evidence.sh`. Original promotion obligations were red at 97a3a61. A64 addendum 2 uses the neutral policy sentence; independently delete every-affected-check, Developer-brief, OR48(2) and exit-0 clauses. In this repository the brief still names every affected ./test/run.sh fragment.
+
+### S722 — Role handoffs promote and compare one confirmed PR identity (#706 AC2/AC4)
+**Covers:** F38, F60, F62, F76
+- Given: the Shared A11, Developer, Stage-selection, OR46 and OR48 instruction scopes.
+- When: a complete Developer segment returns or an orchestrator prepares a Review round.
+- Then: A11 checkpoints the shared WIP branch; Developer promotes only a completed D6-green segment; WIP-only commits count for the first-commit deadline. OR46 permits promotion of existing green commits, confirms the remote PR head equals the promoted SHA, and uses that same head for QA comparison, Review and the Pipeline log. Failed promotion or a moved head prevents Review. OR48 distinguishes checkpoint checks from D6 promotion checks.
+- Falsifier: dropping an individual obligation passes; widening the closed OR46 list to a sixth kind or authored edits passes. Keep repair dispatch and ordinary stage handoffs. Independently delete generated-only, unedited and work-item-WIP limits; every affected check, brief and exit-0 conditions; and valid Test record, OR34 and each exemption object (QA artifact, comparison, Reviewer approval block). Single-session never exempts.
+- Case files: `test/cases/s722_promotion_role_handoffs.sh`, changed S317, and S724. A64 addenda 1–2 replace the whole OR46/OR48 lines without moving obligations out of injected context. The valid-record duty and the three-object exemption duty have separate witnesses and cuts. Independent duty deletions within those replacements must fail, including failed/moved-head stops, invalid waivers and missing superseding artifacts. S311/S317/S322/S466 and OB55–OB58, OB60–OB62, OB75–OB82 and OB84–OB91 retain their existing outcomes. Independently check the branch-without-issue refusal in `hooks/rules.sh` and item 2 of `skills/write-spec/SKILL.md` against the exact A64 addendum 3 WIP-first wording. Each site has its own literal positive, deletion and historical reversion controls; correct text elsewhere cannot mask it. Reject feature/fix checkout hints and the old write-spec working-branch instruction. Through existing guard/native fixtures, both refusal messages retain their blocking statuses and show issue-first WIP commands; S55 and all D8 lookup/status controls remain unchanged.
+
+### S723 — Base merges and post-merge cleanup preserve WIP work (#706 AC6)
+**Covers:** F76
+- Given: a remote PR head moved by a base merge, or a confirmed merged PR with a remote WIP ref that may have later work or an active user.
+- When: the documented recovery/wrap-up procedure is loaded.
+- Then: merge the remote PR head into WIP, revalidate D6 and retry without force. Delete remote WIP explicitly only after confirmed PR merge and durable reporting, after checking for later work/active users. Retain and reconcile moved/active refs; squash ancestry alone cannot prove safe deletion. Finish on the integration branch so SessionEnd cannot recreate WIP. Dispatched roles gain no destructive-git authority.
+- Falsifier: omitting any individual recovery/deletion safeguard passes the oracle. Broader cleanup remains #726; this test never deletes a real remote ref.
+- Case file: `test/cases/s723_wip_recovery_cleanup.sh`. Original loaded-text obligations were red at 97a3a61; A64 addendum 1 leaves policy recovery/cleanup and the Git reconciliation control in S719 unchanged.
+
+### S724 — Promotion behavior scenarios retain inventory and provenance distinctions (#706 AC2/AC4)
+**Covers:** F38, F60, F76
+- Given: QA-owned OB84–OB91 in the existing closed behavior schema, with matching Intended changes entries citing #706.
+- When: the scenario parser and rule inventory are checked.
+- Then: each heading's rule has reciprocal `covered_by` entries. OB84 permits existing green SHA promotion; OB85 routes partial code to Developer; OB86 promotes before a WIP-only comparison can lead to Review; OB87 rechecks a moved head; OB88 requires D6 on a later doc-only head; OB89 preserves valid skip=Test; OB90 routes a differing comparison to its owner; OB91 dispatches authored base-merge reconciliation without force.
+- Falsifier: one inventory edge is absent, a scenario is unlisted, or an unauthorized field/value is used. A real final behavior run must exercise all scenarios required by the whole-file stamp; parsing alone proves no model obedience.
+- Case file: `test/cases/s724_promotion_behavior_inventory.sh`. Missing inventory edges were red at 97a3a61; A64 addendum 1 retains the exact parts, reciprocal edges and OB84–OB91 outcomes. QA-authored schema/Then checks are green controls, not claims of an executed model run.
+
+### S725 — Historical freezes admit only the exact #706 amendments (#706 AC8–AC11/AC2)
+**Covers:** F19, F38, F60, F76
+- Given: original historical freeze bases and the literal before/after pairs in `test/fixtures/wip-706-substitutions.json`, anchored to 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581.
+- When: S593 reconstructs hooks/inventory, S626/S659 reconstruct role contracts, S548 checks its core snapshot, S627 checks its four protected A artifacts, and S709 compares core/scenario/inventory bytes.
+- Then: apply only the declared pairs, once each, above the existing historical allowances. OR46 uses the exact A64 addendum 2 whole-line replacement; OR48 retains addendum 1's exact pair. A64 addendum 3 retains the regex pair and uses complete historical `REASON_COMMIT_ON_MAIN` and `REASON_BRANCH_NO_ISSUE` assignments as old sides for the exact new WIP-first messages; the overlapping branch-prefix pair is removed. Count-1 application and reverse restoration remain mandatory, with independent omitted/wrong-pair and actual extra-byte rejection in S593/S725. Independently falsify generated-only/unedited/WIP, every affected check/brief/exit 0, valid record/OR34 and each of the three exemption objects, with separate record and exemption witnesses. Reject each omitted pair, wrong or extra bytes, and each independent duty deletion within the whole-line replacements; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions. S627 retains A and the unchanged pins, permits only the shared core/scenario pairs and S548's genuine final stamp digest, and rejects omitted amendments, arbitrary stamps and extra bytes. No new digest authority or baseline replacement is permitted.
+- Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment or deleted duty, or hand-writing a stamp. DEV706-1 is falsified by unchanged `./test/run.sh s309` and `./test/run.sh s318`: K=2, budget 9,000, headroom floor 500 in each slot, fallback 8,500 and every padding/one-character control remain. Both are red for the budget reason at 579d3c72c52cf78eaa227cdb4a988bb7d9f08884; the exact shorter replacements must make them green. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
+- Case file: `test/cases/s725_exact_freeze_allowances.sh`; amended freeze consumers remain strict. Exact substitution values are a concrete Developer implementation target; any owning-role change needs QA reconciliation of these oracles, not loosening them to candidate bytes.

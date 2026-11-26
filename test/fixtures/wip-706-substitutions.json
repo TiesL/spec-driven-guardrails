@@ -1,0 +1,99 @@
+{
+  "base": "97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581",
+  "changes": {
+    "hooks/rules.sh": [
+      [
+        "BRANCH_ISSUE_PATTERN='^(feature|fix)/[0-9]+-[a-z0-9-]+$'",
+        "BRANCH_ISSUE_PATTERN='^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$'"
+      ],
+      [
+        "REASON_COMMIT_ON_MAIN=\"main gets its changes via a PR. Make a branch first \u2014 your\n       changes come along unchanged, nothing gets lost:\n\n         git checkout -b feature/<issue>-<name>\n\n       Then commit and push as usual.\"",
+        "REASON_COMMIT_ON_MAIN=\"main gets its changes via a PR. Create the issue first, then work on WIP:\n\n         git checkout -b wip/<issue>-<name>\n\n       Your changes come along unchanged.\n       Commit and checkpoint WIP; promote only after validation.\""
+      ],
+      [
+        "REASON_BRANCH_NO_ISSUE=\"every feature/fix branch names the issue it implements, e.g.\n       feature/123-short-desc. Create the issue first (see the write-spec\n       skill for the epic/work-item templates), then branch from its number:\n\n         gh issue create --template work-item.md\n         git checkout -b feature/<issue-number>-<short-desc>\"",
+        "REASON_BRANCH_NO_ISSUE=\"every feature/fix/wip branch names its issue, e.g.\n       wip/123-short-desc. Create the issue first (see write-spec), then:\n\n         git checkout -b wip/<issue-number>-<short-desc>\""
+      ]
+    ],
+    "hooks/git-guardrails": [
+      [
+        "    feature/*|fix/*) ;;",
+        "    feature/*|fix/*|wip/*) ;;"
+      ]
+    ],
+    "hooks/pre-commit": [
+      [
+        "      feature/*|fix/*)",
+        "      feature/*|fix/*|wip/*)"
+      ]
+    ],
+    "skills/role-contracts/SKILL.md": [
+      [
+        "sequentially on one shared branch per work item.",
+        "sequentially on one shared WIP branch per work item."
+      ],
+      [
+        "decomposition, on the work item's shared branch, and the pull request itself \u2014 opens/updates\nit as the vehicle for the other three;",
+        "decomposition, on the work item's shared WIP branch, and the pull request itself \u2014 opens/updates\nit as the vehicle for the other three. The Developer promotes a completed segment only after D6 passes; partial or failing segments only checkpoint;"
+      ],
+      [
+        "Count spec-only, test-only, empty and later-squashed\ncommits across sessions;",
+        "Commits on WIP are work-item commits for the first-commit deadline.\nCount spec-only, test-only, empty and later-squashed\ncommits across sessions;"
+      ],
+      [
+        "**Commit and push per logical step on the work item's shared branch, without asking** (A11).",
+        "**Commit and push per logical step on the work item's shared WIP branch, without asking** (A11)."
+      ],
+      [
+        "One branch per work item, not per role: roles already work sequentially on the same branch, no worktree-per-role.",
+        "One shared working branch per work item, `wip/<issue>-<slug>`, not per role: checkpoint logical steps to its same-named remote. The PR branch is `feature/<issue>-<slug>` or `fix/<issue>-<slug>`; never check it out for work or attach a PR (including a draft) to WIP. The Developer promotes completed D6-green segments; the orchestrator promotes existing already-green commits before Review. Use explicit fast-forward SHA pushes; partial or failing work only checkpoints. D6 requires a clean exact committed head, `./check --no-tests`, every affected case named in the brief, and current OR48(1) behavior evidence. Record the full SHA, exact commands and results. No worktree-per-role."
+      ],
+      [
+        "full Developer head SHA and applicable base SHA.",
+        "full promoted PR head SHA (Developer head) and applicable base SHA. Confirm the remote PR head equals the promoted SHA; comparison, Review brief and Pipeline log use that same head. WIP-only or mismatched heads cannot start Review."
+      ]
+    ],
+    "skills/role-contracts/ORCHESTRATOR.md": [
+      [
+        "- OR46 No-agent steps, closed list; do them yourself, never dispatch agent for them: (a) run one named repo script or command, report its output (behavior runner, `./check`, `wait-for-ci.sh`, `review-rounds.sh`); (b) commit and push, on work-item branch, files that command generated and nobody hand-edited (e.g. stamp); (c) read-only git or `gh` calls, including comparison of QA artifact to committed head; (d) set label, edit Pipeline log. Anything else, incl. fixing failed command's cause or hand-editing any file, is dispatch. Failing command: report, then dispatch to owning role; never repair. Only under a valid skip=Test record (OR34), no QA artifact, comparison or Reviewer approval block applies: log `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>` and start Review with no open finding. A single-session does not exempt. OR19 and the A49 conflict stop still apply. Otherwise, when a Review round is about to start: compare the applicable QA artifact against that head; log invocation, identities, hashes and result. If artifact reference is missing or evidence unusable, block Review and dispatch QA. If different, block Review, disclose each hunk as a finding and follow OR17. If an unauthorized scenario difference has been resolved by its owner, dispatch QA for a new artifact explicitly superseding the prior one; resolution alone is insufficient. Start that Review round only with a logged matching comparison and no open finding. Log: command and result, one Pipeline log line each (detail: `dispatch-economy`).",
+        "- OR46 Closed no-agent list; do yourself, never dispatch: (a) run one named repo command, report output; (b) commit/push unedited command-generated files on work-item WIP branch; (c) read-only git/`gh` and QA comparison; (d) set label, edit Pipeline log; (e) promote existing D6-green commits to PR branch by explicit fast-forward SHA push, never force. D6: clean exact committed head; `./check --no-tests` and every affected check in brief exit 0; OR48(1) behavior evidence current for that commit; log full SHA, exact commands/results. Partial/failing work only checkpoints. Confirm remote PR head equals promoted SHA before comparison; comparison/Review brief/Pipeline log use that head. Failed promotion/moved head blocks Review. All else: dispatch owner, including hand edits/repairs. Report failed commands, never repair. Only a valid skip=Test record (OR34) grants this exception. No QA artifact/comparison/Reviewer approval block; log `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`; no open finding. Single-session never exempts. OR19 and the A49 conflict stop still apply. Otherwise before each Review compare applicable QA artifact to that head; log invocation/identities/hashes/result. Missing reference/unusable evidence: block Review, dispatch QA. Any diff: block Review, disclose each hunk as finding, follow OR17. Owner-resolved unauthorized scenario diff: dispatch QA for new artifact explicitly superseding prior. Review requires logged match and no open finding. Each command/result: one Pipeline log line (detail: `dispatch-economy`)."
+      ],
+      [
+        "- OR48 Run scope. (1) Behavior-test run after change: affected scenarios only, unless stamp or gate needs full run; then log names that stamp or gate. (2) Local checks before commit on work-item branch: only those changed files can affect; doc-only commit = pre-commit hooks only. Full `./check` at most once before PR opens, never per commit (CI runs it). Brief names checks it requires, never defaults to full suite.",
+        "- OR48 Run scope. (1) Behavior-test run after change: affected scenarios only, unless stamp or gate needs full run; then log names that stamp or gate. (2) Pre-commit checks on work-item branch: only those changed files affect; doc-only = pre-commit hooks only. Full `./check` at most once before PR opens, never per commit (CI runs it). Brief names required checks, never defaults to full suite. Checkpoint checks, including doc-only, never replace D6 for promotion (OR46)."
+      ]
+    ],
+    "skills/role-contracts/orchestrator-rules.tsv": [
+      [
+        "OR15\treview-round-brief-artifacts-and-qa-provenance\tjudgment\t2\tS210,S311,S465,OB13,OB75,OB76,OB77,OB78",
+        "OR15\treview-round-brief-artifacts-and-qa-provenance\tjudgment\t2\tS210,S311,S465,OB13,OB75,OB76,OB77,OB78,OB86,OB87,OB89,OB90"
+      ],
+      [
+        "OR17\tloop-back-routes\tjudgment\t2\tS214,S311,OB14,OB15,OB16,OB17,OB51,OB73,OB74,OB76,OB78,OB82",
+        "OR17\tloop-back-routes\tjudgment\t2\tS214,S311,OB14,OB15,OB16,OB17,OB51,OB73,OB74,OB76,OB78,OB82,OB90"
+      ],
+      [
+        "OR34\tpipeline-override-record\tjudgment\t1\tS180,S311,OB32,OB33,OB34,OB79,OB80,OB81,OB82",
+        "OR34\tpipeline-override-record\tjudgment\t1\tS180,S311,OB32,OB33,OB34,OB79,OB80,OB81,OB82,OB89"
+      ],
+      [
+        "OR46\tno-agent-steps\tjudgment\t1\tS311,S317,S466,OB55,OB56,OB57,OB58,OB75,OB76,OB77,OB78,S469,OB79,OB80,OB81",
+        "OR46\tno-agent-steps\tjudgment\t1\tS311,S317,S466,OB55,OB56,OB57,OB58,OB75,OB76,OB77,OB78,S469,OB79,OB80,OB81,OB84,OB85,OB86,OB87,OB88,OB89,OB90,OB91"
+      ],
+      [
+        "OR48\trun-scope\tjudgment\t2\tS311,S317,OB60,OB61,OB62",
+        "OR48\trun-scope\tjudgment\t2\tS311,S317,OB60,OB61,OB62,OB88"
+      ]
+    ],
+    "test/behavior/orchestrator-scenarios.md": [
+      [
+        "## Intended changes\n",
+        "## WIP checkpoint and PR promotion (#706)\n\n### OB84 \u00b7 OR46\nGiven: The Developer has completed a segment on wip/40-example at full SHA aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa. The working tree is clean. That exact head passed ./check --no-tests and all affected case commands named in the brief; the required whole-file behavior run is current and its generated stamp is committed. All commands, results and the SHA are recorded. The PR branch feature/40-example is an ancestor. No repair or authored edit is needed.\nWhen: You update the publication ref before the QA comparison.\nThen: next_action=answer_directly; next_role=none\n\n### OB85 \u00b7 OR46\nGiven: A Developer segment returned partial work on wip/40-example and checkpointed it. ./check --no-tests fails because an implementation edit is unfinished. No test or scenario is faulty; no existing agent has reusable working context. A PR branch exists at the last green head.\nWhen: You choose how to complete the segment before promotion.\nThen: next_action=dispatch; next_role=Developer\n\n### OB86 \u00b7 OR15, OR46\nGiven: Review round 1 is due. WIP is at aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa with current D6 evidence, but the remote PR head is bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, an ancestor of WIP. QA comparison matched WIP only. No finding is open.\nWhen: You choose the next step before dispatching Review.\nThen: next_action=answer_directly; next_role=none\n\n### OB87 \u00b7 OR15, OR46\nGiven: Review round 2 is due. Promotion and the matching QA comparison were recorded for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa. A fresh read shows the remote PR head has since moved to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb and there is no D6 evidence or comparison for it. No finding is open.\nWhen: You decide whether Review can start on the changed remote head using the recorded evidence.\nThen: next_action=stop; next_role=none; asks_human=false\n\n### OB88 \u00b7 OR46, OR48\nGiven: WIP commit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa passed every promotion check. A later doc-only commit bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb has only its passing pre-commit checks, with no ./check --no-tests or affected case evidence for that SHA. The PR branch is an ancestor and no behavior stamp is affected. The working tree is clean; the Developer brief names the affected case commands, and obtaining the missing evidence needs no authored edit.\nWhen: You choose how to obtain the missing promotion-check results for the later committed head before publishing it.\nThen: next_action=answer_directly; next_role=none; asks_human=false\n\n### OB89 \u00b7 OR15, OR34, OR46\nGiven: Review round 1 is due at the confirmed promoted remote PR head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, with clean exact-head D6 evidence recorded. A valid timely human skip=Test record is linked and recognized. The Pipeline log has the not-applicable QA provenance line for that exact PR head and waiver. No finding is open, and the Review brief has all required fields.\nWhen: You start the Review round.\nThen: next_action=dispatch; next_role=Reviewer; asks_human=false\n\n### OB90 \u00b7 OR15, OR17, OR46\nGiven: Review is due at the confirmed promoted PR head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa with current D6 evidence. The QA comparison on that head returned exit 1, different. Its disclosed finding is class test: QA owns the faulty scenario. No owning-role resolution or new artifact exists and no reusable agent context exists.\nWhen: You choose the next step before Review.\nThen: next_action=dispatch; next_role=QA\n\n### OB91 \u00b7 OR46\nGiven: An external base merge moved origin/feature/40-example. WIP has different later work; its explicit SHA promotion is rejected as non-fast-forward. Both histories must be preserved. Resolving their conflict needs an authored implementation edit and no existing agent context can be reused.\nWhen: You choose who reconciles the remote PR head into WIP before new D6 validation.\nThen: next_action=dispatch; next_role=Developer\n\n## Intended changes\n"
+      ],
+      [
+        "  The base core has no artifact prerequisite, while an exemption extended to\n  single-session would also admit Review here (#546, #547, A49 panel Q3).\n- OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict\n  stop or authorize editing existing scenario text (#547, A49 panel).\n",
+        "  The base core has no artifact prerequisite, while an exemption extended to\n  single-session would also admit Review here (#546, #547, A49 panel Q3).\n- OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict\n  stop or authorize editing existing scenario text (#547, A49 panel).\n\n- OB84 (OR46): D6-green existing commits may be promoted without an agent (#706, D1\u2013D7, A64).\n- OB85 (OR46): partial work checkpoints and unfinished code returns to Developer (#706, D1\u2013D7, A64).\n- OB86 (OR15, OR46): promote first; a WIP-only comparison cannot start Review (#706, D1\u2013D7, A64).\n- OB87 (OR15, OR46): a moved PR head blocks Review until D6 evidence and the applicable QA comparison are current for that same head (#706, D1\u2013D7, A64).\n- OB88 (OR46, OR48): the orchestrator runs the missing exact-head D6 commands before promotion; doc-only checkpoint hooks do not replace them (#706, D1\u2013D7, A64).\n- OB89 (OR15, OR34, OR46): promotion preserves the valid Test-waiver provenance exemption (#706, D1\u2013D7, A64).\n- OB90 (OR15, OR17, OR46): promotion cannot waive a differing QA comparison (#706, D1\u2013D7, A64).\n- OB91 (OR46): base-merge recovery dispatches authored reconciliation and never force-pushes (#706, D1\u2013D7, A64).\n"
+      ]
+    ]
+  }
+}

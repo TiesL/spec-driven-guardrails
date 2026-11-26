@@ -53,8 +53,9 @@ cc() {
   has "$line" "OR46" || echo "or4-pointer: OR4 must point to OR46"
   has "$line" "other work-item artifact" && echo "or4-old: OR4 still bans every other work-item artifact"
   line="$(item OR46 "$o")"
-  for k in "(a)" "(b)" "(c)" "(d)"; do has "$line" "$k" || echo "or46-step: OR46 lacks step $k"; done
-  has "$line" "(e)" && echo "or46-fifth: OR46 has a fifth step kind"
+  for k in "(a)" "(b)" "(c)" "(d)" "(e)"; do has "$line" "$k" || echo "or46-step: OR46 lacks step $k"; done
+  has "$line" "promote existing D6-green commits" || echo "or46-promotion: OR46 (e) must permit only existing D6-green promotion"
+  has "$line" "(f)" && echo "or46-sixth: OR46 has an unauthorized sixth step kind"
   has "$line" "dispatch" || echo "or46-dispatch: OR46 must say anything else is a dispatch"
   has "$line" "never repair" || echo "or46-repair: OR46 must say the orchestrator never repairs a failing command"
   has "$line" "generated" || echo "or46-generated: OR46 (b) is about generated, unedited files"
@@ -138,8 +139,10 @@ negh or47-in-part1 wrong-part "$d/o-p1.md" "$TSV"
 awk '/^- OR13 /{print $0 " Not decided here (#412)."; next} {print}' "$ORCH" | sed 's/Not decided/not decided/' > "$d/o-undec.md"
 negc or13-undecided or13-undecided "$d/o-undec.md" "$TSV"
 
-awk '/^- OR46 /{print $0 " (e) edit any file."; next} {print}' "$ORCH" > "$d/o-5th.md"
-negc or46-fifth or46-fifth "$d/o-5th.md" "$TSV"
+awk '/^- OR46 /{print $0 " (f) edit any file."; next} {print}' "$ORCH" > "$d/o-6th.md"
+negc or46-sixth or46-sixth "$d/o-6th.md" "$TSV"
+sed 's/promote existing D6-green commits/edit any file/' "$ORCH" > "$d/o-promotion-edit.md"
+negc promotion-not-authored or46-promotion "$d/o-promotion-edit.md" "$TSV"
 
 awk -F'\t' -v OFS='\t' '$1=="OR46"{$5=""} {print}' "$TSV" > "$d/t-nocov.tsv"
 negh or46-uncovered judgment-no-ob "$ORCH" "$d/t-nocov.tsv"
@@ -153,5 +156,11 @@ negc or48-no-doc-only or48-doc-only "$d/o-nodoc.md" "$TSV"
 
 sed '/^- OR13 /s/100k/200k/' "$ORCH" > "$d/o-200k.md"
 negc or13-threshold or13-100k "$d/o-200k.md" "$TSV"
+
+# A64 keeps both D6 cross-part references; deleting either is rejected.
+sed '/^- OR46 /s/OR48(1)/OR48/' "$ORCH" > "$d/o-behavior-xref.md"
+negh behavior-xref xref-or46-behavior "$d/o-behavior-xref.md" "$TSV"
+sed '/^- OR48 /s/(OR46)/(OR45)/' "$ORCH" > "$d/o-promotion-xref.md"
+negh promotion-xref xref-or48-promotion "$d/o-promotion-xref.md" "$TSV"
 
 test_done

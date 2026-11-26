@@ -9,6 +9,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+# #706: exact QA-owned substitutions; never derive freezes from candidate bytes.
+import runpy
+WIP706 = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
 IDENT = int(sys.argv[1])
 ERRORS = []
 COUNTS = {'positive': 0, 'mutation': 0}
@@ -2143,11 +2146,16 @@ def preservation_checks():
             old, new = SUBSTITUTIONS[path]
             check(baseline.count(old) == 1, '593/substitution/applies-once-at-merge-base/' + path)
             expected = baseline.replace(old, new, 1)
+        expected = WIP706['controls'](path, expected)
         digest = hashlib.sha256(expected).digest()
         oracle = lambda data: [] if hashlib.sha256(data).digest() == digest else ['593/protected-byte/' + path]
         check(not oracle(expected), 'preserved assertion green at merge base ' + path)
         check(not oracle(actual), 'unchanged ' + path)
         rejects(oracle, actual, actual + b'\n', '593/protected-byte/' + path)
+        for index, (old706, new706) in enumerate(WIP706['TABLE'].get(path, [])):
+            for label, replacement in (('omitted', old706.encode()), ('wrong', b'UNAUTHORIZED')):
+                mutant = expected.replace(new706.encode(), replacement, 1)
+                rejects(oracle, expected, mutant, '593/706/' + path + '/' + label + '/' + str(index+1))
         if path in SUBSTITUTIONS:
             rejects(oracle, actual, baseline, '593/substitution/unapplied/' + path)
             wrong = (new.replace(b'Developer', b'Producer', 1) if path == 'hooks/agent-dispatch.py'

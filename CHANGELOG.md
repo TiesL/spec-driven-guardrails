@@ -13,6 +13,11 @@ point.
 
 ## Unreleased
 
+- #706: Checkpoint work on a shared `wip/<issue>-<slug>` branch and publish only
+  exact heads with recorded passing D6 checks to the PR branch by fast-forward
+  SHA push. Document Review identity, base-merge recovery and safe WIP cleanup;
+  extend issue-first branch guards to `wip/*`. Checkpoint hooks stay unchanged.
+
 ## v0.8.0 — Temporary-decision panel: Product, Architect and the orchestrator settle a question on record while the maintainer is away, pending the maintainer's decision; the merge-risk panel for autonomous merges into main ships inert. (2026-11-25)
 
 - #645: Document the temporary-decision panel proposal, limited allow-list,

@@ -14,6 +14,9 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+# #706: exact QA-owned substitutions; never derive freezes from candidate bytes.
+import runpy
+WIP706 = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
 RULES = {534: [('canonical panel subsection', '### Stage-selection panel'),
        ('canonical class subsection', '### Standing human class decisions')],
  535: [('ordinary panel record',
@@ -114,7 +117,11 @@ SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e383
  'pipeline-override.sh': 'a107b7379b33e5f25225a9f8c5bce54fd93727f85f9c496d1e590d7bdb4b4998',
  'skills/role-contracts/ORCHESTRATOR.md': '7f9e938a251c1c8f67dc57d4bb65d6dfff14873c7fa5b7e17fdab0231cadd56e',
  'skills/role-contracts/orchestrator-rules.tsv': 'a41764d85b4392adcf557389d5d69d84fb8445750cff7bcfe8a1ad4771cd3f99',
- 'test/behavior/orchestrator-diff.stamp': 'ef833815d861b434a555f19c302a97f52c82dca39ce524bda2b404ce406b4928',
+ # Previous stamp snapshot: ef833815d861b434a555f19c302a97f52c82dca39ce524bda2b404ce406b4928
+ # #706 runner-generated stamp: behavior sha256=e644a58b5917fae06a1a2c205362e78647c08bff5164f9a636621a12684b584e.
+ # Previous stamp snapshot: c8bfb965e6fda1835820cff84bc099820c7bc4bbc480232257f4467005242780
+ # #706 runner-generated stamp: behavior sha256=6e3bb3191d30b107e54a8156f084322fcf89734df38370565892f2827af24258.
+ 'test/behavior/orchestrator-diff.stamp': '981305bf026494b08fc609ef20e1c918029ac381acde439417ef9cfe21e92b3c',
  'test/behavior/orchestrator-scenarios.md': '35c9f032e3344764c2a919d25beb68c8169f3076a46a54d49368c6c7237eb638',
  'test/fixtures/orchestrator-core-pins.tsv': '2e1a30b503bd1c294db97e50111fc2759777592b8fffb8597b1cda3a514228d7'}
 errors = []
@@ -678,6 +685,11 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
         catalogue(running(ROOT))
         for path, digest in SNAPSHOTS.items():
             content = (ROOT / path).read_bytes()
+            if path in WIP706['TABLE']:
+                try:
+                    content = WIP706['restore'](path, content)
+                except AssertionError as exc:
+                    check(False, 'S548/#706 exact allowances: '+str(exc))
             check(hashlib.sha256(content).hexdigest() == digest, 'S548/unchanged ' + path)
             check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
         print('CONTROL: S548 frozen production hashes and byte mutants PASS')
