@@ -57,7 +57,7 @@ the dispatching prompt's own job to state.
 ## Running the pipeline
 
 Every role takes part in every change: there is no phase skipping in v1 (A3) other than the human override of `ORCHESTRATOR.md` OR34. Roles work
-sequentially on one shared branch per work item. The run rules live in one file,
+sequentially on one shared WIP branch per work item. The run rules live in one file,
 [`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
 with each stage's label and `model-record` `stage=` value, fresh dispatch (a fresh Reviewer for every Review round), the
 loop-back route for a finding by its class, the human override record, what to do when dispatch isn't available, and how to resume. In a
@@ -247,7 +247,8 @@ there is no new gate, parser, hook or script check. A reference does not prove l
 loading, applicability, human authorship or obedience.
 
 Both the completed panel decision and waiver posting must precede both the first
-work-item commit and PR creation. Count spec-only, test-only, empty and later-squashed
+work-item commit and PR creation. Commits on WIP are work-item commits for the first-commit deadline.
+Count spec-only, test-only, empty and later-squashed
 commits across sessions; inherited base/release commits are excluded. In the Pipeline
 log retain the initial base SHA, first work-item commit identity (or `none yet`),
 decision/waiver comment identities and creation times, and PR identity/creation time
@@ -454,8 +455,8 @@ to avoid touching an existing one. Internal seams — private to your own implem
 by your own tests — are yours to add freely; the external seam is Architect's call.
 
 **Write/action scope (A4):** application code, test code, and docs within Architect's
-decomposition, on the work item's shared branch, and the pull request itself — opens/updates
-it as the vehicle for the other three; never introduces a new *external* seam Architect didn't
+decomposition, on the work item's shared WIP branch, and the pull request itself — opens/updates
+it as the vehicle for the other three. The Developer promotes a completed segment only after D6 passes; partial or failing segments only checkpoint; never introduces a new *external* seam Architect didn't
 decide (internal seams stay its own call, as above). Developer-authored docs edits
 exclude `PRD.md`, `ARCHITECTURE.md` and `TEST-SCENARIOS.md`. Committing owner-authored
 text with implementing tests does not transfer authorship or permission to rewrite it.
@@ -552,7 +553,7 @@ Perform this OR46(c) comparison only before starting a Review round. An approved
 Review with passing checks needs no merge-time repeat.
 
 OR46(c) inputs: repository identity (`owner/repo`), selected QA report comment ID,
-full Developer head SHA and applicable base SHA. Select the report from durable
+full promoted PR head SHA (Developer head) and applicable base SHA. Confirm the remote PR head equals the promoted SHA; comparison, Review brief and Pipeline log use that same head. WIP-only or mismatched heads cannot start Review. Select the report from durable
 handoff records, including supersession links; never infer it from the local tree.
 Use `git show <base>:TEST-SCENARIOS.md`, reconstruct outside the repository with
 `git apply`, and verify both hashes before comparing the whole committed file.
@@ -711,8 +712,8 @@ or a dispatched sub-agent, never asked of the decision-maker. Only a genuine dec
 preference, a trade-off, a judgment call only that person can make) goes to them, and several
 open decisions get batched in one round rather than trickled out one at a time.
 
-**Commit and push per logical step on the work item's shared branch, without asking** (A11).
-One branch per work item, not per role: roles already work sequentially on the same branch, no worktree-per-role. Never merge into
+**Commit and push per logical step on the work item's shared WIP branch, without asking** (A11).
+One shared working branch per work item, `wip/<issue>-<slug>`, not per role: checkpoint logical steps to its same-named remote. The PR branch is `feature/<issue>-<slug>` or `fix/<issue>-<slug>`; never check it out for work or attach a PR (including a draft) to WIP. The Developer promotes completed D6-green segments; the orchestrator promotes existing already-green commits before Review. Use explicit fast-forward SHA pushes; partial or failing work only checkpoints. D6 requires a clean exact committed head, `./check --no-tests`, every affected case named in the brief, and current OR48(1) behavior evidence. Record the full SHA, exact commands and results. No worktree-per-role. Never merge into
 `main`, release, force-push, or run a destructive git operation — that stays human-only (A2).
 Merging a work-item PR into a release branch follows the `release-branch-workflow` skill; in
 the five-role pipeline the orchestrating session does that, never a dispatched role.
