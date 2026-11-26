@@ -12232,3 +12232,257 @@ Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
 - **Decision.** Bump only `process-multi-agent-roles` from v3 to v4. #645 adds a bounded temporary-decision procedure and record/disclosure duties to the role contract. #646 adds the sole route by which a separately accepted and enabled `merge-risk-panel` delegation could allow an opted-in orchestrator to merge into `main` without per-PR approval. The shipped configuration has `enabled:false` and `acceptance:null`; neither installation nor a `yes` answer grants that authority. The meaning note must say this condition explicitly, retain the v3 #647/#651 and v2 #427 history, and leave `Reaches session` unchanged. The canonical skills remain the Interface; do not copy their procedures into `CHANGES.md`.
 - **Scope.** Relative to local `origin/main` at `4dd1325`, #646 is the new role-contract obligation. #681 clarifies the reserved contract-text class within #645's panel; #678 adjusts its fixture and wording; #652/#676 condense the core without a new duty; #685 Part A changes the role's displayed name, not its scope; #707 uses its own `process-model-routing` row. The main-side #645 procedure belongs in this same bump. The sync, route documentation and tracked `wip/` to `prep/` move do not add a second adoption obligation. No other `CHANGES.md` meaning version moves. This does not accept or enable #646.
 - **Handoff.** QA updates the v3/current-state assertions in S239, S265, S314, S336 and S588, including S336's explicit v3-to-v4 allowance against the main merge base, and adds fixture coverage for implicit v1, v2, v3 and v4 answers of both signs. S90 still requires a byte-identical snapshot. Developer updates the single entry, snapshot, current-state scenario/architecture wording, changelog and, only after TiesL's attributable AC3 words, this repository's adoption row. Historical #663 claims stay historical. No AC is contradicted or narrowed; AC3 remains a human decision.
+
+### A64 — Checkpoint on one WIP branch; promote an exact green head to the PR branch (#706; F18, F19, F38, F60; new F76)
+
+Planning, 2026-11-26. Baseline: `255040eb0802798a2f81ff408be4008826873b61`.
+This implements settled D1–D7, after #713 moved tracked reports to `prep/`.
+Reserve F76 for the promotion rule; Product owns its PRD entry. QA assigns
+new scenario IDs. The work-item PR targets `release/742-process-hygiene`.
+This role session stays on the supplied shared branch
+`feature/706-push-wip-to-non-pr-branch`; it does not rename or publish it.
+
+**PR structure.** One PR, with two independently reviewable implementation
+segments: (1) the F19 guard extension and its tests; (2) the promotion rule,
+generated instructions and its tests. Guard first makes naming support
+explicit before instructions depend on it. One release-targeted PR keeps
+the accepted branch shape, role permissions and lifecycle coherent, with
+one final exact-head Review and CI result. Two PRs would add a partial
+delivery and duplicate evidence without isolating live hook sources: the
+source checkout, not the PR count or base branch, determines hook effects.
+Do not merge the guard segment alone while AC9 remains unresolved.
+
+#### Branch and promotion Interface
+
+- One shared working branch per issue: `wip/<issue>-<slug>`. All roles
+  commit logical steps there and checkpoint to `origin/wip/<issue>-<slug>`.
+  This is one WIP branch plus a publication ref, not a branch per role.
+  A WIP branch has no PR, including a draft PR. Red-first and partial
+  commits remain recoverable without making them CI heads in this repo.
+- The PR ref is `feature/<issue>-<slug>` or `fix/<issue>-<slug>`, with the
+  same issue/slug. It receives an explicit fast-forward push:
+  `git push origin <full-sha>:refs/heads/feature/<issue>-<slug>` (or `fix/`).
+  Never force-push. Earlier red commits may be ancestors of a promoted
+  head; only that head must satisfy D6. Open the PR on the first promotion.
+- Never check out the PR branch for work, including via `gh pr checkout`.
+  On another computer, resume the WIP branch and its same-named remote.
+  Fetch and merge `origin/feature/<issue>-<slug>` (or `fix/`) into WIP
+  before continuing if the PR head has moved. After a PR base update,
+  integrate that PR head into WIP, resolve through the owning role and
+  rerun D6. A rejected non-fast-forward push is a reconciliation signal.
+- D6 is checked on the exact committed head with a clean working tree:
+  `./check --no-tests`, every affected `./test/run.sh <fragment>` named in
+  the Developer brief, and any current OR48(1) behavior evidence required
+  by a stamp or gate. Record the full SHA, exact commands and results in
+  the promotion's Pipeline log line, or a PR comment without an
+  orchestrator. Generated artifacts must be committed before validating
+  the final SHA. A later commit needs evidence for that new SHA.
+- Keep OR48's distinction between committing and promoting. Doc-only WIP
+  commits need their pre-commit hooks; promotion still needs D6. Full
+  `./check` runs at most once before PR opening under OR48(2), not for
+  every checkpoint. General workflow text also permits fast-check
+  projects to use their full check for promotion, per D6. This does not
+  predict macOS, unaffected cases or the PR merge result; CI covers them.
+- Developer promotes a completed, green segment. Partial segments only
+  checkpoint. Before every Review round the orchestrator promotes an
+  existing already-green head as a new OR46 no-agent step. It may run
+  checks and report failure; it must dispatch repairs, not author them.
+  Confirm the remote PR head equals the promoted SHA. Then compare the
+  applicable QA artifact against that PR head and use the same SHA in
+  the comparison log, OR15 Review brief and Pipeline log. Failed
+  promotion, a moved remote head or an unresolved comparison blocks Review.
+  Preserve A49's ordinary/skip=Test provenance rules. Review markers and
+  CI remain pinned to the PR head; their implementation does not change.
+- After confirmed PR merge and durable reporting, explicitly delete
+  `origin/wip/<issue>-<slug>`; `gh pr merge --delete-branch` handles only
+  the PR branch. The orchestrator owns cleanup in a role pipeline, the
+  working session otherwise. Check that the WIP ref has no later work
+  and no active user before deletion; do not infer that a squash merge
+  makes the WIP tip an ancestor of the base. If it moved, retain and
+  reconcile it. Do not have SessionEnd recreate a just-deleted WIP ref:
+  finish on the integration branch after preserving work. Broader local
+  clone/worktree cleanup belongs to #726. Dispatched roles gain no merge
+  or destructive-git authority from this procedure.
+
+#### Guard Module and existing Seams
+
+Keep the existing issue-first Module. Its Interfaces are PreToolUse JSON
+and the native pre-commit invocation. Its internal data Seam is
+`hooks/rules.sh`; its two real input adapters remain distinct. Deleting
+that shared data would spread the pattern/reason across both callers.
+Retaining it gives Leverage and Locality without a new shallow helper or
+promotion-state Module. The guard's Depth already covers parsing, syntax,
+lookup and diagnostics behind those existing Interfaces.
+
+Set `BRANCH_ISSUE_PATTERN` to
+`^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$`. Add `wip/*` to the selectors in
+`check_branch_creation` in `hooks/git-guardrails` and in the native
+`hooks/pre-commit` naming check. Update their comments and the shared
+`REASON_BRANCH_NO_ISSUE` to include WIP. Preserve the exact regex semantics;
+do not add a stricter slug rule or an issue lookup to native pre-commit.
+The native hook remains syntax-only, offline and subject to its existing
+unborn-HEAD exception. Existing malformed WIP branches can be checked out,
+but their later commits will fail syntax. This is D7's intended effect.
+
+Use the existing creation parser for both `checkout -b` and `switch -c`.
+Successfully observed OPEN permits creation; observed CLOSED blocks.
+Keep other branch families, plain checkout/switch, main protection,
+unverifiable lookup warnings and the existing escape hatch unchanged,
+subject to the unresolved missing-issue decision below. Existing-branch
+pushes and explicit SHA promotion do not enter branch-creation validation.
+PR creation still uses `check-pr-issue-link.sh`. No green-push guard,
+promotion marker, network lookup per commit or push-hook change is added.
+
+**AC9/S97 conflict, class spec.** AC9 and S97 require a nonexistent issue
+to block; executable S97b and S99 allow failed lookups with a warning.
+The current `gh issue view ... --json state --jq .state` exposes a nonzero
+status/empty value for both missing issues and unavailable lookup. That
+same input cannot justify both outcomes. This is already referred to the
+maintainer through Product; Planning does not amend the oracle.
+
+Keep the decision local to lookup classification inside
+`check_branch_creation`, not in the branch selectors or native hook.
+Either answer fits: (a) retain current unverified => warn/allow and have
+Product/QA reconcile AC9/S97 with S97b/S99; or (b) add a reliably verified
+missing outcome => block, while unverified infrastructure/access failure
+still warns/allows. Option (b) needs an agreed distinguishable lookup
+signal and matching QA specimens; treating every nonzero status or
+scraping unstable stderr as confirmed absence is insufficient. No new
+public Seam is needed. The affected lookup oracle, specimens and any
+lookup implementation wait for the owning-role/maintainer resolution.
+Syntax, native naming, checkpoint isolation and documentation design can
+proceed independently; neither branch of the decision is claimed green.
+
+#### Text placement and adoption
+
+`policy/WORKFLOW.md` owns the general rule in During the work. Reconcile
+Branch strategy, startup/resume and wrap-up too, so they no longer direct
+ordinary work onto a checked-out PR branch. Explain draft PRs, the checkout
+bypass, exact-head checks/logging, base-update recovery and remote WIP
+cleanup there for sessions without roles. Generate `WORKFLOW.md`,
+`adapters/codex/AGENTS.md` and the root `AGENTS.md` managed block with
+`generate-workflow-adapters.sh`; never hand-edit these copies. Adopted
+`CLAUDE.md` links consume `WORKFLOW.md`; this clone has no such link to edit.
+Runtime adapter source files need no content change for this shared rule.
+
+`skills/role-contracts/SKILL.md` owns Shared A11's WIP target, Developer's
+promotion permission/condition, and the explicit statement that the first
+WIP commit counts for the Stage-selection deadline. WIP history does not
+reset that deadline. `ORCHESTRATOR.md` owns the OR46 promotion step and
+promotion-before-comparison ordering, alongside OR15's PR-head brief.
+Keep OR48's commit/run-scope limits and identify promotion validation
+separately. Update `orchestrator-rules.tsv` coverage for affected/new
+scenarios; do not renumber existing OR IDs. Keep the injected core within
+the existing context budget.
+
+**CHANGES.md stance (D4).** Leave it unchanged: no meaning-version bump,
+new entry, new default or new adoption switch. The older default-question
+recommendation is not an accepted offer. The common workflow arrives by
+the existing generated-instruction delivery; role details follow existing
+`process-multi-agent-roles` adoption, currently meaning v4. D7's guards
+affect consumers linked to their source independently of text adoption.
+Copied Codex bundles have their separate explicit refresh lifecycle.
+This design neither claims live loading nor grants a refresh. A separately
+offered adoption choice would require a new maintainer content decision;
+it is not a prerequisite invented for #706. A release note in
+`CHANGELOG.md` may explain the operational effect without changing D4.
+
+D3 and D5 remain deferred: no CI trigger/concurrency edits or advisory
+nudge here. AC7 is post-epic observation, not a merge gate. Record failed
+PR-head share against #696's 123/180 failures and 16/90 fully-green heads,
+and distinguish failures D6 would have caught. Only that evidence may
+trigger the separate advisory-nudge/concurrency discussion under D3/D5.
+
+#### Hook-source isolation before merge
+
+The disposable clone's native pre-commit/commit-msg/pre-push links resolve
+to `/Users/ties/Documents/ClaudeCodeZandbak/spec-driven-guardrails/hooks/`.
+At inspection that checkout is on `main` at `255040e`; this clone is a
+separate source tree. Claude's configured hook commands derive their
+source from the adopted project's settings symlink. A release branch is
+not isolation if consumers link into the checkout being edited.
+
+Developer edits only the disposable candidate clone. Do not edit the
+operator checkout, retarget live links/settings, install adoption there,
+refresh a Codex bundle or disable guards. QA uses temporary projects and
+local bare remotes. Invoke the candidate `hooks/git-guardrails` explicitly
+with JSON and deterministic gh stubs. For native checks, install fixture
+symlinks to the candidate `hooks/pre-commit` and adjacent `rules.sh` using
+the existing test adoption helper; executing pre-commit as an ordinary file
+would exercise its missing-symlink fail-open path, not naming protection.
+Run checkpoint hooks/configuration against fixture projects only.
+Record fixture targets and candidate SHA, and recheck live source targets
+before implementation. If any live consumer resolves into the candidate,
+stop edits there and obtain an isolated checkout through the orchestrator.
+These tests establish configured behavior, not live runtime activation.
+
+#### QA Seams and falsifying checks
+
+QA owns scenario/test authoring. Extend existing cases where they already
+cross the Interface; add focused local-ref and text/behavior cases where
+coverage is missing. Keep preservation and intended-change evidence apart.
+
+| Seam / scenarios | Required falsifier |
+| --- | --- |
+| PreToolUse creation, S96–S99 in `test/cases/s96_s101_issue_first_branching.sh` | Both creation forms reject malformed WIP with exit 2 and issue-first reason; valid OPEN WIP passes; CLOSED blocks. Include malformed slug/case/slash controls. Missing gh and unavailable/empty lookup warn/allow. Removing WIP from either selector or regex must fail a new assertion. The nonexistent-issue row waits for AC9 resolution. |
+| Native syntax, S100 | A real fixture commit on malformed WIP fails with `REASON_BRANCH_NO_ISSUE`; numbered WIP passes without gh. Test the existing escape hatch only inside the fixture. Removal of the native WIP selector must be caught independently of PreToolUse. |
+| Preservation, S101 and AC11 | Matrix feature/fix syntax and OPEN/CLOSED/unverified results for both creation forms; plain checkout and switch remain allowed. Release and unrelated scratch creation remain outside F19. Preserve unborn-HEAD/native main behavior and S12 main-push refusal. Do not call existing limited S101 coverage a complete matrix. |
+| Checkpointing, S56/S57/S86/S91 plus new WIP/PR-ref isolation case | With distinct local bare-origin WIP and PR refs, real PostToolUse and configured SessionEnd each advance only WIP, including from unrelated cwd. Compare both full ref SHAs after each operation. Explicit SHA fast-forward then advances only PR; guard allows commit, checkpoint and promotion commands. S57 negative/no-origin/diverged controls and S91 timeout/visibility remain. |
+| Promotion lifecycle, new F76 scenarios | Local bare-origin simulation rejects non-fast-forward promotion after a base merge; merging PR into WIP and revalidating permits it without force. Partial/red work does not promote under the documented rule. Confirmed merge cleanup deletes only the intended remote WIP ref; moved/active WIP is retained. Omitted reconciliation/cleanup instructions must fail text controls. |
+| Loaded rule text, new F76 plus F38/F60 | Delete one obligation at a time: WIP checkpoint target, no draft WIP PR, PR-checkout bypass, clean exact-head D6, SHA/command log, Developer/orchestrator ownership, first-WIP-commit deadline, promotion before QA comparison/Review, PR-head identity or cleanup. Each deletion fails its own assertion. Check source policy, generated copies and role text, including stale contradictory instructions. |
+| OR inventory/provenance, S311/S317/S322/S466 | Core and inventory agree; OR46's new step pushes existing green commits only. Comparison/log/brief all use promoted PR head. WIP-only head, absent promotion, missing QA artifact or mismatched comparison cannot start Review. Preserve valid Test-skip and ordinary provenance distinctions. Update `orchestrator-core.py` and `oracle-contract-pins.py` only for owned changed assertions. |
+| Behavior, OB55–OB58, OB60–OB62, OB75–OB81 and new promotion cases | Already-green promotion is direct; a failing check still routes repair, never authoring by orchestrator or skipping a stage. Doc-only commit remains hooks-only; promotion requires D6. Add divergent WIP/PR, moved head and WIP-deadline cases. Change Given/Intended changes only where D1–D7 require it; preserve unrelated Then outcomes. |
+| Generation, budgets, stamp and historical pins | Generation/drift checks reject stale copies; S309/S310/S318 keep context budgets. Final OR/scenario edits require a real runner-produced `orchestrator-diff.stamp`; S323/S335 and other stamp consumers reject stale evidence. S593, S626/S659 and S709 currently freeze changed contract/core bytes: QA must reconcile exact sanctioned #706 substitutions, retain historical baselines and reject omitted/extra changes. Do not remove freezes, skip checks or repin to arbitrary candidate bytes. |
+
+Run existing S56/S57/S86/S91, S96–S101 and S12 preservation cases on the
+actual PR/main merge base and candidate; record both SHAs and commands.
+The supplied starting SHA alone is not a future merge-base claim. WIP
+guard assertions should be red on that base for D7, separately from
+preservation. Behavior stamps hash the whole core/scenario files, so their
+current gates require a full real behavior run after final edits under
+OR48(1), naming the gate, rather than a fabricated or hand-edited stamp.
+This offline Planning session runs no model behavior test. S219 remains
+preservation coverage for unchanged macOS CI; no workflow fixture is relaxed.
+
+#### File scope and ownership
+
+- Developer, guard segment: `hooks/rules.sh`, `hooks/git-guardrails`,
+  `hooks/pre-commit`, and QA-specified executable cases under `test/cases/`
+  and supporting fixtures. Keep parser and push/merge enforcement outside
+  the named F19 change unchanged unless owning-role resolution requires it.
+- Developer, rule segment: `policy/WORKFLOW.md`;
+  `skills/role-contracts/SKILL.md`, `ORCHESTRATOR.md`,
+  `orchestrator-rules.tsv`; generated `WORKFLOW.md`,
+  `adapters/codex/AGENTS.md`, root `AGENTS.md`; `CHANGELOG.md`;
+  affected/new executable cases and fixture pins. Include
+  `test/fixtures/orchestrator-core.py`, `oracle-contract-pins.py`,
+  `temporary-panel-645.py`, `merge-risk-646.py` and
+  `test/cases/s709_route_docs.sh` only for QA-owned sanctioned adjustments.
+  The behavior scenario file and runner-generated stamp are required
+  evidence artifacts; commit their owner-authored/generated output intact.
+- Product owns `PRD.md` (F76 and F19 reconciliation). Architect owns this
+  entry. QA owns `TEST-SCENARIOS.md` and test/behavior oracle text. Developer
+  may commit their supplied text, not rewrite it. Any newly exposed
+  spec/test conflict follows the owning-role route before affected edits.
+- Maintainer-reserved contract-text paths include `policy/`, `hooks/`,
+  `skills/`, `adapters/`, generated `AGENTS.md`/`WORKFLOW.md`, and any
+  `CHANGES.md` change. D1–D7 settle the named substance; this plan grants
+  no panel authority for extra content or weakened reserved protections.
+  Review the historical-pin reconciliation explicitly as a protection edit.
+- Excluded: `CHANGES.md` and adoption answers; `.github/workflows/*.yml`,
+  `templates/ci.yml`, `hooks/push-after-commit`,
+  `settings/session-hooks.json`, live configuration/links, copied Codex
+  bundles and broad cleanup automation. No version bump or tag here.
+
+**AC consistency.** No AC is amended or intentionally narrowed. AC1–AC6
+and AC8–AC11 map to the Seams above; AC7 remains observational. AC9's
+nonexistent-issue clause conflicts with S97b/S99 and is unresolved, not
+silently implemented as either answer. D1–D7 are not reopened.
+
+**Violated when:** a checkpoint advances a PR ref; promotion lacks current
+clean exact-head D6 evidence; comparison/Review names a WIP-only SHA; a
+non-fast-forward is forced; WIP naming escapes either guard adapter;
+unverified lookup is silently treated as verified absence; live operator
+guards are edited to test the candidate; contract pins or behavior stamps
+are weakened to accept it; or delivery adds a meaning bump/new offer
+without a separate maintainer decision.
