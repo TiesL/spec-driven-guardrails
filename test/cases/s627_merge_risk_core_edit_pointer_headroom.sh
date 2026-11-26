@@ -149,11 +149,19 @@ printf '\nhand edit\n' >>"$m/WORKFLOW.md"
 out="$(projection_problems "$m")"
 grep -qF 'not clean' <<<"$out" || fail "S627/mutation — a hand-edited projection passed the generator check"
 
-# A60's branch-state constraint is against A, not main/release preservation.
-for pinned in skills/role-contracts/ORCHESTRATOR.md test/behavior/orchestrator-scenarios.md test/fixtures/orchestrator-core-pins.tsv test/behavior/orchestrator-diff.stamp; do
-  git -C "$TEST_REPO_ROOT" show "51178851a1f6fba76e87d046788339c02f874f03:$pinned" >"$SANDBOX/pinned"
-  cmp -s "$SANDBOX/pinned" "$TEST_REPO_ROOT/$pinned" || fail "S627 — protected A bytes drifted: $pinned"
-done
+# A60's A identity is retained. A64 addendum 2 allows only the shared exact
+# #706 pairs and S548's single genuine stamp digest; the pins stay identical.
+python3 -I - "$TEST_REPO_ROOT" <<'PY706'
+from pathlib import Path
+import runpy, sys
+root = Path(sys.argv[1])
+a = runpy.run_path(str(root/'test/fixtures/wip-706-substitutions.py'))
+errors = a['protected_a_checks'](root)
+for error in errors:
+    print('FAIL: '+error)
+sys.exit(bool(errors))
+PY706
+[ "$?" -eq 0 ] || fail "S627 — protected A exact allowances not satisfied"
 
 # A physical 19-character clone path, independent of macOS's long TMPDIR.
 short_base="$(cd /tmp && pwd -P)"

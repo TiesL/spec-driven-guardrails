@@ -11,7 +11,7 @@ root=Path(sys.argv[1]); a=runpy.run_path(str(root/'test/fixtures/wip-706-substit
 table=json.loads((root/'test/fixtures/wip-706-substitutions.json').read_text())
 duties=runpy.run_path(str(root/'test/fixtures/wip-promotion-706.py'))
 duties['core_duty_controls']([new for old,new in table['changes']['skills/role-contracts/ORCHESTRATOR.md']])
-errors=[]
+errors=a['protected_a_checks'](root)
 for path in table['changes']:
     before=subprocess.check_output(['git','-C',str(root),'show',table['base']+':'+path])
     expected=a['controls'](path,before)

@@ -21,7 +21,7 @@ ROWS = [
 (720, 'first-promotion', POLICY, '', r'open.*PR.*first promotion.*before Review', 'Open the PR at the first promotion, before Review.'),
 (721, 'exact-clean', POLICY, '', r'exact.*(commit|head).*clean working tree', 'Validate the exact committed head with a clean working tree.'),
 (721, 'no-tests', POLICY, '', r'\./check --no-tests.*(exit 0|pass|succeed)', './check --no-tests must exit 0.'),
-(721, 'affected-cases', POLICY, '', r'every affected.*\./test/run.sh.*(brief|OR48).*exit 0', 'Every affected ./test/run.sh <fragment> named by the Developer brief under OR48(2) must exit 0.'),
+(721, 'affected-cases', POLICY, '', r'every affected project check named in the Developer brief under OR48\(2\) must exit 0', 'every affected project check named in the Developer brief under OR48(2) must exit 0.'),
 (721, 'behavior-current', POLICY, '', r'behavior run.*OR48\(1\).*current.*(commit|head)', 'Any behavior run required by OR48(1) must be current for that commit.'),
 (721, 'record-evidence', POLICY, '', r'record.*(full )?SHA.*exact commands.*results.*Pipeline log.*PR comment', 'Record the full SHA, exact commands and results in the Pipeline log or a PR comment.'),
 (721, 'generated-before-validation', POLICY, '', r'commit generated artifacts.*before.*(final )?validation', 'Commit generated artifacts before final validation.'),
@@ -64,14 +64,14 @@ def matches(pattern, text):
 CORE_DUTIES = [
 ('OR46', 'closed-list', r'closed no.agent list.*never dispatch', 'Closed no-agent list; never dispatch.', 'Closed no-agent list; do yourself, never dispatch: '),
 ('OR46', 'named-command-output', r'\(a\) run one named repo command, report output', '(a) Run one named repo command, report output.', 'report output'),
-('OR46', 'generated-unedited-wip', r'\(b\) commit/push command.generated, never hand.edited files on work.item WIP branch', '(b) Commit/push command-generated, never hand-edited files on work-item WIP branch.', 'never hand-edited '),
+('OR46', 'generated-unedited-wip', r'\(b\) commit/push unedited command.generated files on work.item WIP branch', '(b) Commit/push unedited command-generated files on work-item WIP branch.', ('command-generated ', 'unedited ', 'work-item WIP branch')),
 ('OR46', 'read-only-comparison', r'\(c\) read.only git/gh and QA comparison', '(c) Read-only git/gh and QA comparison.', 'QA comparison'),
 ('OR46', 'labels-log', r'\(d\) set label, edit Pipeline log', '(d) Set label, edit Pipeline log.', '(d) set label, edit Pipeline log; '),
 ('OR46', 'existing-green-only', r'\(e\) promote existing D6.green commits to PR branch', '(e) Promote existing D6-green commits to PR branch.', 'existing D6-green '),
 ('OR46', 'fast-forward-sha', r'explicit fast.forward SHA push, never force', 'Use explicit fast-forward SHA push, never force.', 'never force'),
 ('OR46', 'clean-committed-head', r'D6: clean exact committed head', 'D6: clean exact committed head.', 'clean exact committed head'),
 ('OR46', 'no-tests', r'\./check --no.tests.*exit 0', './check --no-tests must exit 0.', './check --no-tests'),
-('OR46', 'affected-case-brief', r'every affected \./test/run.sh <fragment> in brief exit 0', 'Every affected ./test/run.sh <fragment> in brief exit 0.', 'every affected `./test/run.sh <fragment>` in brief exit 0'),
+('OR46', 'affected-case-brief', r'every affected check in brief exit 0', 'Every affected check in brief exit 0.', ('every affected check ', 'in brief ', 'exit 0')),
 ('OR46', 'current-behavior', r'OR48\(1\) behavior evidence current for that commit', 'OR48(1) behavior evidence current for that commit.', 'OR48(1) behavior evidence current for that commit'),
 ('OR46', 'evidence-identity', r'log full SHA, exact commands/results', 'Log full SHA, exact commands/results.', 'log full SHA, exact commands/results'),
 ('OR46', 'partial-checkpoints', r'partial/failing work only checkpoints', 'Partial/failing work only checkpoints.', 'Partial/failing work only checkpoints.'),
@@ -81,7 +81,8 @@ CORE_DUTIES = [
 ('OR46', 'moved-head-stop', r'moved head blocks Review', 'Moved head blocks Review.', 'moved head '),
 ('OR46', 'owner-hand-edits', r'all else: dispatch owner, including hand edits/repairs', 'All else: dispatch owner, including hand edits/repairs.', 'including hand edits/repairs'),
 ('OR46', 'failed-command-no-repair', r'report failed commands, never repair', 'Report failed commands, never repair.', 'Report failed commands, never repair.'),
-('OR46', 'valid-test-waiver-only', r'valid skip=Test \(OR34\) only: no QA artifact/comparison/Reviewer approval block', 'Valid skip=Test (OR34) only: no QA artifact/comparison/Reviewer approval block.', 'Valid '),
+('OR46', 'valid-test-waiver-only', r'only a valid skip=Test record \(OR34\) grants this exception', 'Only a valid skip=Test record (OR34) grants this exception.', ('Only ', 'valid ', ' record', ' (OR34)')),
+('OR46', 'test-waiver-exemption-objects', r'no QA artifact/comparison/Reviewer approval block', 'No QA artifact/comparison/Reviewer approval block.', ('QA artifact/', 'comparison/', 'Reviewer approval ')),
 ('OR46', 'waiver-provenance', r'QA provenance: result=not.applicable; skip=<record URL>; head=<SHA>', 'QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>', 'QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>'),
 ('OR46', 'waiver-no-open-finding', r'QA provenance: result=not.applicable; skip=<record URL>; head=<SHA>; no open finding', 'QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>; no open finding.', '; no open finding.'),
 ('OR46', 'single-session', r'single.session never exempts', 'Single-session never exempts.', 'Single-session never exempts.'),
@@ -116,9 +117,17 @@ def core_duty_controls(lines):
         assert matches(pattern, witness), 'broken duty witness: '+label
         assert not matches(pattern, 'Keep unrelated evidence.'), label
         line = scoped(complete, rid)
-        assert line.count(cut) == 1, 'duty cut not unique: '+label
-        mutant = complete.replace(line, line.replace(cut, '', 1), 1)
-        assert label in core_duties(mutant), 'whole-line duty deletion escaped: '+label
+        # Anchor the exemption cuts in its own sentence; 'comparison/' also
+        # occurs in the ordinary Review-head duty and cannot select this cut.
+        location = ('No QA artifact/comparison/Reviewer approval block'
+                    if label == 'test-waiver-exemption-objects' else line)
+        assert line.count(location) == 1, 'duty cut scope not unique: '+label
+        for clause in (cut if isinstance(cut, tuple) else (cut,)):
+            assert location.count(clause) == 1, 'duty cut not unique: '+label+' '+clause
+            changed = line.replace(location, location.replace(clause, '', 1), 1)
+            mutant = complete.replace(line, changed, 1)
+            assert label in core_duties(mutant), 'whole-line duty deletion escaped: '+label+' '+clause
+            print('KILLED: core-duty/'+label+' delete '+repr(clause))
     print('CONTROL: A64 whole-line duty witnesses/deletions PASS ('+str(len(CORE_DUTIES))+')')
 
 
@@ -133,6 +142,12 @@ def check(number):
         assert matches(pattern, complete), 'broken complete: '+label
         assert not matches(pattern, complete.replace(witness, '', 1)), 'obligation deletion escaped: '+label
         assert not matches(pattern, 'Keep unrelated evidence. Continue other work.'), label
+        if (n, label) == (721, 'affected-cases'):
+            for clause in ('every affected project check ', 'named in the Developer brief ',
+                           'under OR48(2) ', 'exit 0'):
+                assert witness.count(clause) == 1, clause
+                assert not matches(pattern, witness.replace(clause, '', 1)), clause
+                print('KILLED: S721/affected-cases delete '+repr(clause))
         source = scoped((ROOT/path).read_text(), scope)
         if not matches(pattern, source):
             failures.append(f'S{n}/{label}: {path} [{scope or "common rule"}] must say: {witness}')
