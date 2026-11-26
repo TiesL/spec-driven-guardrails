@@ -142,6 +142,7 @@ HINT_SITES = [(720,
   '\n'
   '         git checkout -b wip/<issue>-<name>\n'
   '\n'
+  '       Your changes come along unchanged.\n'
   '       Commit and checkpoint WIP; promote only after validation."',
   'REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Make a branch first — your\n'
   '       changes come along unchanged, nothing gets lost:\n'
