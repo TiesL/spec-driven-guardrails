@@ -37,7 +37,7 @@ def controls(path, baseline):
                 assert value.count(old.encode()) == 1
                 value = value.replace(old.encode(), new.encode(), 1)
         assert value != expected, '706 omission escaped: '+path
-    assert expected+b'\n' != expected, '706 extra-byte control'
+    assert restore(path, expected+b'\n') != baseline, '706 extra-byte control'
     return expected
 
 
