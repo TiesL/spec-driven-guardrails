@@ -1291,12 +1291,16 @@ something new is being added.
 - Then: `git-guardrails` blocks it, pointing at creating the issue
   first and naming the branch after its number
 
-### S97 — Branch creation against a closed or nonexistent issue is blocked
+### S97 — Branch creation blocks a successfully observed non-OPEN issue state
 **Covers:** F19
-- Given: a branch name that does match the pattern, but the numbered
-  issue is closed or doesn't exist (`gh issue view <n> --json state`)
-- When: the command runs
-- Then: `git-guardrails` blocks it
+- Given: a syntactically valid feature/fix/wip branch and a successful,
+  nonempty `gh issue view <n> --json state --jq .state` lookup
+- When: the observed state is not OPEN (including CLOSED)
+- Then: `git-guardrails` blocks creation
+- S97b (D8): if a nonexistent issue 999999 instead exits 1 with stderr
+  `GraphQL: Could not resolve to an issue or pull request with the number of 999999. (repository.issue)`,
+  the guard warns and allows. Both `checkout -b` and `switch -c` must
+  actually query that number for feature/fix/wip; failure is not verified absence.
 
 ### S98 — Branch creation against a real, open issue succeeds
 **Covers:** F19
@@ -1305,13 +1309,16 @@ something new is being added.
 - When: the command runs
 - Then: the command goes through, unblocked
 
-### S99 — The issue-first guard fails open without gh or network
+### S99 — Failed, empty or unavailable issue lookup warns and allows
 **Covers:** F19
-- Given: `gh` is missing, or the `gh issue view` call fails (no
-  network/access)
-- When: a branch name matching the pattern is created
-- Then: a warning appears that the issue-existence check was skipped
-- And: the command is allowed
+- Given: a syntactically valid feature/fix/wip branch and missing `gh`, a
+  failed lookup (including nonexistent issue, network or access failure),
+  or a successful lookup with empty output
+- When: `checkout -b` or `switch -c` creates it
+- Then: a warning says the issue check was skipped and the command is allowed
+- And: failed lookup still warns/allows if stdout says CLOSED; only a
+  successfully observed non-OPEN state blocks (S97). Under accepted D8,
+  a mistyped or invented issue number may pass with this warning.
 
 ### S100 — Non-Claude commits are covered by the native pre-commit hook
 **Covers:** F19
@@ -12680,19 +12687,19 @@ QA seams: explicit candidate guard invocation with local gh stubs, native hook
 symlinks in disposable fixture repositories, local bare origins, loaded instruction
 text, the closed behavior-scenario schema and historical byte freezes. No test
 changes live hook links/settings, invokes a real gh or proves runtime activation.
-AC7 remains a post-epic observation; it is not a merge gate. The nonexistent-issue
-lookup conflict in AC9/S97 versus S97b/S99 remains maintainer-pending. Those rows
-and assertions are unchanged; new WIP CLOSED/OPEN/unavailable controls do not
-choose a verified-absence classifier.
+AC7 remains a post-epic observation; it is not a merge gate. Maintainer decision
+D8 reconciles AC9/S97/S97b/S99: failed, empty or unavailable lookup warns/allows,
+including a nonexistent issue producing lookup failure. Successfully observed
+non-OPEN blocks; the accepted risk permits mistyped or invented numbers with a warning.
 
 ### S718 — WIP creation and native commits use the existing issue-first boundary (#706 AC8–AC11)
 **Covers:** F19, F76
-- Given: a fixture repo and the candidate guard; both `checkout -b` and `switch -c`, malformed `wip/no-number`, uppercase/empty/nested slugs, and `wip/706-example` with local OPEN/CLOSED/unavailable stubs.
+- Given: a fixture repo and the candidate guard; both `checkout -b` and `switch -c`, malformed `wip/no-number`, uppercase/empty/nested slugs, and `wip/706-example` with local OPEN/CLOSED/failed/empty/unavailable stubs and the real nonexistent-issue diagnostic.
 - When: the explicit guard receives each command; a fixture-linked candidate native pre-commit hook receives commits on malformed and numbered WIP names.
-- Then: malformed creation exits 2; numbered OPEN WIP queries issue 706 and passes; verified CLOSED exits 2; missing gh or unsuccessful lookup warns and allows. Native malformed WIP commits refuse with `REASON_BRANCH_NO_ISSUE`, numbered WIP commits pass syntax offline, and the fixture-only escape hatch bypasses naming.
+- Then: malformed creation exits 2; numbered OPEN WIP queries issue 706 and passes; verified CLOSED exits 2; failed, empty or unavailable lookup warns and allows, including nonexistent-issue failure under D8. Native malformed WIP commits refuse with `REASON_BRANCH_NO_ISSUE`, numbered WIP commits pass syntax offline, and the fixture-only escape hatch bypasses naming.
 - Falsifiers: dropping the creation selector loses malformed/CLOSED/lookup/warning assertions; dropping the regex alternative rejects the independently checked numbered WIP syntax; dropping the native selector permits the malformed native commit. Native execution must be through a fixture symlink, never direct execution of the hook file.
 - Preservation controls: feature/fix malformed, OPEN, CLOSED and unavailable outcomes in both creation forms; release/scratch creation; plain checkout/switch for all branch families; native feature/fix/release/scratch, unborn main, established main refusal and escape hatch. These are expected green controls, not red-before-green evidence. They must also run on the future actual PR/main merge base before preservation is claimed.
-- Case file: `test/cases/s96_s101_issue_first_branching.sh`; original AC9 lookup rows remain byte-identical. New-behavior assertions are red on 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581 because WIP is absent from the three guard boundaries.
+- Case file: `test/cases/s96_s101_issue_first_branching.sh`; AC9 lookup rows follow D8; successful non-OPEN blocks and lookup failure warns/allows. New-behavior assertions are red on 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581 because WIP is absent from the three guard boundaries.
 
 ### S719 — Checkpoints move WIP while explicit SHA publication moves only the PR ref (#706 AC5/AC6)
 **Covers:** F18, F76
@@ -12708,7 +12715,7 @@ choose a verified-absence classifier.
 - When: the common rule is loaded as text.
 - Then: all roles share WIP and its same-named remote, feature/fix are publication refs, publication uses explicit fast-forward SHA pushes, PRs including drafts never attach to WIP, the PR branch is never checked out for work (including `gh pr checkout`), and the PR opens on first promotion before Review. Replace the old feature-branch checkpoint and undifferentiated regular-push instructions; appending a contradictory rule is insufficient.
 - Falsifier: any individual obligation is removed. The independent compliant witness and one-obligation-deletion controls must discriminate each requirement without reading PRD/A64 as a substitute for delivered instructions.
-- Case file: `test/cases/s720_wip_publication_rule.sh`, fixture `wip-promotion-706.py`. Every new loaded-text obligation is red on the supplied head. Generation equality and S309/S310/S318 budgets remain separate existing consumers; tests do not hand-edit generated copies.
+- Case file: `test/cases/s720_wip_publication_rule.sh`, fixture `wip-promotion-706.py`. Original new obligations were red at 97a3a61. A64 addendum 1 changes only the exact core lines; common policy obligations remain. Generation equality and S309/S310/S318 budgets remain separate existing consumers; tests do not hand-edit generated copies.
 
 ### S721 — Promotion evidence belongs to the exact clean committed head (#706 D6; AC1–AC4)
 **Covers:** F76
@@ -12716,7 +12723,7 @@ choose a verified-absence classifier.
 - When: the documented promotion condition is inspected.
 - Then: D6 requires that exact committed head and a clean tree; `./check --no-tests` and every affected `./test/run.sh <fragment>` named in the Developer brief exit 0; OR48(1)'s required behavior evidence is current for that commit. Record the full SHA, exact commands and results in the Pipeline log or PR comment. Commit generated artifacts before final validation. Later commits need their own evidence. Partial/failing segments only checkpoint; doc-only checkpoints still need D6 to promote.
 - Falsifier: deleting any one condition passes the text oracle. Retain OR48's at-most-once full-check limit and the distinction between doc-only commit checks and publication validation. This documents the promotion rule; it introduces no mechanical green-push refusal or new nudge.
-- Case file: `test/cases/s721_exact_head_promotion_evidence.sh`. Individual obligations are red on the supplied head; independent witness/deletion controls are green.
+- Case file: `test/cases/s721_exact_head_promotion_evidence.sh`. Original promotion obligations were red at 97a3a61. The A64 addendum 1 core replacement retains these D6 duties with independent witness/deletion controls.
 
 ### S722 — Role handoffs promote and compare one confirmed PR identity (#706 AC2/AC4)
 **Covers:** F38, F60, F62, F76
@@ -12724,7 +12731,7 @@ choose a verified-absence classifier.
 - When: a complete Developer segment returns or an orchestrator prepares a Review round.
 - Then: A11 checkpoints the shared WIP branch; Developer promotes only a completed D6-green segment; WIP-only commits count for the first-commit deadline. OR46 permits promotion of existing green commits, confirms the remote PR head equals the promoted SHA, and uses that same head for QA comparison, Review and the Pipeline log. Failed promotion or a moved head prevents Review. OR48 distinguishes checkpoint checks from D6 promotion checks.
 - Falsifier: dropping an individual obligation passes; widening the closed OR46 list to a sixth kind or authored edits passes. Keep repair dispatch, generated-file-only commits, ordinary stage handoffs, valid skip=Test exemption and single-session provenance distinctions.
-- Case files: `test/cases/s722_promotion_role_handoffs.sh`, changed S317, and S724. New obligations are red on the supplied head. S311/S317/S322/S466 and OB55–OB58, OB60–OB62, OB75–OB81 remain preservation consumers.
+- Case files: `test/cases/s722_promotion_role_handoffs.sh`, changed S317, and S724. A64 addendum 1 replaces the whole OR46/OR48 lines without moving obligations out of injected context. Independent duty deletions within those replacements must fail, including failed/moved-head stops, invalid waivers and missing superseding artifacts. S311/S317/S322/S466 and OB55–OB58, OB60–OB62, OB75–OB81 remain preservation consumers.
 
 ### S723 — Base merges and post-merge cleanup preserve WIP work (#706 AC6)
 **Covers:** F76
@@ -12732,7 +12739,7 @@ choose a verified-absence classifier.
 - When: the documented recovery/wrap-up procedure is loaded.
 - Then: merge the remote PR head into WIP, revalidate D6 and retry without force. Delete remote WIP explicitly only after confirmed PR merge and durable reporting, after checking for later work/active users. Retain and reconcile moved/active refs; squash ancestry alone cannot prove safe deletion. Finish on the integration branch so SessionEnd cannot recreate WIP. Dispatched roles gain no destructive-git authority.
 - Falsifier: omitting any individual recovery/deletion safeguard passes the oracle. Broader cleanup remains #726; this test never deletes a real remote ref.
-- Case file: `test/cases/s723_wip_recovery_cleanup.sh`. Loaded-text obligations are red on the supplied head; the Git reconciliation control in S719 is green.
+- Case file: `test/cases/s723_wip_recovery_cleanup.sh`. Original loaded-text obligations were red at 97a3a61; A64 addendum 1 leaves policy recovery/cleanup and the Git reconciliation control in S719 unchanged.
 
 ### S724 — Promotion behavior scenarios retain inventory and provenance distinctions (#706 AC2/AC4)
 **Covers:** F38, F60, F76
@@ -12740,12 +12747,12 @@ choose a verified-absence classifier.
 - When: the scenario parser and rule inventory are checked.
 - Then: each heading's rule has reciprocal `covered_by` entries. OB84 permits existing green SHA promotion; OB85 routes partial code to Developer; OB86 promotes before a WIP-only comparison can lead to Review; OB87 rechecks a moved head; OB88 requires D6 on a later doc-only head; OB89 preserves valid skip=Test; OB90 routes a differing comparison to its owner; OB91 dispatches authored base-merge reconciliation without force.
 - Falsifier: one inventory edge is absent, a scenario is unlisted, or an unauthorized field/value is used. A real final behavior run must exercise all scenarios required by the whole-file stamp; parsing alone proves no model obedience.
-- Case file: `test/cases/s724_promotion_behavior_inventory.sh`. Missing inventory edges are red on the supplied head. QA-authored schema/Then checks are green controls, not claims of an executed model run.
+- Case file: `test/cases/s724_promotion_behavior_inventory.sh`. Missing inventory edges were red at 97a3a61; A64 addendum 1 retains the exact parts, reciprocal edges and OB84–OB91 outcomes. QA-authored schema/Then checks are green controls, not claims of an executed model run.
 
 ### S725 — Historical freezes admit only the exact #706 amendments (#706 AC8–AC11/AC2)
 **Covers:** F19, F38, F60, F76
 - Given: original historical freeze bases and the literal before/after pairs in `test/fixtures/wip-706-substitutions.json`, anchored to 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581.
 - When: S593 reconstructs hooks/inventory, S626/S659 reconstruct role contracts, S548 checks its core snapshot, and S709 compares core/scenario/inventory bytes.
-- Then: apply only the declared pairs, once each, above the existing historical allowances. Reject each omitted pair, wrong or extra bytes; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions.
-- Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment, or hand-writing a stamp. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
+- Then: apply only the declared pairs, once each, above the existing historical allowances. OR46 and OR48 each use one exact whole-line historical-to-A64-addendum-1 pair. Reject each omitted pair, wrong or extra bytes, and each independent duty deletion within the whole-line replacements; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions.
+- Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment or deleted duty, or hand-writing a stamp. DEV706-1 is falsified by unchanged `./test/run.sh s309` and `./test/run.sh s318`: K=2, budget 9,000, headroom floor 500 in each slot, fallback 8,500 and every padding/one-character control remain. Both are red for the budget reason at 579d3c72c52cf78eaa227cdb4a988bb7d9f08884; the exact shorter replacements must make them green. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
 - Case file: `test/cases/s725_exact_freeze_allowances.sh`; amended freeze consumers remain strict. Exact substitution values are a concrete Developer implementation target; any owning-role change needs QA reconciliation of these oracles, not loosening them to candidate bytes.

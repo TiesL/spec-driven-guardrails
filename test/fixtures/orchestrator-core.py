@@ -243,6 +243,9 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
     def need(rid, needle, name):
         if needle not in full.get(rid, ""):
             errs.append((name, "%s must contain %r" % (rid, needle)))
+    # A64: keep the cross-part D6 definition and behavior-scope reference injected.
+    need("OR46", "OR48(1)", "xref-or46-behavior")
+    need("OR48", "D6 for promotion (OR46)", "xref-or48-promotion")
     need("OR21", "OR45", "xref-or21")
     need("OR37", "OR45", "xref-or37")
     need("OR31", "OR5", "xref-or31")

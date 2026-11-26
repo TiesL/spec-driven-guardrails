@@ -35,7 +35,7 @@ status=$?
 [ "$status" -eq 2 ] || fail "S96 — branch creation without an issue number was not blocked"
 assert_contains "S96 — message points at creating the issue first" "issue" "$output"
 
-# S97 — the number is there, but the issue is closed.
+# S97 — a successful lookup observes a non-OPEN state: block.
 # fake_gh_bin always writes to the same $SANDBOX/fakegh path, so each
 # variant is built fresh right before it's used — holding onto an earlier
 # path and reusing it later would silently pick up whatever script was
@@ -48,12 +48,26 @@ exit 1
 ')" >/dev/null 2>&1; echo $?)"
 [ "$status" = "2" ] || fail "S97 — branch creation against a closed issue was not blocked"
 
-# S97b — the number is there, but no such issue exists (gh errors).
-status="$(through_guard "$project" 'git checkout -b feature/999-no-such-issue' "$(fake_gh_bin 'exit 1')" >/dev/null 2>&1; echo $?)"
-# A gh error is indistinguishable from "no network" here (S99) — both fail
-# open, by design (same rule as the merge guard). This case documents that
-# choice rather than asserting a block.
-[ "$status" != "2" ] || fail "S97b — an unreachable gh was treated as a hard block instead of failing open"
+# S97b — D8 accepts the risk: even a nonexistent issue warns/allows when
+# its lookup fails. Use gh's real diagnostic, not an undifferentiated exit 1.
+# Exercise both selectors and all three protected branch families.
+for form in 'checkout -b' 'switch -c'; do
+  for family in feature fix wip; do
+    fake="$(fake_gh_bin '
+case "$*" in
+  "issue view 999999 --json state --jq .state")
+    echo checked >> "$SANDBOX/nonexistent-lookup"
+    printf "%s\n" "GraphQL: Could not resolve to an issue or pull request with the number of 999999. (repository.issue)" >&2
+    exit 1 ;;
+esac
+exit 88')"
+    rm -f "$SANDBOX/nonexistent-lookup"
+    output="$(through_guard "$project" "git $form $family/999999-no-such-issue" "$fake")"; status=$?
+    [ -s "$SANDBOX/nonexistent-lookup" ] || fail "S97b/$family/$form — nonexistent issue lookup was not attempted"
+    [ "$status" -eq 0 ] || fail "S97b/$family/$form — nonexistent issue lookup failure must allow under D8"
+    assert_contains "S97b/$family/$form — lookup failure warns" warning "$output"
+  done
+done
 
 # S98 — a real, open issue: goes through.
 status="$(through_guard "$project" 'git checkout -b feature/7-open-issue' "$(fake_gh_bin '
@@ -64,8 +78,8 @@ exit 1
 ')" >/dev/null 2>&1; echo $?)"
 [ "$status" != "2" ] || fail "S98 — branch creation against an open issue was wrongly blocked"
 
-# S99 — gh missing entirely, or network unreachable: fails open, with a
-# warning, exactly like the merge guard (S17).
+# S99 — failed, empty or unavailable lookup warns and allows (D8),
+# including a failed command that happens to print CLOSED.
 output="$(through_guard "$project" 'git checkout -b feature/7-open-issue' "$nogh")"
 status=$?
 [ "$status" -ne 2 ] || fail "S99a — gh missing, but branch creation was blocked anyway"
@@ -75,6 +89,13 @@ output="$(through_guard "$project" 'git checkout -b feature/7-open-issue' "$(fak
 status=$?
 [ "$status" -ne 2 ] || fail "S99b — gh unreachable, but branch creation was blocked anyway"
 assert_contains "S99b — warns that the check was skipped" "warning" "$output"
+
+for result in empty failed-nonopen; do
+  if [ "$result" = empty ]; then body='exit 0'; else body='echo CLOSED; exit 1'; fi
+  output="$(through_guard "$project" 'git checkout -b feature/7-example' "$(fake_gh_bin "$body")")"; status=$?
+  [ "$status" -eq 0 ] || fail "S99/$result — unverified lookup must allow"
+  assert_contains "S99/$result — skipped lookup warns" warning "$output"
+done
 
 # S96 (switch form) — `git switch -c` is judged the same way as `checkout -b`.
 status="$(through_guard "$project" 'git switch -c feature/no-number' "$nogh" >/dev/null 2>&1; echo $?)"
@@ -103,8 +124,8 @@ if ! git -C "$native_project" commit -q --allow-empty -m "on numbered branch" 2>
   fail "S100 — a legitimate commit on a numbered branch was blocked"
 fi
 
-# S718 (#706 AC8-AC11): candidate-only WIP coverage. The original S97,
-# S97b and S99 lookup rows above are intentionally untouched pending AC9.
+# S718 (#706 AC8-AC11): candidate-only WIP coverage. S97/S97b/S99
+# above follow AC9 as settled by maintainer decision D8.
 # Both selectors and the shared pattern have independent falsifiers.
 . "$TEST_REPO_ROOT/hooks/rules.sh"
 [[ wip/706-example =~ $BRANCH_ISSUE_PATTERN ]] || fail "S718/regex — numbered WIP is absent from the shared syntax rule"
@@ -124,8 +145,13 @@ exit 1')"
   [ -s "$SANDBOX/wip-lookup" ] || fail "S718/lookup/$form — OPEN WIP creation must actually verify its issue"
   output="$(through_guard "$project" "git $form wip/706-example" "$(fake_gh_bin 'echo CLOSED; exit 0')")"; status=$?
   [ "$status" -eq 2 ] || fail "S718/closed/$form — verified CLOSED WIP must block"
-  for unavailable in missing failed; do
-    if [ "$unavailable" = missing ]; then fake="$nogh"; else fake="$(fake_gh_bin 'exit 1')"; fi
+  for unavailable in missing failed empty failed-nonopen; do
+    case "$unavailable" in
+      missing) fake="$nogh" ;;
+      failed) fake="$(fake_gh_bin 'exit 1')" ;;
+      empty) fake="$(fake_gh_bin 'exit 0')" ;;
+      failed-nonopen) fake="$(fake_gh_bin 'echo CLOSED; exit 1')" ;;
+    esac
     output="$(through_guard "$project" "git $form wip/706-example" "$fake")"; status=$?
     [ "$status" -eq 0 ] || fail "S718/unverified/$form/$unavailable — unavailable lookup must fail open"
     assert_contains "S718/warning/$form/$unavailable" warning "$output"
@@ -139,8 +165,13 @@ exit 1')"
     [ "$status" -eq 0 ] || fail "AC11/control/$family/$form/open"
     output="$(through_guard "$project" "git $form $family/706-example" "$(fake_gh_bin 'echo CLOSED; exit 0')")"; status=$?
     [ "$status" -eq 2 ] || fail "AC11/control/$family/$form/closed"
-    for unavailable in missing failed; do
-      if [ "$unavailable" = missing ]; then fake="$nogh"; else fake="$(fake_gh_bin 'exit 1')"; fi
+    for unavailable in missing failed empty failed-nonopen; do
+      case "$unavailable" in
+        missing) fake="$nogh" ;;
+        failed) fake="$(fake_gh_bin 'exit 1')" ;;
+        empty) fake="$(fake_gh_bin 'exit 0')" ;;
+        failed-nonopen) fake="$(fake_gh_bin 'echo CLOSED; exit 1')" ;;
+      esac
       output="$(through_guard "$project" "git $form $family/706-example" "$fake")"; status=$?
       [ "$status" -eq 0 ] || fail "AC11/control/$family/$form/$unavailable"
       assert_contains "AC11/control/$family/$form/$unavailable/warning" warning "$output"
