@@ -595,9 +595,12 @@ fail forever; a gate applies from the next merge onward.
 ### F14 — Blocking edges in the issue templates
 
 `**Blocked by:** #` / `**Blocks:** #` in `work-item.md` and `epic.md`.
-Deliberately a plain field, since `gh issue view` already shows
-`blocked-by`/`blocking`; native sub-issues would tie the convention to
-GitHub Projects.
+Issue-body fields are the portable source of truth for parent and blocker
+relations. Under F77/D1, native sub-issue and blocked-by relations mirror
+those settled fields; they do not replace them or require a Projects board.
+Keep reciprocal body declarations consistent before mirroring, including
+changed and removed edges. Board fields remain authoritative for decided
+ordering. Both issue templates follow `write-spec`'s maintenance rule.
 
 ### F15 — Release mechanism
 
@@ -2985,6 +2988,110 @@ separating failures D6 would have caught. That evidence may trigger a
 separate advisory-nudge item: network-free, adoption-gated, visible to the
 agent, never a refusal or open-PR lookup. Reconsider concurrency separately.
 No such follow-up is implemented here.
+
+### F77 — Keep backlog metadata current and report drift on request (issue #724; epic #742)
+
+**Serves:** #724 AC1–AC6. A65 defines the design. Maintainer decisions
+D1–D5 remain settled: body fields own relations and native/board relations
+mirror them (D1); reporting is on request initially (D2); empty ordering
+fields require durable exception evidence (D3); OR46(d) permits mirroring
+already-decided metadata only, with full behavior evidence and a current
+stamp (D4); `process-issue-tracking` moves to meaning v2, with exact
+CHANGES.md wording reserved for maintainer approval at the release merge
+(D5). These decisions grant no project-setting or prioritization authority.
+
+**Outcome and scope.** Keep issues, their relationships and the configured
+backlog board aligned as work proceeds, so readers can see dependencies,
+settled order and actual completion without reconstructing session history.
+Maintain metadata at creation, relationship or stage changes, confirmed
+reprioritization and closure. Put the canonical maintenance rule in
+`write-spec`; policy/generated instructions and both issue templates must
+agree with it and F14. This applies with or without role pipelines.
+
+**Relations and lifecycle (AC1).** Work items name their epic with a live
+whole-line `**Epic:** #N`; epics list their children under Work items.
+Nested epics name their parent; top-level epics have none. Both carry
+realized `**Covers:**` tokens and explicit `**Blocked by:**` / `**Blocks:**`
+sets, using `none` for empty sets. A child declaration and its parent's
+child list must agree. A blocked-by B means B blocks A; native edges copy
+that direction. Reparenting and blocker removal update both affected body
+ends and remove obsolete native edges. Contradictory, missing, duplicate
+or ambiguous source declarations require owner reconciliation; they never
+authorize invented decisions or destructive mirroring. Quoted examples
+are not declarations.
+
+Keep applicable type/status/active-role labels, native relations, board
+membership and stage Status aligned with the decided lifecycle. Inactive
+items need no invented active role; closed items drop active status/role
+labels. Retain blocked evidence and the applicable stage Status rather
+than inferring an unblocked state. Check automatic membership first; add
+only a confirmed missing item. Parent/progress/PR-link board fields reflect
+native relations and actual PR linkage, rather than competing manual data.
+Owners author body decisions; the orchestrator mirrors settled metadata,
+reads back results and records completed, failed and unchecked operations.
+A partial sequence must remain visibly pending reconciliation.
+
+**Ordering and exceptions (AC2).** Backlog rank and Horizon in the configured
+board own ordering. Apply only confirmed maintainer choices, respecting
+#721's child-rank inheritance, epic ordering and parking rules; do not
+independently rank children or apply proposals awaiting confirmation.
+Each empty field needs its own durable issue-body or issue-comment note:
+field, reason, proposed value (or explicitly undecided), awaiting-maintainer
+or parked disposition, and decision/reference. Awaiting proposals remain
+unapplied; parking cites its documented decision. An inherited empty field
+names its parent/decision. Evidence for one field does not excuse the
+other. A generic TBD is insufficient; contradictory unresolved notes leave
+the check indeterminate. Report valid exceptions visibly.
+
+**On-request read-only report (AC3–AC4).** Report repository issues and their
+parent/dependency relations, inverse declarations and, when configured,
+board membership, rank, Horizon and closed-item Status. Include open and
+closed issues and complete applicable issue, comment, relation and board
+pagination. Identify each finding by issue link, field/edge and observed
+versus expected state, including missing membership, extra/removed edges,
+inverse disagreement and missing ordering evidence. Link exception evidence.
+State repository/project identity, snapshot scope and unchecked portions.
+A complete consistent snapshot is clean; known mismatches are drift;
+any incomplete required read makes the aggregate incomplete while retaining
+known drift. Missing permissions, unavailable tools/network, malformed or
+truncated data and missing required fields must never look clean or empty.
+Name the affected operation and issues without exposing credentials.
+
+The report changes nothing and imposes no work/merge/CI gate. Advisory
+clean/drift/incomplete results do not block work; invocation errors and
+internal defects remain distinguishable as specified by A65. No automatic
+repair, session-start invocation or duplicate synchronization engine is
+added. Reconsider session-start reporting only after cost/noise measurement
+and a later decision under D2. Failed maintenance reads are not authority
+to write; successful write requests alone are not verified synchronization.
+
+**Closure and portability (AC5–AC6).** Reuse automatic membership and closure
+workflows first, then verify fresh issue state, actual PR linkage, board
+membership and Done Status. A closed issue whose board item is not Done
+is drift; an absent item is reported rather than claimed verified. For a
+release child, merging its PR into `release/*` alone is insufficient:
+record completion and the PR link, explicitly close the child under the
+release workflow, then verify CLOSED and board Done. Keep the epic's own
+release-closure rules. Do not add duplicate closure automation.
+
+Without a configured board, board checks are explicitly not applicable;
+portable body metadata, labels and applicable native relations still
+matter. A configured but inaccessible board is incomplete, not absent.
+Native relations do not require Projects. Unsupported/inaccessible native
+relations remain unchecked with portable records preserved. Offline work
+may prepare owner-authored records but must name pending external work.
+
+**Evidence and limits.** The supplied 2026-11-26 orchestrator capture reports
+Project 1's enabled workflows, zero missing open issues and successful
+parent/blocker creation; it does not establish complete relation/order
+consistency, successful removals or end-to-end release-child closure.
+This offline specification claims no live board verification or historical
+preservation run. QA must falsify each AC, including independent drift,
+field-specific exceptions, inverse/removal errors, incomplete pagination,
+partial maintenance, board omission versus denial and release-child
+closure. Fixtures prove local behavior, not server success; live claims
+require actual authorized read-back evidence. QA owns scenario IDs and
+coverage; Product adds no scenarios here.
 
 ## Non-functional characteristics
 

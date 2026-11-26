@@ -66,7 +66,7 @@ CORE_DUTIES = [
 ('OR46', 'named-command-output', r'\(a\) run one named repo command, report output', '(a) Run one named repo command, report output.', 'report output'),
 ('OR46', 'generated-unedited-wip', r'\(b\) commit/push unedited command.generated files on work.item WIP branch', '(b) Commit/push unedited command-generated files on work-item WIP branch.', ('command-generated ', 'unedited ', 'work-item WIP branch')),
 ('OR46', 'read-only-comparison', r'\(c\) read.only git/gh and QA comparison', '(c) Read-only git/gh and QA comparison.', 'QA comparison'),
-('OR46', 'labels-log', r'\(d\) set label, edit Pipeline log', '(d) Set label, edit Pipeline log.', '(d) set label, edit Pipeline log; '),
+('OR46', 'labels-log', r'\(d\) labels/log; mirror decided metadata;', '(d) labels/log; mirror decided metadata;', ('labels/log; ', 'mirror decided metadata;')),
 ('OR46', 'existing-green-only', r'\(e\) promote existing D6.green commits to PR branch', '(e) Promote existing D6-green commits to PR branch.', 'existing D6-green '),
 ('OR46', 'fast-forward-sha', r'explicit fast.forward SHA push, never force', 'Use explicit fast-forward SHA push, never force.', 'never force'),
 ('OR46', 'clean-committed-head', r'D6: clean exact committed head', 'D6: clean exact committed head.', 'clean exact committed head'),

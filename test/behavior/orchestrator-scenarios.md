@@ -542,6 +542,38 @@ Given: An external base merge moved origin/feature/40-example. WIP has different
 When: You choose who reconciles the remote PR head into WIP before new D6 validation.
 Then: next_action=dispatch; next_role=Developer
 
+## Decided metadata mirroring (#724)
+
+### OB92 · OR46
+Given: Product's unchanged published body records settle the parent and reciprocal dependency edges. The maintainer has confirmed the exact Backlog rank and Horizon values. Current native/project reads are complete, IDs and desired changes are recorded, the permissions and fields exist, and only copying these already-decided values then reading them back remains. No authored edit, priority decision or repair is required.
+When: You choose who applies the settled native and board metadata mirrors.
+Then: next_action=answer_directly; next_role=none; asks_human=false
+
+### OB93 · OR46
+Given: An issue has no Backlog rank or Horizon. Ordering is undecided and Product still needs to author the field-specific reasons and an unapplied proposal/awaiting-maintainer note. The maintainer has confirmed no board values. No existing role agent has reusable working context and there is no implementation defect.
+When: You choose who authors the missing ordering proposal and exception records before any board mirroring.
+Then: next_action=dispatch; next_role=Product
+
+### OB94 · OR4, OR46
+Given: A child body says Epic 10 but the requested reparent to epic 40 needs new authored body content and reciprocal edits to both epic child lists. Product has not authored those changes. Native mirrors alone cannot settle the contradiction. No existing role agent has reusable working context.
+When: You choose who authors the reconciled issue-body records before any mirroring.
+Then: next_action=dispatch; next_role=Product
+
+### OB95 · OR46
+Given: While copying decided metadata, the parent add succeeded and was read back, but a blocker removal returned a permission failure and the board field write was not attempted. The desired owner records remain unchanged. No repair is authorized; no body reconciliation or code fix is needed. The immediate next step is only to report the completed, failed and unchecked operations and request no blind retries.
+When: You record the partial outcome without claiming synchronization or inventing a repair.
+Then: next_action=answer_directly; next_role=none
+
+### OB96 · OR46
+Given: An adopted project explicitly has no configured Projects board. Owner-produced portable bodies and labels are complete; native parent and blocker endpoints are accessible. Their already-decided mirror changes require no authored work. Board rank, Horizon, membership and Status do not apply.
+When: You choose who mirrors the settled native metadata and reports board checks as not applicable.
+Then: next_action=answer_directly; next_role=none
+
+### OB97 · OR46
+Given: A project is explicitly configured, but its read failed with denied access. Portable and native reads completed and one native edge mismatch is known. No field write, access change or implementation repair is authorized. The next step is only to report that finding plus the failed board operation and unchecked scope, retaining the desired state.
+When: You record an incomplete result rather than treating the board as absent or synchronized.
+Then: next_action=answer_directly; next_role=none
+
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
@@ -645,3 +677,10 @@ item cites its decision as at least one `#<n>`.
 - OB89 (OR15, OR34, OR46): promotion preserves the valid Test-waiver provenance exemption (#706, D1–D7, A64).
 - OB90 (OR15, OR17, OR46): promotion cannot waive a differing QA comparison (#706, D1–D7, A64).
 - OB91 (OR46): base-merge recovery dispatches authored reconciliation and never force-pushes (#706, D1–D7, A64).
+
+- OB92 (OR46): copy already-decided metadata directly, then verify (#724 D4, A65).
+- OB93 (OR46): undecided order returns to Product for authored proposal/exception records; never apply unconfirmed board values (#724 D1/D3, A65).
+- OB94 (OR4, OR46): authored body reconciliation stays with Product (#724 D4, A65).
+- OB95 (OR46): report partial success/failed/unchecked steps without inventing repair (#724 AC4, A65).
+- OB96 (OR46): board omission permits applicable native mirrors and board N/A (#724 AC6, A65).
+- OB97 (OR46): configured denial is incomplete and retains known findings (#724 AC4/AC6, A65).

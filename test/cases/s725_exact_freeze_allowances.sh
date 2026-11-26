@@ -9,6 +9,7 @@ from pathlib import Path
 import json,runpy,subprocess,sys
 root=Path(sys.argv[1]); a=runpy.run_path(str(root/'test/fixtures/wip-706-substitutions.py'))
 table=json.loads((root/'test/fixtures/wip-706-substitutions.json').read_text())
+table['changes']=a['TABLE']  # literal #706 pairs plus the exact #724 extension
 duties=runpy.run_path(str(root/'test/fixtures/wip-promotion-706.py'))
 duties['core_duty_controls']([new for old,new in table['changes']['skills/role-contracts/ORCHESTRATOR.md']])
 errors=a['protected_a_checks'](root)
