@@ -12591,3 +12591,104 @@ followed by the QA -> Developer -> fresh Reviewer route.
 waiver, budget decision or maintainer question. AC9 follows D8 above;
 Product/QA own reconciliation of its earlier pending text and scenarios.
 AC7 remains post-epic observation. D1-D7 remain settled.
+
+#### A64 addendum 2 — Restore the valid Test record and adopter-neutral checks (2026-11-26)
+
+**Decision.** Resolve FIND706-S469 and FIND706-S162 at supplied head
+`3adfef9`; FIND706-S627 follows the QA route below. This supersedes only
+addendum 1's OR46 replacement and the repo-specific affected-check wording
+in shared workflow policy. Keep its OR48 line, all other core bytes,
+rule IDs, parts, inventory and behavior outcomes. No AC is narrowed or
+contradicted; in this repository, affected checks still include every
+`./test/run.sh <fragment>` named in the Developer brief. This is wording
+preservation, not permission to omit those commands or to weaken D6.
+
+**Exact OR46 whole line.** Retain the trailing LF:
+
+~~~text
+- OR46 Closed no-agent list; do yourself, never dispatch: (a) run one named repo command, report output; (b) commit/push unedited command-generated files on work-item WIP branch; (c) read-only git/`gh` and QA comparison; (d) set label, edit Pipeline log; (e) promote existing D6-green commits to PR branch by explicit fast-forward SHA push, never force. D6: clean exact committed head; `./check --no-tests` and every affected check in brief exit 0; OR48(1) behavior evidence current for that commit; log full SHA, exact commands/results. Partial/failing work only checkpoints. Confirm remote PR head equals promoted SHA before comparison; comparison/Review brief/Pipeline log use that head. Failed promotion/moved head blocks Review. All else: dispatch owner, including hand edits/repairs. Report failed commands, never repair. Only a valid skip=Test record (OR34) grants this exception. No QA artifact/comparison/Reviewer approval block; log `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`; no open finding. Single-session never exempts. OR19 and the A49 conflict stop still apply. Otherwise before each Review compare applicable QA artifact to that head; log invocation/identities/hashes/result. Missing reference/unusable evidence: block Review, dispatch QA. Any diff: block Review, disclose each hunk as finding, follow OR17. Owner-resolved unauthorized scenario diff: dispatch QA for new artifact explicitly superseding prior. Review requires logged match and no open finding. Each command/result: one Pipeline log line (detail: `dispatch-economy`).
+~~~
+
+The restored sentence is exactly S469's required clause. Its following
+exemption retains the QA artifact/comparison/Reviewer approval block,
+record/head provenance log and no-open-finding condition. `Otherwise`
+continues to scope ordinary per-Review comparison requirements; single-session
+never exempts and OR19/A49 still apply. The only other changes are
+`command-generated, never hand-edited` -> `unedited command-generated`
+and the runner-specific affected-case phrase -> `every affected check in
+brief`. Unedited command output excludes hand edits; the broader check
+word retains every named affected case. All five no-agent actions,
+owner dispatch/repair limits, clean exact-head checks, behavior currency,
+SHA/command/result logging, promotion ordering/identity/stops, per-hunk
+finding routes and superseding QA artifact duties remain injected.
+No Module, Interface or Seam is added; existing Depth and Locality remain.
+
+**Exact policy replacement.** In `policy/WORKFLOW.md`'s D6 paragraph,
+replace only its second sentence with:
+
+~~~text
+`./check --no-tests` must exit 0, and every affected project check named in the Developer brief under OR48(2) must exit 0.
+~~~
+
+This names the adopter's own affected checks, with exact commands supplied
+by the brief, without asserting that an adopter has this repository's
+test runner. Keep every other D6 sentence. Regenerate `WORKFLOW.md`,
+`adapters/codex/AGENTS.md` and root `AGENTS.md` through the existing
+generator. Do not qualify this runner as a guardrails-clone invocation:
+that would test the tool supplier instead of the adopter's project.
+S162's path-resolution rule and controls remain unchanged.
+
+**Sizes.** Excluding LF, old/new OR46 are both 1,576 ASCII bytes/code
+points (1,577 including LF). The three phrase deltas are -10, -21, +31:
+net zero. Historical OR46 is 2,103 bytes, so its replacement still saves
+527. OR48 remains 473 bytes, saving 147. Against the supplied S627
+measurement, slot 1 remains 8,488 characters/bytes, headroom 512; slot 2
+remains 8,449 characters, 8,453 UTF-8 bytes, character headroom 551.
+The one-character control leaves 511/551 headroom. These are arithmetic
+estimates, not executed S309/S318 evidence; path-dependent warnings must
+be measured by QA. Keep budget 9,000, floor 500, K=2, fallback 8,500 and
+all padding/boundary/one-character controls unchanged.
+
+**QA handoff — sanctioned bytes and duties.**
+
+- In `wip-706-substitutions.json`, replace only the new side of the
+  historical-to-OR46 whole-line pair with the exact line above. Keep base
+  `97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581`, its old side, the OR48 pair
+  and all other existing pairs. Retain unique occurrence, forward/reverse
+  restoration, each omitted-pair and extra-byte rejection.
+- Reconcile `wip-promotion-706.py`: S721 `affected-cases` uses the exact
+  policy witness above; require every affected project check, the named
+  Developer brief/OR48(2) and exit 0 independently. S722/S725 core duty
+  witnesses/patterns/deletion locations change only for
+  `generated-unedited-wip`, `affected-case-brief` and
+  `valid-test-waiver-only`. Independently falsify generated-only, no edits,
+  WIP target, every affected check, brief scope, exit 0, valid record,
+  OR34 and the exemption's three objects. Splitting the waiver duty into
+  record and exemption duties avoids a regex bridging unrelated text.
+  Keep S469's requirement; retain all unchanged duties and mutants.
+- S627 retains protected baseline
+  `51178851a1f6fba76e87d046788339c02f874f03` (A). Offline blob comparison
+  confirms all four protected A paths equal the #706 table's historical
+  base. For core/scenarios, compare A plus only the shared exact #706
+  substitutions; retain `orchestrator-core-pins.tsv` byte-for-byte.
+  For the stamp, allow only the exact genuine final-run artifact digest
+  sanctioned by S548, retaining A's historical identity. Reuse S548's
+  single digest authority rather than a second independently repinned
+  candidate hash. Reject old/omitted amendments, arbitrary replacement
+  stamps and one extra byte; preserve pointer/projection, relative-floor,
+  short-path and boundary controls. No baseline replacement or freeze removal.
+- Reconcile S725's scenario description for addendum 2 and S627 coverage;
+  retain S317 and OB55–OB58, OB60–OB62, OB75–OB82, OB84–OB91 outcomes.
+  Existing S548/S593/S626/S659/S709 exact allowances remain strict.
+
+**Execution handoff.** QA authors the owned oracle amendments; Developer
+applies this design and their literal amendments. Target S162/S469/S627,
+S721/S722/S725, S309/S318 and affected preservation consumers. No further
+full `./check` here: the orchestrator already spent OR48's allowance.
+After all final core/scenario bytes, obtain a new genuine whole-file
+behavior run (both arms, N=3) and runner-produced stamp; the old stamp is
+invalid even though byte counts match. QA sanctions its actual digest in
+S548, which S627 consumes; orchestrator commits generated output. D6 then
+validates the final clean committed head before promotion and a fresh
+Reviewer. Planning arithmetic neither closes the findings nor proves live
+obedience. S412/#728 remains the reported unrelated local-only failure.
