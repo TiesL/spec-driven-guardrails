@@ -12803,3 +12803,366 @@ above; preserve its historical source and base, every other pair and all
 rejection controls. Update S720's exact commit-on-main witness and its
 independent deletion/reversion control to the same assignment. Preserve
 S47's existing assertion; no oracle relaxation or repin is authorized.
+
+### A65 — Portable issue relations, decided board fields and an on-request drift report (#724; epic #742)
+
+Planning, 2026-11-27; supplied release head
+`3e3e94f0c1d2e756ca248ee37e91dd22cca4ca61` (includes #706).
+This implements maintainer D1–D3 recorded on #724: body relations own the
+graph, native relations mirror it, board fields own order; reporting is on
+request; empty ordering fields need durable decision evidence. PR base is
+`release/742-process-hygiene`. A65 is the next free A-number by heading
+search. F77 and S726–S731 are proposals, not defined coverage: Product/QA
+must establish their headings before using them as resolved `Covers:`.
+
+#### One rule owner and a narrowly necessary core permission
+
+Put the create-time **and continuing maintenance** rule in
+`skills/write-spec/SKILL.md`, immediately after numbered item 3. It already
+owns issue creation, templates and portable traceability, for single-session
+projects as well as role pipelines. Add one subsection, “Maintaining issue
+and board metadata”, with the operational recipe below. Do not introduce
+a second board skill, a daemon, a hook or a replacement issue registry.
+The existing policy issue-first sentence already routes creation there;
+append one routing sentence at the end of `policy/WORKFLOW.md`'s “Issue
+labels” section: “At creation, relationship or stage changes, reprioritization
+and closure, follow `write-spec`'s issue and board maintenance rule.”
+Generate runtime copies with `./generate-workflow-adapters.sh`; never edit
+`WORKFLOW.md`, `AGENTS.md` or runtime payloads independently. No adapter
+source change is needed for this runtime-neutral sentence.
+
+**ORCHESTRATOR.md must change, narrowly.** Its OR46 closed no-agent list
+currently permits labels/log, read-only gh and named repository commands;
+it does not authorize direct native-relation or board writes. Do not
+interpret a `gh api` mutation as read-only, turn the reporter into an
+apply tool to evade this limit, or dispatch a fresh Developer for every
+mechanical mirror operation. In OR46's first sentence replace exactly
+`(d) set label, edit Pipeline log;` with
+`(d) labels/log; mirror decided metadata;`. Every other byte of that rule
+and every other core rule remains unchanged. “labels/log” retains the
+existing label/Pipeline-log actions; the added action copies already
+decided issue relations and board values. It grants no authored body
+content, prioritization judgment, project-setting change or repair authority.
+Product still authors body changes and inverse body-edge changes; the
+orchestrator publishes owner-produced records unchanged and mirrors them.
+Unsettled source content returns to Product/the maintainer under OR4/OR43.
+
+This is reserved contract content, proposed for the maintainer's exact
+content decision, not an override authorized by this role. Reserved edits
+are precisely: the new write-spec subsection; the one policy routing
+sentence; OR46(d) above; both template guidance blocks and the epic fields
+below; generated equivalents; and any adoption notice. Do not edit other
+role responsibilities or OR46's repair prohibition. D1–D3 settle substance;
+they do not authorize arbitrary contract rewrites or project settings.
+
+**Measured cost.** At the supplied head, ORCHESTRATOR.md is 16,468 UTF-8
+bytes; its source parts are 7,984 and 8,449 characters. Running
+`bash test/cases/s318_dispatch_economy_context_budget.sh` exited 0 and
+reported worst-case slots 8,491/8,449, budget 9,000. The exact replacement
+adds seven ASCII characters: projected slots 8,498/8,449, headroom 502/551;
+the one-character control should retain 501 in slot 1. This arithmetic
+is a target, not candidate validation. Keep K=2, budget 9,000, floor 500
+and fallback 8,500. Do not add a core pointer or any extra words there.
+Because the core changes, a real whole-file behavior run and current
+runner-generated stamp are required; a prose-only waiver is not proposed.
+Policy/skill-only placement was considered and rejected because it leaves
+the OR46 permission conflict unresolved. An automatic sync engine was
+rejected because it adds write-state machinery and decision risks for a
+manual workflow with an initially on-request report.
+
+#### Authority and maintenance transaction
+
+The rule applies when an epic/work item is created, a relation or stage
+changes, order is confirmed, or completion is recorded. The owner prepares
+the concrete body/decision first. The orchestrator reads current data,
+computes the difference, applies only settled changes, then reads it back.
+This is a non-atomic sequence: log each completed/failed/unchecked operation
+and affected issue/edge in the Pipeline log (or a durable issue note outside
+role pipelines). Never describe a partially applied sequence as synchronized.
+
+- A work item has one live whole-line `**Epic:** #N`, realized `**Covers:**`
+  tokens and explicit `**Blocked by:**` / `**Blocks:**` sets (`none` for
+  empty). A top-level epic has no parent and lists its children under
+  “Work items”; epic bodies also carry Covers and dependency fields.
+  An epic nested under another epic uses Epic too. Parent child-list and
+  child Epic must agree before mirroring; do not choose silently between
+  contradictory body declarations. Ignore quoted/template examples using
+  the existing `lib/markdown.sh` live-text convention, excluding indented
+  code too. Duplicate/malformed/ambiguous fields are unchecked, not empty.
+- A says “Blocked by B” iff B says “Blocks A”; the single native edge is
+  A blocked-by B. Remove obsolete edges from both body ends and the native
+  graph. Likewise remove the old epic child entry/native parent on a
+  reparent, then attach the settled new parent. Read all affected ends,
+  including old parents and removed blockers. Missing inverse body data
+  is drift requiring owner reconciliation, not permission to invent it.
+  Explicit settled removals may repair stale native inverses; neither a
+  missing field nor a failed lookup authorizes deletion.
+- Keep type, status and the active role label aligned with the decided
+  lifecycle. Preserve the existing canonical role names and stage order;
+  inactive/backlog/closed items need no invented active role. Use existing
+  labels; do not create label vocabulary or infer stages from the board.
+  Stage transitions still follow OR5; reporter output never drives them.
+  For Project 1, mirror backlog to Backlog, active Discovery through
+  Implementation to In progress, Review to In review, and verified closure
+  to Done; use Ready only for explicitly decided ready work. A blocked
+  label/body reason remains visible because this board has no Blocked
+  option; retain the applicable stage Status rather than inventing an
+  option or claiming the blocker is resolved. Other projects use their
+  documented Status mapping; missing mapping/options are unchecked, not
+  permission to create configuration. Closed issues drop active status/
+  role labels under the existing closed-is-done convention.
+- Board membership is checked after existing auto-add workflows have had
+  a chance to act. Add only a confirmed missing item, then verify it. A
+  duplicate/already-exists response is a reason to re-read, not a success
+  assertion. Project parent/progress/PR-link fields are derived from native
+  relations and PR linkage; do not attempt to edit those derived fields.
+- Backlog rank/Horizon are authoritative in the configured board. Apply
+  only the maintainer's confirmed order/horizon, including #721's child
+  rank inheritance and epic ordering. Do not rank children independently,
+  infer priority from issue number, or write an unapplied proposal. No
+  detailed #721 implementation artifact was supplied here; its settled
+  rule must be included in the implementation brief rather than guessed.
+  Where inheritance leaves a physical field empty, record that reason
+  and the parent/decision reference explicitly; it is not an invisible
+  exception to AC2.
+
+For each empty field use a durable issue-body “Board decisions” note,
+one row per `Backlog rank` / `Horizon`: field, reason, proposed value (or
+explicitly undecided), disposition `awaiting-maintainer` or `parked`, and
+decision/reference. An awaiting row records that confirmation is pending;
+a parked row cites its documented parking decision. Existing equivalent
+issue comments count when they name the same field, reason and pending
+proposal/parking decision; the report must read all comments to recognize
+them. Generic “priority TBD”, an unlinked label or a proposal already
+applied without confirmation is not evidence. A confirmed value supersedes
+an earlier awaiting note; contradictory unresolved notes are indeterminate.
+The record makes a permitted empty visible; it does not grant ordering
+authority. The report checks completeness/exceptions, not whether a human
+priority decision was wise.
+
+**Command recipe (future implementation, not commands run in Planning).**
+Use explicit repository identity and fetched numeric/node IDs, never token
+values. `R` below is OWNER/REPO; numbers/IDs are validated data, never eval.
+Read `gh api repos/$R/issues/$n`, `.../parent`, `.../sub_issues`,
+`.../dependencies/blocked_by` and `.../dependencies/blocking`; paginate every
+list. Fetch issue IDs from the issue objects rather than confusing an
+issue number, REST numeric ID, GraphQL node ID or project-item ID.
+
+- Parent add: `gh api --method POST repos/$R/issues/$parent/sub_issues -F
+  sub_issue_id="$child_id"`. Parent removal uses `--method DELETE
+  repos/$R/issues/$old_parent/sub_issue -F sub_issue_id="$child_id"`.
+  Do not use blind replacement of a parent on incomplete evidence.
+- Blocker add: `gh api --method POST
+  repos/$R/issues/$blocked/dependencies/blocked_by -F issue_id="$blocker_id"`;
+  remove with `--method DELETE
+  repos/$R/issues/$blocked/dependencies/blocked_by/$blocker_id`. Verify the
+  corresponding blocking read on the blocker too.
+- Labels: `gh issue edit "$n" -R "$R" --add-label ... --remove-label ...`.
+  Role-owned body updates use `--body-file`, preserving newlines and the
+  unedited owner content. No body interpolation into executable shell text.
+- Resolve the configured project, complete item inventory, fields, field
+  types and option IDs. `gh project item-add "$project" --owner "$owner"
+  --url "$issue_url"` only after confirmed absence. For decided values,
+  `gh project item-edit --id "$item_id" --project-id "$project_id"
+  --field-id "$field_id" --number "$rank"`, or `--single-select-option-id
+  "$option_id"` for Horizon/Status. Clear only an explicitly decided
+  removal, using `--clear`. Verify each value in a fresh read. Never change
+  project workflows or create missing fields/options in this work item.
+
+Board facts prove that parent/blocker POSTs and auto-membership have worked
+on Project 1, not that every read/removal/field write works today. Developer
+must check command shapes against the installed gh help/endpoint contract;
+QA's fake verifies requests and expected IDs. The orchestrator must record
+actual authorized add/remove/read-back evidence before claiming live
+maintenance, especially removal and release-child closure. A fake is not
+server evidence. 401/403/404, unsupported relations, rate limits, GraphQL
+errors, malformed JSON and partial pagination all name the operation,
+issue(s) and unchecked scope. Do not print raw HTTP headers, auth status,
+tokens, debug traces or arbitrary server stderr into reports. Do not alter
+credentials/scopes or retry writes blindly. After partial writes, re-read
+and reconcile; retain the owner-approved desired state and the failed-step
+list so another session can finish safely. No rollback that guesses state.
+Distinguish the documented no-parent result from an unavailable endpoint:
+only an established supported relation read's explicit absence semantics
+may establish no parent. An ambiguous 404 is unchecked, not an empty graph.
+QA must include a supported top-level/no-parent case as well as an
+unsupported-endpoint case; otherwise a permanently incomplete report could
+pass the failure tests while never producing a useful clean snapshot.
+
+#### One read-only report Module
+
+Add one executable root script, `backlog-drift.sh`. Its Interface is
+`./backlog-drift.sh [--repo OWNER/REPO] [--project-owner OWNER --project N]`,
+run from the project checkout (adopters may invoke it via
+`$SPEC_DRIVEN_GUARDRAILS_DIR/backlog-drift.sh`). With no `--repo`, resolve
+the current repo using gh's existing placeholder pattern. Board arguments
+are a pair identifying an explicitly configured board; omission means
+board checks `not-applicable`, printed prominently. Do not discover an
+arbitrary board, assume Project 1 for adopters, or treat a configured but
+inaccessible board as absent. Keep existing project-board documentation as
+the source of these arguments; no new config file/adoption parser.
+
+The scope is all repository issues, open and closed (exclude PRs), their
+referenced parents/dependencies and inverse relations, and same-repository
+issue items on the selected board, including archived items where exposed.
+State the repository, project, snapshot time, counts and unchecked scope.
+No capped `gh issue list --limit` or first-page-only project listing counts
+as complete. REST issue/comment/relation lists use `--paginate` with page
+validation. Projects v2 needs GraphQL queries with explicit cursor loops
+for items, fields and nested field values: validate `pageInfo`, terminal
+pages, required objects/types, and both process exit and GraphQL `errors`.
+GraphQL's transport POST is allowed only for a query, never a mutation.
+REST for issue data preserves useful partial reporting if GraphQL is
+unavailable, as already documented by `role-label-staleness.sh`.
+
+Within one script, normalize the collected data and compare sets/fields.
+Reuse `lib/markdown.sh` for live text; use existing bash 3.2/gh/jq patterns
+and deterministic sorting. No new dependency framework or shared graph
+library. The Module has Depth because it hides complete collection,
+normalization, inverse checks, exceptions and partial-read diagnostics
+behind one invocation. Its deletion would spread those concerns across
+manual callers. That gives Leverage and Locality. The actual Seam is gh
+on PATH: real gh and a recording fake gh are two real adapters; no
+speculative transport abstraction is needed. Reuse the staleness script's
+failure discipline and fake-gh patterns, not its marker/PR-discovery
+implementation. Existing `role-label-staleness.sh` remains independently
+available for role evidence; do not duplicate that parser here.
+
+For each finding print issue URL, field/edge, observed and expected value,
+and evidence/decision URL for valid exceptions. Report missing membership;
+body/native parent and blocker drift, extra/removed edges and inverse
+disagreement; missing rank/Horizon without valid field-specific evidence;
+closed issue items whose Status is not Done. Print valid awaiting/parking
+exceptions explicitly. A missing required project field is unchecked scope,
+not an empty value; an open issue absent from a complete project inventory
+is missing membership. A closed issue absent from it is also reported,
+rather than claiming its board Status was verified. Parent/child body
+contradictions are reported alongside native differences. Do not repair.
+
+Use aggregate `result=clean|drift|incomplete`, with per-check applicability
+and findings. `clean` requires every applicable read/check complete and
+no drift. Any incomplete required read yields `incomplete` even if known
+drift is printed too; never discard that drift. No gh/network/permission
+means `incomplete`, operation and scope named, not clean. Advisory results
+(including unavailable prerequisites) exit 0; invalid usage exits 2 and
+internal defects exit 1. This is fail-open for work, not false success:
+stdout must distinguish unchecked from verified. It is never a check/CI,
+merge gate, SessionStart hook or automatic repair. Later session-start
+integration needs the cost/noise decision deferred by D2.
+
+#### Closure, portability and delivery ownership
+
+After an issue closes or a linked PR merges, verify actual issue state,
+membership and Status through fresh reads, allowing existing workflows to
+run first. Closed issue with non-Done Status is drift. Correct a remaining
+Status only to the already settled Done value and verify it; a failed read
+is not authority to write. Link the PR with the real issue relationship
+and the required `Closes #724` body reference; verify linkage rather than
+assuming a textual mention populated “Linked pull requests”.
+
+For a release-targeted child, follow the existing
+`release-branch-workflow` skill: confirm PR merge to the release, record
+the child completion/PR link, explicitly `gh issue close "$n" -R "$R"`,
+then verify CLOSED and board Done. A merged PR into `release/*` alone
+does not prove closure. Keep the epic open under its existing release
+rules. No change to `epic-auto-close.sh`, its hooks or GitHub workflows;
+enabled automation is reused and its observed outcome checked.
+
+Without a board, maintain portable bodies, labels and applicable native
+GitHub mirrors; rank/Horizon, membership and board Status are N/A. Without
+native GitHub support/access, preserve portable records and name native
+checks as unchecked. Board-less does not mean native sub-issues require
+Projects. Without gh/network the human/owner can still prepare portable
+records; record pending external maintenance, never claim it happened.
+
+**Product reconciliation before affected implementation.** Replace F14's
+sentences beginning “Deliberately a plain field” through “GitHub Projects”
+with body authority plus optional-platform native mirrors under D1; retain
+the dependency fields. Remove the work-item template comment's exact
+three-line sentence beginning “Deliberately this flat field, not native
+sub-issues” and replace it with that same authority distinction and a
+write-spec reference. Preserve the adjacent instruction to fill both ends.
+Update the epic template guidance to require reciprocal children, Covers,
+and explicit empty dependency sets; add optional Epic for nested epics
+with a comment that top-level epics have no parent. Refresh the matching
+`.github/ISSUE_TEMPLATE/{work-item,epic}.md` copies via the normal template
+ownership path. Product owns F14/F77; QA owns S726–S731 or their final IDs.
+This known, requested reconciliation does not authorize Developer edits
+to an unresolved oracle. No AC1–AC6 is contradicted or narrowed by A65.
+
+The materially expanded issue-tracking duty needs an adoption notice:
+recommend updating only `process-issue-tracking`'s “Yes means” and
+meaning version 1 to 2, plus `Reaches session` to name the existing
+write-spec route. Maintainer owns the exact `CHANGES.md` content/version
+decision and any adoption-answer reconfirmation; do not silently bump
+`process-multi-agent-roles` or claim existing adopters have accepted it.
+The new metadata permission does not itself require use of a board or
+enable any delegation. Update the corresponding CHANGES snapshot and
+release note only after that content decision, retaining unrelated pins.
+
+#### QA handoff and Developer file scope
+
+QA should establish the proposed six scenario groups (AC1–AC6), with
+multiple falsifying examples in each rather than one happy path per AC:
+
+| Group / Seam | Falsifying checks |
+| --- | --- |
+| AC1, relation/lifecycle recipe and report | Child, top-level/nested epic, reciprocal Blocks/Blocked by, changed parent, removed blocker, extra native edge and inverse-only mismatch. Reversed edge or issue-number/ID substitution fails. Owner-unspecified/duplicate fields produce incomplete, never destructive instructions. Labels retain canonical stage order; inactive items need no role. |
+| AC2, field/decision comparison | Confirmed rank/Horizon preserved; unconfirmed proposal never applied. Empty field without a field-specific note drifts; both valid awaiting and parked notes print exceptions. One documented empty field cannot excuse the other; inherited child rank names its parent/decision under #721. |
+| AC3, report Interface | Fully consistent fixture is clean; each independent membership/relation/ordering/closure mutation produces the linked observed/expected finding. Record all gh argv; a reachable catch-all rejects unrecognized requests. Positive control injects a write and proves the witness fails. Reject REST write verbs and GraphQL mutation content, not all GraphQL POST transport. |
+| AC4, collection/fail-open | Missing gh; REST/GraphQL denial; errors with HTTP success; malformed/missing fields; page-two failure and truncated/cyclic cursor data; inaccessible configured board; failing comments hiding an exception. Every case names unchecked scope and cannot be clean. A confirmed drift survives an unrelated failed read. Partial maintenance records exactly the successful and unfinished steps and demands read-back. No credentials/debug headers appear. |
+| AC5, closure and existing automation | Already auto-added item is not added again; failed add is not success. Main closure observes Done; delayed/non-Done closure reports drift. Release child PR merge while issue remains OPEN cannot be called complete; explicit close plus CLOSED/Done read-back can. Do not duplicate the enabled workflows or alter epic closure. |
+| AC6, canonical text/portability | Both templates and F14 stop rejecting native mirrors. Board omitted gives board N/A while issue/native checks still run; configured denied board is incomplete. Source/generated policy agree; unrelated adapters remain unchanged. |
+
+Reuse `test/lib.sh`'s `fake_gh_bin` and the reachable witness/positive
+control approach of S152 and `test/fixtures/role-label-fake-gh.sh`; use
+fresh #724 fixtures, not changes to role-label fixtures or production
+staleness logic. Exercise the script's actual argv and JSON/exit results,
+not a duplicate comparison implementation. Include more than one page and
+empty successful pages. Use isolated fixtures only, no live writes in
+the test suite. Documentation checks delete one obligation at a time;
+an assertion just matching a heading is insufficient maintenance evidence.
+
+Because OR46 changes, add behavior examples for decided mirror directly,
+undecided order dispatched to its owner, owner-authored body changes still
+dispatched, partial failure reported without invented repair, and board
+omission versus access failure. Preserve OB55–OB58, promotion/QA provenance
+and repair prohibitions. QA updates the OR inventory and exact protection
+pins only for the sanctioned OR46(d) pair, retaining historical source
+bytes and independent rejection controls. Rerun S309/S318 including the
+one-character control on candidate bytes. Run the real
+`test/behavior/orchestrator-diff.sh --base <actual-PR-merge-base>`: the stamp
+hashes the whole file/scenario corpus, so its coverage must be whole-file,
+logged under OR48(1). Commit the runner-generated stamp before final D6;
+no fabricated/stale stamp or broad hash repin. This offline Planning run
+claims no such behavior evidence or live board verification.
+
+Developer's implementation scope, after owner reconciliation: new
+`backlog-drift.sh`; the named write-spec subsection; one policy sentence
+and command-generated equivalents; exactly OR46(d); template changes and
+their managed copies; QA-owned approved scenarios/cases/fixtures; the
+inventory/pins/stamp updates required by that exact core pair; approved
+CHANGES entry/snapshot and a CHANGELOG note. Product/QA, not Developer,
+author PRD/scenario oracles. Developer briefs name the affected new test
+fragments, S152 preservation, S309/S318, core/pin and adapter/template
+checks, traceability and real behavior evidence. Promotion still needs
+clean exact-head `./check --no-tests` and the affected checks under D6;
+no checkpoint or offline fixture substitutes for it.
+
+Keep #726's clone/worktree cleanup and #685's role-name work untouched:
+no branch-cleanup scripts, role renames, model routing, hook settings or
+existing staleness changes here. Shared ARCHITECTURE/PRD/scenarios and the
+small OR46/inventory/stamp surface require serialized release integration;
+revalidate against the merged release head, never overwrite a sibling's
+text or reuse its stamp. If #685 changes the same core, coordinate its
+exact pair and regenerate whole-file evidence after integration. Defer
+unrelated refactoring and project configuration. Effort is small for the
+manual recipe/reporter, with the existing required whole-file behavior run
+the main validation cost; this is not a reason to evade that run.
+
+**Violated when:** body and native relations have competing authority;
+an unconfirmed ordering proposal is applied; inverse/removal steps vanish;
+a failed/truncated read yields clean or absence; a reported mutation lacks
+read-back; release merge alone proves child closure; board-less becomes
+permission to drop portable metadata; an automatic writer is added to the
+reporter; or reserved content/pins/core budgets are weakened silently.
