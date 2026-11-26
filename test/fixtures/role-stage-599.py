@@ -1,5 +1,6 @@
 """Public CLI/dispatch/doc seams for #599. No product writes; mutations use scratch copies."""
 import ast
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -656,21 +657,18 @@ def round5_emitter_controls():
                       and b'role' not in result.stderr.lower() and b'stage' not in result.stderr.lower(),
                       label + ' quoted value: only the model value may be refused')
 
-PREVIOUS_HEAD = '2d93c25'  # last head before the whole-prompt shell word stream (round 5)
-
 def previous_head_baseline():
-    # The prose cases below are pinned to the verdicts of the head before the
-    # structural change. Each case also records that verdict, so a shallow
-    # clone without this commit still runs every current-hook assertion.
-    if run(['git', 'rev-parse', '--verify', PREVIOUS_HEAD + '^{commit}']).returncode:
-        print('SKIP: round-6 previous head ' + PREVIOUS_HEAD + ' unavailable; '
-              'only its comparisons skipped, recorded expectations still pinned')
-        return None
+    # Exact hooks/agent-dispatch.py bytes from
+    # 2d93c255f06c3f89afde70b2625c1926a09754a5, replayed under current policy.
+    snapshot = ROOT / 'test/fixtures/role-stage-599-previous.py'
+    try:
+        data = snapshot.read_bytes()
+    except OSError as exc:
+        sys.exit('Cannot read historical snapshot role-stage-599-previous.py: ' + str(exc))
+    if hashlib.sha256(data).hexdigest() != 'de151be376dacf6ac1dde3807bc85ae6537af5afabda98b8a8566394fbbc5e71':
+        sys.exit('SHA-256 integrity mismatch: role-stage-599-previous.py')
     base = copy('previous-head')
-    result = run(['git', 'show', PREVIOUS_HEAD + ':' + HOOK])
-    if not check(result.returncode == 0, 'round-6 git show ' + PREVIOUS_HEAD + ':' + HOOK):
-        return None
-    (base / HOOK).write_bytes(result.stdout)
+    (base / HOOK).write_bytes(data)
     return base
 
 def verdict(r):
