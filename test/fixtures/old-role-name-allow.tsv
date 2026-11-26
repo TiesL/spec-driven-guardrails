@@ -11,6 +11,7 @@ test/fixtures/agent-dispatch/agent-pretooluse-2.1.301.json	*
 test/fixtures/temporary-panel-645.py	2
 test/fixtures/review-findings-734.py	10
 test/fixtures/role-stage-599.py	5
+test/fixtures/role-stage-599-previous.py	1
 test/fixtures/merge-risk-646.py	1
 test/cases/s312_agent_dispatch_denies_with_core_line.sh	1
 prep/**	*

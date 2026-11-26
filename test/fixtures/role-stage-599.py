@@ -783,23 +783,24 @@ def round6_dispatch(previous):
     from concurrent.futures import ThreadPoolExecutor
     started = time.monotonic()
     prose = round6_prose_cases()
-    briefs = [{'label': 'round-6 brief ' + l, 'text': t, 'expected': e} for l, t, e in round6_briefs()]
+    historical_differences = {
+        'Developer brief, matching role with comment': 'deny OR8',
+        'Developer brief, role of another role': 'deny OR8',
+    }
+    briefs = [{'label': 'round-6 brief ' + l, 'text': t, 'expected': e,
+               'historical': historical_differences.get(l, e)} for l, t, e in round6_briefs()]
     quoted_cases = round6_quoted_apostrophes()
     pinned = prose + briefs
     with ThreadPoolExecutor(max_workers=8) as pool:
         current = list(pool.map(lambda c: verdict(hook(c['text'])), pinned))
         quoted_results = list(pool.map(lambda c: hook(c['text']), quoted_cases))
-        before = (list(pool.map(lambda c: verdict(hook(c['text'], previous)), pinned))
-                  if previous is not None else [None] * len(pinned))
+        before = list(pool.map(lambda c: verdict(hook(c['text'], previous)), pinned))
         shells = list(pool.map(lambda c: run(['bash', '-c', 'set -- ' + c['flags'] + '; printf "%s\\0" "$@"']),
                                quoted_cases))
     groups = {}
     for case, now, then in zip(pinned, current, before):
-        if then is not None:
-            # Same verdict as before the structural change: the recorded
-            # expectation is the previous head's verdict, checked here.
-            check(then == case['expected'], case['label'] + ': recorded expectation ' + case['expected'] +
-                  ' must equal previous head ' + PREVIOUS_HEAD + ' verdict ' + then)
+        historical = case.get('historical', case['expected'])
+        check(then == historical, case['label'] + ': historical expected ' + historical + ', got ' + then)
         ok = check(now == case['expected'], case['label'] + ': expected ' + case['expected'] + ', got ' + now)
         if 'opener' in case:
             keys = ['opener ' + case['opener'], 'kind ' + case['kind'], 'span %d' % case['span'],
@@ -839,9 +840,8 @@ def round6_dispatch(previous):
     ]
     for label, text, expected in reviewer:
         label = 'round-6 Reviewer scenario ' + label
-        if previous is not None:
-            then = verdict(hook(text, previous))
-            check(then == expected, label + ': recorded ' + expected + ' must equal previous head verdict ' + then)
+        then = verdict(hook(text, previous))
+        check(then == expected, label + ': recorded ' + expected + ' must equal historical snapshot verdict ' + then)
         before_count = len(failures)
         now = verdict(hook(text))
         check(now == expected, label + ': expected ' + expected + ', got ' + now)
@@ -861,13 +861,12 @@ def round6_dispatch(previous):
         check(noted, label + ': expected exit 0 and exactly one '
               '"dispatch allowed unchecked" diagnostic, not a silent allow; got ' + verdict(r))
         print('RESULT: ' + label + ': ' + ('RED' if len(failures) > before_count else 'GREEN'))
-        if previous is not None:
-            print('OBSERVATION: previous head ' + label + ': ' + verdict(hook(text, previous)))
+        print('OBSERVATION: previous head ' + label + ': ' + verdict(hook(text, previous)))
     # Observation only: the same double quote without the backslash was a silent
     # allow on the previous head as well; no oracle pinned.
     text = 'ROLE SESSION: Product\n' + C + ' --role Product --model "x \n--stage Planning\n'
     print('OBSERVATION: unterminated double quote, newline without backslash: current ' + verdict(hook(text)) +
-          ('' if previous is None else '; previous head ' + verdict(hook(text, previous))))
+          ('; previous head ' + verdict(hook(text, previous))))
 
 def dispatch():
     for prefix,role,stage in ROWS:
@@ -945,7 +944,9 @@ def dispatch():
     round3_dispatch(baseline)
     round4_dispatch(baseline)
     round5_emitter_controls()
-    round6_dispatch(previous_head_baseline())
+    previous = previous_head_baseline()
+    if check(previous is not None, 'round-6 historical replay is mandatory; availability skip forbidden'):
+        round6_dispatch(previous)
     round7_dispatch()
     round8_escaped_whitespace()
 
