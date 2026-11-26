@@ -34,6 +34,12 @@ output="$(through_guard "$project" 'git checkout -b feature/no-number' "$nogh")"
 status=$?
 [ "$status" -eq 2 ] || fail "S96 — branch creation without an issue number was not blocked"
 assert_contains "S96 — message points at creating the issue first" "issue" "$output"
+assert_contains "S96 — branch refusal suggests WIP" "git checkout -b wip/<issue-number>-<short-desc>" "$output"
+
+output="$(through_guard "$project" 'git commit -m example' "$nogh")"; status=$?
+[ "$status" -eq 2 ] || fail "S718/main — guard commit on main must block"
+assert_contains "S718/main — issue precedes WIP work" "Create the issue first, then work on WIP:" "$output"
+assert_contains "S718/main — guard refusal suggests WIP" "git checkout -b wip/<issue>-<name>" "$output"
 
 # S97 — a successful lookup observes a non-OPEN state: block.
 # fake_gh_bin always writes to the same $SANDBOX/fakegh path, so each
@@ -199,6 +205,7 @@ for family in wip feature fix; do
   native_output="$(git -C "$wip_native" commit -q --allow-empty -m malformed 2>&1)"; native_status=$?
   [ "$native_status" -ne 0 ] || fail "S718/native/$family — malformed native commit must block"
   assert_contains "S718/native-reason/$family" "$REASON_BRANCH_NO_ISSUE" "$native_output"
+  assert_contains "S718/native-hint/$family" "git checkout -b wip/<issue-number>-<short-desc>" "$native_output"
   # Escape hatch is scoped to one command inside this disposable fixture.
   CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git -C "$wip_native" commit -q --allow-empty -m escape >/dev/null 2>&1 || fail "AC11/control/escape/$family"
   git -C "$wip_native" checkout -q -b "$family/706-example"
@@ -211,6 +218,8 @@ done
 git -C "$wip_native" checkout -q main
 native_output="$(git -C "$wip_native" commit -q --allow-empty -m protected 2>&1)"; native_status=$?
 [ "$native_status" -ne 0 ] || fail "AC11/control/native-main"
+assert_contains "S718/native-main — issue precedes WIP work" "Create the issue first, then work on WIP:" "$native_output"
+assert_contains "S718/native-main — refusal suggests WIP" "git checkout -b wip/<issue>-<name>" "$native_output"
 CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git -C "$wip_native" commit -q --allow-empty -m escape >/dev/null 2>&1 || fail "AC11/control/escape-main"
 
 test_done

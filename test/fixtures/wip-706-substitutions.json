@@ -7,8 +7,12 @@
         "BRANCH_ISSUE_PATTERN='^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$'"
       ],
       [
-        "REASON_BRANCH_NO_ISSUE=\"every feature/fix branch names",
-        "REASON_BRANCH_NO_ISSUE=\"every feature/fix/wip branch names"
+        "REASON_COMMIT_ON_MAIN=\"main gets its changes via a PR. Make a branch first \u2014 your\n       changes come along unchanged, nothing gets lost:\n\n         git checkout -b feature/<issue>-<name>\n\n       Then commit and push as usual.\"",
+        "REASON_COMMIT_ON_MAIN=\"main gets its changes via a PR. Create the issue first, then work on WIP:\n\n         git checkout -b wip/<issue>-<name>\n\n       Commit and checkpoint WIP; promote only after validation.\""
+      ],
+      [
+        "REASON_BRANCH_NO_ISSUE=\"every feature/fix branch names the issue it implements, e.g.\n       feature/123-short-desc. Create the issue first (see the write-spec\n       skill for the epic/work-item templates), then branch from its number:\n\n         gh issue create --template work-item.md\n         git checkout -b feature/<issue-number>-<short-desc>\"",
+        "REASON_BRANCH_NO_ISSUE=\"every feature/fix/wip branch names its issue, e.g.\n       wip/123-short-desc. Create the issue first (see write-spec), then:\n\n         git checkout -b wip/<issue-number>-<short-desc>\""
       ]
     ],
     "hooks/git-guardrails": [

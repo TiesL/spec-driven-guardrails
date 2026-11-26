@@ -131,8 +131,101 @@ def core_duty_controls(lines):
     print('CONTROL: A64 whole-line duty witnesses/deletions PASS ('+str(len(CORE_DUTIES))+')')
 
 
+# Independent literal A64 addendum 3 witnesses at each delivered hint site.
+# Each scope is checked separately; a correct hint elsewhere cannot mask it.
+HINT_SITES = [(720,
+  'commit-on-main',
+  'hooks/rules.sh',
+  '^REASON_COMMIT_ON_MAIN="[^"]*"',
+  'REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Create the issue first, then work on '
+  'WIP:\n'
+  '\n'
+  '         git checkout -b wip/<issue>-<name>\n'
+  '\n'
+  '       Commit and checkpoint WIP; promote only after validation."',
+  'REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Make a branch first — your\n'
+  '       changes come along unchanged, nothing gets lost:\n'
+  '\n'
+  '         git checkout -b feature/<issue>-<name>\n'
+  '\n'
+  '       Then commit and push as usual."'),
+ (720,
+  'startup',
+  'pending-changes.sh',
+  '^  echo "You are on main[^\\n]*\\n  echo "[^\\n]*"',
+  '  echo "You are on main. Create the issue first, then work on WIP:"\n'
+  '  echo "  git checkout -b wip/<issue-number>-<name>"',
+  '  echo "You are on main. New work belongs on its own branch:"\n'
+  '  echo "  git checkout -b feature/<issue-number>-<name>"'),
+ (722,
+  'branch-without-issue',
+  'hooks/rules.sh',
+  '^REASON_BRANCH_NO_ISSUE="[^"]*"',
+  'REASON_BRANCH_NO_ISSUE="every feature/fix/wip branch names its issue, e.g.\n'
+  '       wip/123-short-desc. Create the issue first (see write-spec), then:\n'
+  '\n'
+  '         git checkout -b wip/<issue-number>-<short-desc>"',
+  'REASON_BRANCH_NO_ISSUE="every feature/fix branch names the issue it implements, e.g.\n'
+  '       feature/123-short-desc. Create the issue first (see the write-spec\n'
+  '       skill for the epic/work-item templates), then branch from its number:\n'
+  '\n'
+  '         gh issue create --template work-item.md\n'
+  '         git checkout -b feature/<issue-number>-<short-desc>"'),
+ (722,
+  'write-spec',
+  'skills/write-spec/SKILL.md',
+  '^2\\. .*?(?=\\n3\\.|\\Z)',
+  '2. Work is split from the PRD into GitHub issues: one `Epic` issue for the\n'
+  '   whole, `Work item` issues per part to be built (see\n'
+  '   `templates/ISSUE_TEMPLATE/`). Create the issue before development.\n'
+  '   Work on `wip/<issue-number>-<short-desc>`; reserve `feature/...` and\n'
+  '   `fix/...` for validated PR publication. See `WORKFLOW.md`, "Branch strategy".',
+  '2. Work is split from the PRD into GitHub issues: one `Epic` issue for the\n'
+  '   whole, `Work item` issues per part to be built (see\n'
+  '   `templates/ISSUE_TEMPLATE/`). No development starts before its issue\n'
+  '   exists — the branch that implements a work item is named\n'
+  '   `feature/<issue-number>-<short-desc>` (or `fix/...`), and\n'
+  '   `git-guardrails`/the native `pre-commit` hook refuse to create a branch\n'
+  '   without that number (see `WORKFLOW.md`, "Branch strategy").')]
+
+
+def hint_failures(sources, number=None):
+    failures = []
+    for n, label, path, pattern, witness, _ in HINT_SITES:
+        if number is not None and n != number:
+            continue
+        found = re.findall(pattern, sources.get(path, ''), re.M | re.S)
+        if found != [witness]:
+            failures.append(f'S{n}/hint/{label}: {path} must deliver its exact WIP-first hint')
+    return failures
+
+
+def hint_controls():
+    good = {}
+    for _, _, path, _, witness, _ in HINT_SITES:
+        good[path] = good.get(path, '') + witness + '\n'
+    good['skills/write-spec/SKILL.md'] += '3. Unrelated guidance.\n'
+    assert not hint_failures(good), 'broken independent hint witnesses'
+    for n, label, path, _, witness, old in HINT_SITES:
+        mutants = [('deletion', ''), ('historical reversion', old)]
+        if path != 'skills/write-spec/SKILL.md':
+            mutants += [(family+' checkout', witness.replace('checkout -b wip/', 'checkout -b '+family+'/'))
+                        for family in ('feature', 'fix')]
+        for name, replacement in mutants:
+            changed = dict(good)
+            assert changed[path].count(witness) == 1, label
+            changed[path] = changed[path].replace(witness, replacement, 1)
+            assert any('/hint/'+label+':' in failure for failure in hint_failures(changed)), label+' '+name
+            print('KILLED: S'+str(n)+'/hint/'+label+'/'+name)
+    print('CONTROL: four independent WIP-first hint sites PASS')
+
+
 def check(number):
     failures = []
+    if number in (720, 722):
+        hint_controls()
+        sources = {path: (ROOT/path).read_text() for _, _, path, _, _, _ in HINT_SITES}
+        failures += hint_failures(sources, number)
     for n, label, path, scope, pattern, witness in ROWS:
         if n != number:
             continue

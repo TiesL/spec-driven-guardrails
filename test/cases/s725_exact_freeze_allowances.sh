@@ -15,8 +15,16 @@ errors=a['protected_a_checks'](root)
 for path in table['changes']:
     before=subprocess.check_output(['git','-C',str(root),'show',table['base']+':'+path])
     expected=a['controls'](path,before)
+    accepts=lambda data: data == expected
+    for index,(old,new) in enumerate(table['changes'][path]):
+        for label,replacement in (('omitted',old.encode()),('wrong',b'UNAUTHORIZED')):
+            mutant=expected.replace(new.encode(),replacement,1)
+            assert not accepts(mutant), 'S725/'+label+' pair survived: '+path
+            print('KILLED: S725/'+path+'/'+label+' pair '+str(index+1))
+    assert not accepts(expected+b'\n'), 'S725/extra byte survived: '+path
+    print('KILLED: S725/'+path+'/extra byte')
     actual=(root/path).read_bytes()
-    if actual!=expected:
+    if not accepts(actual):
         errors.append('S725/exact-allowance: '+path+' differs from the #706 sanctioned substitutions')
 for e in errors: print('FAIL: '+e)
 sys.exit(bool(errors))

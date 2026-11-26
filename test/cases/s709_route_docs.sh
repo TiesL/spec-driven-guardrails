@@ -258,9 +258,35 @@ import runpy,subprocess,sys
 root,base,path=sys.argv[1:]
 a=runpy.run_path(str(Path(root)/'test/fixtures/wip-706-substitutions.py'))
 before=subprocess.check_output(['git','-C',root,'show',base+':'+path])
-expected=a['controls'](path,before)
+def reconstructed(baseline):
+    # A dynamic base may already contain every sanctioned pair. Undo those
+    # exact pairs first; fixed historical consumers keep strict apply().
+    pairs=a['TABLE'].get(path, [])
+    if pairs and all(baseline.count(new.encode()) == 1 for old,new in pairs):
+        baseline=a['restore'](path,baseline)
+    return a['controls'](path,baseline)
+
+def accepts(baseline, data):
+    return data == reconstructed(baseline)
+
+# Exercise the same comparison in both base states, including HEAD == main.
+# Expected bytes come from the unchanged historical table, never the candidate.
+import json
+historical_ref=json.loads((Path(root)/'test/fixtures/wip-706-substitutions.json').read_text())['base']
+historical=subprocess.check_output(['git','-C',root,'show',historical_ref+':'+path])
+sanctioned=a['controls'](path,historical)
+for state,baseline in (('pre-integration',historical),('post-integration',sanctioned)):
+    assert accepts(baseline, sanctioned), 'S709/'+state+'/unchanged sanctioned bytes: '+path
+    mutants=[('extra byte',sanctioned+b'\n')]
+    for index,(old,new) in enumerate(a['TABLE'][path]):
+        mutants += [('omitted pair '+str(index+1),sanctioned.replace(new.encode(),old.encode(),1)),
+                    ('wrong pair '+str(index+1),sanctioned.replace(new.encode(),b'UNAUTHORIZED',1))]
+    for label,mutant in mutants:
+        assert not accepts(baseline, mutant), 'S709/'+state+'/'+label+' survived: '+path
+        print('KILLED: S709/'+state+'/'+label+': '+path)
+    print('CONTROL: S709/'+state+'/unchanged sanctioned bytes PASS: '+path)
 actual=(Path(root)/path).read_bytes()
-if actual!=expected:
+if not accepts(before,actual):
     print('FAIL: S709/#706 exact core allowance mismatch: '+path)
     sys.exit(1)
 PY706
