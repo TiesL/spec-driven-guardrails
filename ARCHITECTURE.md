@@ -12712,6 +12712,7 @@ REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Create the issue first, t
 
          git checkout -b wip/<issue>-<name>
 
+       Your changes come along unchanged.
        Commit and checkpoint WIP; promote only after validation."
 ~~~
 
@@ -12786,3 +12787,19 @@ no new behavior run or stamp allowance is needed for this text correction.
 The independent S709 repair needs no behavior run if those inputs remain
 unchanged. Deferred OR40 lows stay deferred; exact-head D6 and fresh Review
 still follow implementation.
+
+
+#### A64 addendum 4 — Preserve S47's assurance (DEV706-2, 2026-11-26)
+
+**Decision.** Addendum 3's `REASON_COMMIT_ON_MAIN` assignment above is
+corrected to retain “Your changes come along unchanged.” This resolves
+DEV706-2 without contradicting or narrowing any AC or S47 requirement;
+issue-first branching, WIP checkpoints and validated promotion remain.
+
+**QA handoff.** Update the replacement side of the sanctioned count-1
+whole-assignment `REASON_COMMIT_ON_MAIN` pair in
+`test/fixtures/wip-706-substitutions.json` to the corrected exact assignment
+above; preserve its historical source and base, every other pair and all
+rejection controls. Update S720's exact commit-on-main witness and its
+independent deletion/reversion control to the same assignment. Preserve
+S47's existing assertion; no oracle relaxation or repin is authorized.
