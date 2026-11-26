@@ -13,12 +13,12 @@
 
 MAIN_BRANCH="main"
 
-REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Make a branch first — your
-       changes come along unchanged, nothing gets lost:
+REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Create the issue first, then work on WIP:
 
-         git checkout -b feature/<issue>-<name>
+         git checkout -b wip/<issue>-<name>
 
-       Then commit and push as usual."
+       Your changes come along unchanged.
+       Commit and checkpoint WIP; promote only after validation."
 
 REASON_PUSH_TO_MAIN="main gets its changes via a PR, not via a direct push."
 
@@ -29,9 +29,7 @@ REASON_PUSH_TO_MAIN="main gets its changes via a PR, not via a direct push."
 # issue via gh) and the native pre-commit hook (syntax only, no network).
 BRANCH_ISSUE_PATTERN='^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$'
 
-REASON_BRANCH_NO_ISSUE="every feature/fix/wip branch names the issue it implements, e.g.
-       feature/123-short-desc. Create the issue first (see the write-spec
-       skill for the epic/work-item templates), then branch from its number:
+REASON_BRANCH_NO_ISSUE="every feature/fix/wip branch names its issue, e.g.
+       wip/123-short-desc. Create the issue first (see write-spec), then:
 
-         gh issue create --template work-item.md
-         git checkout -b feature/<issue-number>-<short-desc>"
+         git checkout -b wip/<issue-number>-<short-desc>"
