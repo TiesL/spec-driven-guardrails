@@ -741,8 +741,9 @@ problem late doesn't stop the work that happened before it.
 `feature/<issue-number>-<short-desc>` / `fix/<issue-number>-<short-desc>` /
 `wip/<issue-number>-<short-desc>` (#706 D7). The first two replaced the
 previous `feature/<short-desc>` convention; F76 adds the WIP checkpoint
-branch. Requiring the number forces the issue to exist before the branch can even be named;
-there's no way to "forget" it the way a free-text branch name allows.
+branch. Creating an issue first remains required. The numbered name makes
+that link explicit, but mechanical enforcement does not guarantee existence:
+D8 accepts the failed-lookup risk described below.
 
 Enforcement follows F17's three-layer shape, adapted to what's actually
 checkable at each layer (branch names don't survive a squash-merge, so
@@ -751,15 +752,15 @@ CI can't be the third layer here the way it is for F17):
 - **`hooks/git-guardrails` (PreToolUse)** blocks `git checkout -b`/
   `git switch -c` for a `feature/`/`fix/`/`wip/` branch whose name doesn't match
   `^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$`. When it does match, one `gh issue
-  view <n> --json state` call (fail-open: no `gh`/no network → warn and
-  allow, exactly the merge guard's `check_merge_guard`/`check_ci_guard`
-  pattern from F8) permits an observed OPEN state and blocks an observed
-  non-OPEN state. **Pending maintainer decision (#706 AC9/S97):** the
-  nonexistent-issue requirement conflicts with S97b/S99 and the current
-  failed-lookup warn/allow path. Neither retaining that boundary for missing
-  issues nor adding verified-absence blocking is decided. The affected
-  lookup requirements, oracles and implementation wait for resolution;
-  D7's inclusion of WIP remains settled.
+  view <n> --json state` call permits OPEN and blocks a successfully
+  observed non-OPEN state. A failed, empty or unavailable lookup warns and
+  allows, including a nonexistent issue that produces such a failure.
+  [maintainer decision D8](https://github.com/TiesL/spec-driven-guardrails/issues/706#issuecomment-7186930378) accepts option A
+  and its risk from [panel-706-d1](https://github.com/TiesL/spec-driven-guardrails/issues/706#issuecomment-7186787989): a mistyped or
+  invented issue number can pass with a warning whenever lookup fails.
+  This is the fail-open pattern from F8; no verified-absence classification
+  is required. D7 applies the same checks to feature, fix and wip.
+  QA reconciles S97/S97b/S99 to this resolved boundary.
 - **The native `pre-commit` hook** re-checks the same pattern, syntax
   only, on commits on `feature/*`, `fix/*` and `wip/*` — no network call, so this
   hook keeps its existing offline character, and it's the layer that
@@ -791,8 +792,8 @@ QA must run `./test/run.sh s96_s101` and `./test/run.sh s12_` on the actual
 PR/main merge base and candidate, recording both SHAs. Expect preserved
 feature/fix results, plain checkout/switch and unrelated-branch allowances,
 main protection and escape-hatch behavior; add both creation forms and
-native coverage for WIP separately. The nonexistent-issue row stays pending,
-not an assertion of verified preservation.
+native coverage for WIP separately. Reconcile the nonexistent-issue row to
+D8's failed-lookup warn/allow boundary; no preservation pass is claimed.
 
 ### F20 — Epic auto-close (issues #219, #683)
 
