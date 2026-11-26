@@ -70,7 +70,7 @@ if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
   # see issue #218.
   if [ -n "$branch" ] && ! grep -qE "${BRANCH_ISSUE_PATTERN:-^$}" <<<"$branch"; then
     case "$branch" in
-      feature/*|fix/*)
+      feature/*|fix/*|wip/*)
         echo "Blocked by the git hook: commit on $branch without an issue number." >&2
         echo >&2
         echo "Reason: $REASON_BRANCH_NO_ISSUE" >&2

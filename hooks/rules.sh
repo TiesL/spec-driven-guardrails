@@ -27,9 +27,9 @@ REASON_PUSH_TO_MAIN="main gets its changes via a PR, not via a direct push."
 # the number forces the issue to exist first — the branch can't be named
 # without it. Shared between git-guardrails (PreToolUse, also verifies the
 # issue via gh) and the native pre-commit hook (syntax only, no network).
-BRANCH_ISSUE_PATTERN='^(feature|fix)/[0-9]+-[a-z0-9-]+$'
+BRANCH_ISSUE_PATTERN='^(feature|fix|wip)/[0-9]+-[a-z0-9-]+$'
 
-REASON_BRANCH_NO_ISSUE="every feature/fix branch names the issue it implements, e.g.
+REASON_BRANCH_NO_ISSUE="every feature/fix/wip branch names the issue it implements, e.g.
        feature/123-short-desc. Create the issue first (see the write-spec
        skill for the epic/work-item templates), then branch from its number:
 
