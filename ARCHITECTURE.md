@@ -12250,7 +12250,8 @@ the accepted branch shape, role permissions and lifecycle coherent, with
 one final exact-head Review and CI result. Two PRs would add a partial
 delivery and duplicate evidence without isolating live hook sources: the
 source checkout, not the PR count or base branch, determines hook effects.
-Do not merge the guard segment alone while AC9 remains unresolved.
+Maintainer decision D8 (2026-11-26) resolves AC9 as recorded below;
+the one-PR/two-segment structure remains.
 
 #### Branch and promotion Interface
 
@@ -12325,33 +12326,23 @@ unborn-HEAD exception. Existing malformed WIP branches can be checked out,
 but their later commits will fail syntax. This is D7's intended effect.
 
 Use the existing creation parser for both `checkout -b` and `switch -c`.
-Successfully observed OPEN permits creation; observed CLOSED blocks.
+Successfully observed OPEN permits creation; any successfully observed
+non-OPEN state blocks.
 Keep other branch families, plain checkout/switch, main protection,
 unverifiable lookup warnings and the existing escape hatch unchanged,
-subject to the unresolved missing-issue decision below. Existing-branch
+per D8 below. Existing-branch
 pushes and explicit SHA promotion do not enter branch-creation validation.
 PR creation still uses `check-pr-issue-link.sh`. No green-push guard,
 promotion marker, network lookup per commit or push-hook change is added.
 
-**AC9/S97 conflict, class spec.** AC9 and S97 require a nonexistent issue
-to block; executable S97b and S99 allow failed lookups with a warning.
-The current `gh issue view ... --json state --jq .state` exposes a nonzero
-status/empty value for both missing issues and unavailable lookup. That
-same input cannot justify both outcomes. This is already referred to the
-maintainer through Product; Planning does not amend the oracle.
-
-Keep the decision local to lookup classification inside
-`check_branch_creation`, not in the branch selectors or native hook.
-Either answer fits: (a) retain current unverified => warn/allow and have
-Product/QA reconcile AC9/S97 with S97b/S99; or (b) add a reliably verified
-missing outcome => block, while unverified infrastructure/access failure
-still warns/allows. Option (b) needs an agreed distinguishable lookup
-signal and matching QA specimens; treating every nonzero status or
-scraping unstable stderr as confirmed absence is insufficient. No new
-public Seam is needed. The affected lookup oracle, specimens and any
-lookup implementation wait for the owning-role/maintainer resolution.
-Syntax, native naming, checkpoint isolation and documentation design can
-proceed independently; neither branch of the decision is claimed green.
+**AC9/S97 resolution — D8, maintainer, 2026-11-26.** Accepted panel
+option A: retain fail-open (warn/allow) for any failed, empty or unavailable
+lookup, including a nonexistent issue producing such a failure. Block a
+successfully observed non-OPEN state. No guard code change or new lookup
+classification is required. Product/QA reconcile AC9/S97 with S97b/S99
+under D8; this architecture records the decision without editing their
+oracle. Nonzero status or unstable stderr never establishes verified
+absence. No new public Seam, native lookup or permission is added.
 
 #### Text placement and adoption
 
@@ -12424,7 +12415,7 @@ coverage is missing. Keep preservation and intended-change evidence apart.
 
 | Seam / scenarios | Required falsifier |
 | --- | --- |
-| PreToolUse creation, S96–S99 in `test/cases/s96_s101_issue_first_branching.sh` | Both creation forms reject malformed WIP with exit 2 and issue-first reason; valid OPEN WIP passes; CLOSED blocks. Include malformed slug/case/slash controls. Missing gh and unavailable/empty lookup warn/allow. Removing WIP from either selector or regex must fail a new assertion. The nonexistent-issue row waits for AC9 resolution. |
+| PreToolUse creation, S96–S99 in `test/cases/s96_s101_issue_first_branching.sh` | Both creation forms reject malformed WIP with exit 2 and issue-first reason; valid OPEN WIP passes; observed non-OPEN blocks. Include malformed slug/case/slash controls. Missing gh and failed/unavailable/empty lookup warn/allow, including nonexistent-issue lookup failures under D8. Removing WIP from either selector or regex must fail a new assertion. |
 | Native syntax, S100 | A real fixture commit on malformed WIP fails with `REASON_BRANCH_NO_ISSUE`; numbered WIP passes without gh. Test the existing escape hatch only inside the fixture. Removal of the native WIP selector must be caught independently of PreToolUse. |
 | Preservation, S101 and AC11 | Matrix feature/fix syntax and OPEN/CLOSED/unverified results for both creation forms; plain checkout and switch remain allowed. Release and unrelated scratch creation remain outside F19. Preserve unborn-HEAD/native main behavior and S12 main-push refusal. Do not call existing limited S101 coverage a complete matrix. |
 | Checkpointing, S56/S57/S86/S91 plus new WIP/PR-ref isolation case | With distinct local bare-origin WIP and PR refs, real PostToolUse and configured SessionEnd each advance only WIP, including from unrelated cwd. Compare both full ref SHAs after each operation. Explicit SHA fast-forward then advances only PR; guard allows commit, checkpoint and promotion commands. S57 negative/no-origin/diverged controls and S91 timeout/visibility remain. |
@@ -12474,10 +12465,11 @@ preservation coverage for unchanged macOS CI; no workflow fixture is relaxed.
   `settings/session-hooks.json`, live configuration/links, copied Codex
   bundles and broad cleanup automation. No version bump or tag here.
 
-**AC consistency.** No AC is amended or intentionally narrowed. AC1–AC6
-and AC8–AC11 map to the Seams above; AC7 remains observational. AC9's
-nonexistent-issue clause conflicts with S97b/S99 and is unresolved, not
-silently implemented as either answer. D1–D7 are not reopened.
+**AC consistency.** AC1–AC6 and AC8–AC11 map to the Seams above; AC7
+remains observational. D8 resolves AC9's former nonexistent-issue conflict
+in favor of fail-open on failed, empty or unavailable lookup. Product/QA
+own its spec/scenario reconciliation. No further AC narrowing is proposed;
+D1–D7 are not reopened.
 
 **Violated when:** a checkpoint advances a PR ref; promotion lacks current
 clean exact-head D6 evidence; comparison/Review names a WIP-only SHA; a
@@ -12486,3 +12478,116 @@ unverified lookup is silently treated as verified absence; live operator
 guards are edited to test the candidate; contract pins or behavior stamps
 are weakened to accept it; or delivery adds a meaning bump/new offer
 without a separate maintainer decision.
+
+#### A64 addendum 1 — Resolve DEV706-1 within existing headroom (2026-11-26)
+
+**Decision and alternatives.** The sanctioned pairs at `7d36e1a` cause the
+confirmed design finding DEV706-1: S309/S318 report slots 9,018/8,596
+characters, versus baseline 8,467/8,394. Retain budget 9,000, headroom floor
+500, K=2, the one-character control and fallback trigger 8,500. Replace
+only the complete OR46 and OR48 lines as specified below; no other core
+sentence, rule ID, tier, part marker or inventory part changes.
+
+Shorter wording wins: it removes examples and repeated phrasing, keeping
+every obligation injected. Moving detail to `SKILL.md` or policy is
+rejected here: A57 records A41's human decision that every rule stays
+injected and no obligation moves to a voluntary read. No short pointer
+can silently amend that decision. Moving OR47/OR48 to part 1 alone worsens
+its existing overflow and does not reduce total size. A third part or
+higher budget would require a maintainer redesign/decision; neither is
+needed. The existing rule Module and Interface retain their Depth and
+Locality; no new helper, loading Seam or permission is introduced.
+
+**Exact core replacements.** Each fenced line is one complete source line,
+including its `- OR<n>` prefix; retain the existing trailing newline.
+Replace the current OR46 line in part 1 with:
+
+~~~text
+- OR46 Closed no-agent list; do yourself, never dispatch: (a) run one named repo command, report output; (b) commit/push command-generated, never hand-edited files on work-item WIP branch; (c) read-only git/`gh` and QA comparison; (d) set label, edit Pipeline log; (e) promote existing D6-green commits to PR branch by explicit fast-forward SHA push, never force. D6: clean exact committed head; `./check --no-tests` and every affected `./test/run.sh <fragment>` in brief exit 0; OR48(1) behavior evidence current for that commit; log full SHA, exact commands/results. Partial/failing work only checkpoints. Confirm remote PR head equals promoted SHA before comparison; comparison/Review brief/Pipeline log use that head. Failed promotion/moved head blocks Review. All else: dispatch owner, including hand edits/repairs. Report failed commands, never repair. Valid skip=Test (OR34) only: no QA artifact/comparison/Reviewer approval block; log `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`; no open finding. Single-session never exempts. OR19 and the A49 conflict stop still apply. Otherwise before each Review compare applicable QA artifact to that head; log invocation/identities/hashes/result. Missing reference/unusable evidence: block Review, dispatch QA. Any diff: block Review, disclose each hunk as finding, follow OR17. Owner-resolved unauthorized scenario diff: dispatch QA for new artifact explicitly superseding prior. Review requires logged match and no open finding. Each command/result: one Pipeline log line (detail: `dispatch-economy`).
+~~~
+
+Replace the current OR48 line in part 2 with:
+
+~~~text
+- OR48 Run scope. (1) Behavior-test run after change: affected scenarios only, unless stamp or gate needs full run; then log names that stamp or gate. (2) Pre-commit checks on work-item branch: only those changed files affect; doc-only = pre-commit hooks only. Full `./check` at most once before PR opens, never per commit (CI runs it). Brief names required checks, never defaults to full suite. Checkpoint checks, including doc-only, never replace D6 for promotion (OR46).
+~~~
+
+**Preservation mapping.** OR46 retains the closed (a)-(e) no-agent list,
+generated-only/non-hand-edited WIP files, read-only comparison, labels/log,
+existing-green explicit fast-forward promotion and no force. Its D6
+definition retains exact clean committed identity, both check commands,
+brief-scoped affected cases, current behavior evidence and SHA/commands/
+results. Partial/failing checkpoints, remote equality before comparison,
+same-head Review/log and failed/moved-head stops remain explicit. All
+other work, including repairs and hand edits, routes to its owner; failed
+commands are reported and never repaired by the orchestrator.
+
+The valid Test-waiver exemption, exact provenance log, no-open-finding
+condition, single-session exclusion and OR19/A49 conflict stop remain.
+Ordinary Review still requires comparison each round, invocation/
+identities/hashes/result logging, missing/unusable-evidence QA dispatch,
+per-hunk findings and OR17 on differences, and QA dispatch for an
+explicitly superseding artifact after owner resolution. Only logged
+matching comparison and no open finding permit ordinary Review.
+`otherwise` scopes those comparison requirements to the non-waived path.
+The command/result Pipeline log obligation and existing detail pointer
+remain. OR48 retains both run-scope clauses, stamp/gate exception with
+logged reason, doc-only hooks, full-check frequency and brief limits.
+Its last sentence references D6's definition still injected in OR46;
+no obligation is moved outside the two parts.
+
+**Size targets, not promotion evidence.** These replacements are ASCII.
+OR46: 2,103 -> 1,576 bytes/code points, delta -527. OR48:
+620 -> 473, delta -147. Applying those deltas to the supplied long-path,
+all-adoptions measurements gives:
+
+| Injected slot | Characters | UTF-8 bytes | Character headroom |
+| --- | ---: | ---: | ---: |
+| 1 | 8,491 | 8,491 | 509 |
+| 2 | 8,449 | 8,453 | 551 |
+
+Part 2 has four pre-existing extra UTF-8 bytes; S309/S318 budget code
+points, not bytes. Slot 1's warning is ASCII in this fixture. Even adding
+one character to the larger slot at the same path leaves 508 headroom.
+These are in-memory delta estimates against supplied logs, not executed
+candidate tests; path-dependent warning lengths must be remeasured by QA.
+OR47 and OR48 stay together in part 2, below 8,500. Do not adjust budget,
+floor, fallback or negative controls to match a candidate.
+
+**QA handoff.** Replace the two old OR46 partial substitutions in
+`test/fixtures/wip-706-substitutions.json` with one exact whole-line
+baseline-to-new pair; replace the OR48 partial pair with its whole-line
+pair. Old lines come from the existing historical base
+`97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581`; leave that base and all
+other pairs unchanged. Keep unique occurrence, reverse restoration,
+omitted-pair and extra-byte rejection. Add independent single-obligation
+deletions inside each whole-line replacement: a whole-line omission
+alone does not test each preserved duty.
+
+Reconcile S720-S725 and S548/S593/S626/S659/S709 only to these sanctioned
+bytes. Adjust affected wording assertions in S317,
+`orchestrator-core.py`, `oracle-contract-pins.py` and
+`wip-promotion-706.py` to the preservation mapping, retaining independent
+positive witnesses and mutants (including a comparison after failed
+promotion, a moved head, a missing superseding artifact, and invalid
+Test-waiver provenance). No arbitrary candidate repin, historical-base
+replacement, freeze removal or broad regex allowance. OR15, OR19, OR47,
+other core bytes, inventory parts and unrelated protections stay frozen.
+Preserve OB84-OB91 outcomes and existing waiver/comparison behavior;
+change wording only if necessary for the same obligations.
+
+**Developer/orchestrator handoff.** Developer applies QA's two literal
+core pairs and owned test adjustments, not improvised alternatives.
+Run affected cases plus S309/S318 and preservation consumers; record both
+actual slot sizes/headrooms. The full real behavior run remains required
+after final core/scenario bytes because the stamp covers both whole
+files. The orchestrator commits the genuine generated stamp; QA sanctions
+only that genuine stamp's exact digest in S548's allowance. Then perform
+D6 on the final clean committed head. Planning's arithmetic does not
+close the finding by itself: S309/S318 must pass with all protections,
+followed by the QA -> Developer -> fresh Reviewer route.
+
+**AC consistency and maintainer questions.** No additional AC narrowing,
+waiver, budget decision or maintainer question. AC9 follows D8 above;
+Product/QA own reconciliation of its earlier pending text and scenarios.
+AC7 remains post-epic observation. D1-D7 remain settled.
