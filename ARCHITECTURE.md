@@ -12330,12 +12330,22 @@ directories and symlink targets; the runner refuses otherwise.
   `TiesL/spec-driven-guardrails/.github/workflows/secret-scan.yml@main`. A
   future rule file or extra scanner is added in that one workflow.
   `templates/ci.yml` for adopters is out of scope.
-* **Fail closed for eval pushes.** The hook fails open when Gitleaks is absent
-  and can be bypassed. The runner's push step therefore checks first: Gitleaks
+* **Fail closed for eval pushes.** The hook fails open when it cannot scan:
+  Gitleaks absent, Gitleaks erroring (any non-zero exit other than its
+  `--exit-code 2` hit status), or the hook not resolving its own `rules.sh`. It
+  can also be bypassed. The runner's push step therefore checks first: Gitleaks
   on `PATH`, `.git/hooks/pre-push` resolves to SDG's `hooks/pre-push`, and
-  `CLAUDE_WORKFLOW_GUARDRAILS_OFF` unset. It pushes with plain `git push`,
-  never `--no-verify`. A failed precondition is not runnable. The hook itself
-  is unchanged.
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF` unset. A failed precondition is not runnable.
+  It then pushes with plain `git push`, never `--no-verify`, with
+  `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED=1` in that command's environment. The
+  shared hook gets one addition: with that variable set, each path that today
+  warns "skipped" (no symlink, no `rules.sh`, no Gitleaks, Gitleaks failed to
+  run) exits 1 instead, so the push is refused. The scan stays in the hook,
+  not in a second runner-side Gitleaks call: one invocation with one set of
+  arguments, and #748's later checks reach eval pushes automatically. With the
+  variable unset, ordinary pushes in either repository behave exactly as
+  today; S145's tool-error case stays green unchanged. The guard-off override
+  keeps its meaning; the runner refuses it up front.
 * **Branches.** The hooks also forbid commits and pushes on `main`. The
   orchestrator commits each run on branch `runs/<run-id>` and pushes that
   branch; no merge is needed. A repository ruleset protects `runs/**` against
@@ -12474,8 +12484,8 @@ Gitleaks' own concern.
 | E6 | Home, cwd, private root and email in fake output become placeholders with counts; each file's header has the run-id and counts; other bytes exact | 1 |
 | E7 | Environment token, raw argv, authentication headers and credential-file contents absent from every private file | 1 |
 | E8 | Push refused, not runnable: Gitleaks absent; hook not SDG's symlink; guard-off variable set | 3 |
-| E9 | Separately, stub Gitleaks exits 1 (secret hit) or 2: push blocked, run stops, no public result; secret bytes unchanged and local unpushed commit retained | 2 |
-| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded; captured push arguments use plain `git push`, without `--no-verify` | 1 |
+| E9 | With every E8 precondition met and the real shared hook installed, separately: stub Gitleaks exits 2 (secret hit) or 1 (scanner error): push refused, local bare remote unchanged, run stops, no public result; secret bytes unchanged and local unpushed commit retained | 2 |
+| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded; captured push uses plain `git push`, without `--no-verify`, with `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED=1` | 1 |
 | E11 | One prohibited FAIL plus two passes (k=3) gives FAIL through prohibition aggregation, not invalid-cardinality handling | 1 |
 | E12 | Judgment 2/3 gives PASS; 1/3 gives FAIL | 2 |
 | E13 | Separately: gate FAIL gives FAIL; missing trial gives `NOT_RUNNABLE`; judge disagreement gives `NOT_RUNNABLE` | 3 |
@@ -12492,8 +12502,9 @@ review of actual public prose.
 **Owners and stop.** QA reconciles S629-S634 and S631's oracle to these checks
 and assigns the criterion labels before runs. Developer scope for #680: the
 runner pair and `verify`, the recorder, the case builder, keys and plan,
-`test/cases/s629_*.sh` through `s634_*.sh`, the `./check` wiring and the
-`secret-scan.yml` extraction. Remove tracked WIP raw evidence when porting;
+`test/cases/s629_*.sh` through `s634_*.sh`, the `./check` wiring, the
+`secret-scan.yml` extraction and the `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED` mode
+in `hooks/pre-push`. Remove tracked WIP raw evidence when porting;
 never copy it into main. Private-repository setup is manual (orchestrator and
 maintainer). Real runs wait for owning-artifact agreement, the green gate and a
 fresh Review. A failed precondition, push, verification or calibration stops
