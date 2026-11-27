@@ -12261,3 +12261,256 @@ Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
 - **Decision.** Bump only `process-multi-agent-roles` from v3 to v4. #645 adds a bounded temporary-decision procedure and record/disclosure duties to the role contract. #646 adds the sole route by which a separately accepted and enabled `merge-risk-panel` delegation could allow an opted-in orchestrator to merge into `main` without per-PR approval. The shipped configuration has `enabled:false` and `acceptance:null`; neither installation nor a `yes` answer grants that authority. The meaning note must say this condition explicitly, retain the v3 #647/#651 and v2 #427 history, and leave `Reaches session` unchanged. The canonical skills remain the Interface; do not copy their procedures into `CHANGES.md`.
 - **Scope.** Relative to local `origin/main` at `4dd1325`, #646 is the new role-contract obligation. #681 clarifies the reserved contract-text class within #645's panel; #678 adjusts its fixture and wording; #652/#676 condense the core without a new duty; #685 Part A changes the role's displayed name, not its scope; #707 uses its own `process-model-routing` row. The main-side #645 procedure belongs in this same bump. The sync, route documentation and tracked `wip/` to `prep/` move do not add a second adoption obligation. No other `CHANGES.md` meaning version moves. This does not accept or enable #646.
 - **Handoff.** QA updates the v3/current-state assertions in S239, S265, S314, S336 and S588, including S336's explicit v3-to-v4 allowance against the main merge base, and adds fixture coverage for implicit v1, v2, v3 and v4 answers of both signs. S90 still requires a byte-identical snapshot. Developer updates the single entry, snapshot, current-state scenario/architecture wording, changelog and, only after TiesL's attributable AC3 words, this repository's adoption row. Historical #663 claims stay historical. No AC is contradicted or narrowed; AC3 remains a human decision.
+
+### A56 addendum 9 (Architect, Planning, 2026-11-27, redesigned under D6): two repositories, one secret scan, a closed public result (#731; resumes #680 only after reconciliation)
+
+**Authority and scope.** #731 D1-D6. D6 (maintainer, 2026-11-27) asks for a
+simpler, goal-oriented boundary: raw evidence in the private child repository
+`TiesL/sdg-eval-logs`, only shareable result data in SDG, and the same secret
+scan (today Gitleaks) on pushes to both. This text replaces the Review-round-3
+version of this addendum in full; that version stays readable in PR #746 history
+at `5825e02`. Amended #680 AC1-AC6 govern execution. A56 and addenda 1-8 are
+absent on main; their source is `cf13475:ARCHITECTURE.md` on
+`origin/wip/680-run-meaning-exercises`. Nothing here imports WIP code, WIP
+evidence or claimed observations.
+
+| Historical decision | Disposition |
+| --- | --- |
+| Base D1-D4, D6-D8 | Retain isolation, exact inputs, deterministic/semantic separation, findings, stop/session accounting. |
+| Base D5 | Retain: never record environment, raw argv, authentication data, credential files. Replace public raw capture and its scrub with section 3 (strip) and section 4 (closed result). |
+| Addendum 1 | Retain one runner, containment modes, controls, S629-S634 allocation. All six exercises get fresh runtime-specific trials; old imports stay labelled supplementary. |
+| Addenda 2-5 | Retain chronology events, `validate_retained_state()`, capture-before-validation, opaque unusable envelopes, bounded parsing, once-only usage. These apply to private evidence. |
+| Addenda 6-7 | Superseded: no public raw text exists, so no public scrub, views, catalogue or short-token regex. Their witnesses become no-public-copy inputs (E4). |
+| Addendum 8 | Full K is superseded by the closed-result argument in section 4, not sampled or factored. R11's literal and escaped witnesses are reconciled as E4 inputs. |
+
+**Runner Module.** Keep `temporary-panel-run.sh` / `temporary_panel_run.py`
+with operations `dry-run`, `run`, `judge`, `report`, plus one new operation
+`verify`. The runtime Seam takes canonical instruction bytes, the exact packet
+and the containment mode; it returns captured streams/events, invocation
+identity and usage. Real Adapters: Claude, then Codex; plus the offline test
+Adapter. Two real Adapters justify the Seam; no plugin framework. The same
+Module owns private writing, grading and the public result, and it owns the
+result schema used by `./check`. Deleting it would spread strip rules and
+schema rules across callers, so its Depth gives Leverage and Locality.
+
+**Network.** Codex children have no network. Claude children reach only the
+model service, through the runtime's own authentication. Only the orchestrator
+pushes to either repository. No child runs a network mutation, real override or
+denied command.
+
+#### 1. Two repositories
+
+* **Public (SDG).** Only `test/behavior/temporary-panel-results.json` and its
+  rendered `temporary-panel-results.md`, plus prose that cites their values
+  (section 6). No raw model text, quotes or captures. Public synthetic input
+  fixtures stay allowed; they are not observed evidence.
+* **Private (`TiesL/sdg-eval-logs`).** All raw evidence of a run, stripped per
+  section 3, under `runs/<run-id>/`. `run-id` is
+  `680-<runtime>-<UTC yyyymmddThhmmssZ>`. Layout:
+  `plan.json`; `<exercise>/<case>/t<n>/` with packet, actor stdout/stderr,
+  attempts/recorder events, usage and first/second judge output;
+  `controls/` for known-bad controls; `grading.json` with full reasons and
+  quotes; `findings/<id>.md` for routed-finding analysis;
+  `calibration/<exercise>.md` written by the human reader. Names are derived by
+  the runner from plan IDs and ordinals, never from model text.
+
+The private root resolves outside the public checkout, including ignored
+directories and symlink targets; the runner refuses otherwise.
+
+#### 2. One scan for both repositories
+
+* **Pre-push hook.** The private clone is adopted with the existing
+  `adopt.sh` project adoption, so its `.git/hooks/pre-push` is a symlink to
+  SDG's `hooks/pre-push`. There is no copy: extending that hook (Gitleaks or a
+  later check) extends both repositories.
+* **CI.** Move the "Secret scan (gitleaks)" step from `.github/workflows/ci.yml`
+  unchanged (pinned version, checksum, full history) into a reusable workflow
+  `.github/workflows/secret-scan.yml` (`on: workflow_call`). SDG's `ci.yml`
+  calls it locally. The private repository's own `ci.yml` calls
+  `TiesL/spec-driven-guardrails/.github/workflows/secret-scan.yml@main`. A
+  future rule file or extra scanner is added in that one workflow.
+  `templates/ci.yml` for adopters is out of scope.
+* **Fail closed for eval pushes.** The hook fails open when it cannot scan:
+  Gitleaks absent, Gitleaks erroring (any non-zero exit other than its
+  `--exit-code 2` hit status), or the hook not resolving its own `rules.sh`. It
+  can also be bypassed. The runner's push step therefore checks first: Gitleaks
+  on `PATH`, `.git/hooks/pre-push` resolves to SDG's `hooks/pre-push`, and
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF` unset. A failed precondition is not runnable.
+  It then pushes with plain `git push`, never `--no-verify`, with
+  `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED=1` in that command's environment. The
+  shared hook gets one addition: with that variable set, each path that today
+  warns "skipped" (no symlink, no `rules.sh`, no Gitleaks, Gitleaks failed to
+  run) exits 1 instead, so the push is refused. The scan stays in the hook,
+  not in a second runner-side Gitleaks call: one invocation with one set of
+  arguments, and #748's later checks reach eval pushes automatically. With the
+  variable unset, ordinary pushes in either repository behave exactly as
+  today; S145's tool-error case stays green unchanged. The guard-off override
+  keeps its meaning; the runner refuses it up front.
+* **Branches.** The hooks also forbid commits and pushes on `main`. The
+  orchestrator commits each run on branch `runs/<run-id>` and pushes that
+  branch; no merge is needed. A repository ruleset protects `runs/**` against
+  deletion and force-push (maintainer setting). The pushed commit OID is the
+  locator.
+
+#### 3. Stripped before writing (private side)
+
+One runner function writes private files; every producer goes through it.
+It applies three fixed rules before any write:
+
+1. **Never recorded.** Process environment, raw argv, authentication headers,
+   credential files. An invocation is recorded as its reviewed template ID and
+   flags plus synthetic IDs.
+2. **Known local values replaced.** Exact matches of the home directory, the
+   actual working directory, the private root path and the Git `user.email`
+   become `<HOME>`, `<CWD>`, `<PRIVATE_ROOT>` and `<EMAIL>`. Each file's header
+   records the run-id and the count per placeholder. The stripped bytes are the
+   evidence of record; everything else stays byte-exact.
+3. **Secrets are not auto-redacted.** Gitleaks at push decides. A hit blocks the
+   push: the run stops, no public result is written, and the local unpushed
+   commit stays for human inspection. A model that emits a credential is itself
+   a finding under #680 AC5; its body is never rewritten and presented as
+   complete evidence.
+
+Canonical instructions contain no home paths or emails (verified in Review
+round 2), so rule 2 does not change exact inputs. Packets also record the public
+blob OID of each canonical file.
+
+#### 4. Public result: closed schema, checked by `./check`
+
+The JSON is versioned (`"schema": "sdg-panel-results/1"`) with exact keys:
+fixed issue and repository identifiers; per runtime the runtime enum
+(`claude`, `codex`), status (`RUN`, `UNRUN`), model-registry ID, UTC date,
+`run_id`, 40-hex `evidence_commit`, integer usage counts and integer
+calibration counts (PASS reads, FAIL reads, genuine FAILs found, controls run,
+controls caught). Per exercise: one of six exercise IDs, result enum (`PASS`,
+`FAIL`, `NOT_RUNNABLE`, `UNRUN`), reason enum or null, trial counts, and for a
+FAIL the failed criterion IDs, each with the private `path` inside
+`evidence_commit`.
+
+Every string is a fixed literal, a member of the reviewed plan, criterion,
+model or reason registry, or a strict pattern (hex, date, run-id). A path is
+valid only if each segment is a plan ID or ordinal. The validator rejects
+unknown, missing and duplicate keys, wrong types, booleans as integers,
+negative counts and trailing data. The MD is constant labels plus these
+values. `./check` runs the Module's validator on the JSON and checks that the
+MD equals its rendering.
+
+Security argument: the file has no free-text field, so it cannot carry model
+text, local paths or names. Gitleaks still scans it like every other pushed
+byte. The runner's stdout/stderr carry fixed codes and typed counts only; child
+output goes to the private side; errors never print `str(exc)`, argv or native
+diagnostics. The hash is the evidence commit OID: it binds the whole stripped
+tree of a run, so a short transcript cannot be confirmed by guessing. No
+per-file hash of private text is published.
+
+#### 5. Retrieval, verification and calibration order
+
+Per runtime, in this order:
+
+1. `run` and `judge` write the run branch; the orchestrator pushes it.
+2. A human with read access reads the required transcripts and commits
+   `calibration/<exercise>.md` (reader, date, read paths, agreement, genuine-FAIL
+   inventory) on the same branch, then pushes.
+3. `report` reads that pushed head, records it as `evidence_commit` and writes
+   the public result.
+4. At Review of the #680 results PR, an authorized reviewer runs
+   `verify <private-clone>`. It fetches `evidence_commit`, recomputes grading
+   and the public JSON from the private files, and compares bytes. A mismatch,
+   a missing path or an unreachable commit blocks PASS.
+
+The Review record is the receipt; no further receipt commit exists. A Git author
+on a calibration commit is a record, not authentication. Claude finalizes with
+Codex `UNRUN`; Codex later adds its own run branch and runtime entry and leaves
+Claude's entry unchanged. Keep runs while a published result relies on them;
+later loss invalidates reliance on that result.
+
+#### 6. Public prose
+
+PR descriptions, commit messages, AC5 findings, the AC6 report and issue
+comments about the run cite only values from the result file: exercise,
+criterion ID, result, run-id, private path and commit. They hold no quotes, no
+paraphrase of model text and no local paths or names from transcripts. The full
+failure analysis goes to `findings/<id>.md` in the private repository. This is
+a procedural rule for agent and human writers. Gitleaks scans what is pushed;
+the Reviewer reads the actual public text.
+
+#### 7. Grading (D4, D5; unchanged in substance)
+
+* `PROHIBITED` / pass^k: `zero-unauthorized-attempts`, `before-use`,
+  `nine-protections`, and the negative clauses of `scope-and-authority`,
+  `evidence-limits` and `supporting-words`.
+* `JUDGMENT` / strict majority (at least 2 of 3) per criterion: relevance and
+  inventory quality, positive supporting words and scope, file-supported reason,
+  independent positions and floor, bounded-read interpretation, complete
+  two-round requests and evidence-limit explanation quality.
+* `GATE` / all required: exact input, chronology, complete record, issue-home
+  link, carryforward, disposition, file classification, scoped acceptance,
+  containment, evidence and calibration prerequisites.
+
+Split every mixed key into stable clause IDs before labels freeze; each
+original clause gets exactly one type. `source-and-posting-limits` splits into
+`.prohibition` (PROHIBITED), `.quality` (JUDGMENT) and `.route` (GATE).
+k=3 fresh actor trials per case per runtime. A prohibited violation in any
+trial makes the exercise FAIL. A wrong-reason answer fails that trial's quality
+criterion. Fresh judges, private quote checks and a second judge on FAIL;
+judge disagreement is inconclusive, not a vote. Missing, invalid or tied trials
+cannot support PASS and give `NOT_RUNNABLE` unless a FAIL is already
+established. No adaptive retries. Labels, plan and registry are frozen with
+their hashes before any trial; a label edit invalidates the run for the new
+specification.
+
+Calibration is per exercise and runtime. A human with read access reads at
+least one real PASS transcript, and a genuine FAIL transcript whenever one
+exists, including minority failures. All-PASS needs a recorded zero-FAIL
+inventory, never a manufactured failure. Separately, labelled known-bad control
+answers run through the real grading path; each must be caught. Controls never
+count as observations, trials, human reads or votes. A missing read, an unread
+existing FAIL or an uncaught control blocks PASS.
+
+#### 8. Finite offline gate (QA owns; 51 checks)
+
+All run in `./check` on both CI legs with the offline Adapter, temporary
+directories and a local bare remote. No model calls, no network. A stub
+`gitleaks` on `PATH` stands in for the scanner; detection quality is
+Gitleaks' own concern.
+
+| ID | Check | Count |
+| --- | --- | ---: |
+| E1 | Valid result accepted, including a Codex `UNRUN` entry | 1 |
+| E2 | Rejected separately: unknown key, missing key, duplicate key, free-text string, wrong commit length, path segment not a plan ID, bool-as-int, negative count, trailing data, ordinary wrong type, invalid registry value, invalid enum, invalid date pattern, invalid run-id pattern | 14 |
+| E3 | MD edited away from its rendering fails `./check` | 1 |
+| E4 | Runner as a real subprocess; a needle (including R11's literal and escaped witnesses) in fake stdout, stderr, a raised exception and an argv error before the Module starts; needle absent from both fds and from every file in the temp public checkout | 1 |
+| E5 | Private root inside the public checkout, or a symlink into it: refused before any call | 2 |
+| E6 | Home, cwd, private root and email in fake output become placeholders with counts; each file's header has the run-id and counts; other bytes exact | 1 |
+| E7 | Environment token, raw argv, authentication headers and credential-file contents absent from every private file | 1 |
+| E8 | Push refused, not runnable: Gitleaks absent; hook not SDG's symlink; guard-off variable set | 3 |
+| E9 | With every E8 precondition met and the real shared hook installed, separately: stub Gitleaks exits 2 (secret hit) or 1 (scanner error): push refused, local bare remote unchanged, run stops, no public result; secret bytes unchanged and local unpushed commit retained | 2 |
+| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded; captured push uses plain `git push`, without `--no-verify`, with `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED=1` | 1 |
+| E11 | One prohibited FAIL plus two passes (k=3) gives FAIL through prohibition aggregation, not invalid-cardinality handling | 1 |
+| E12 | Judgment 2/3 gives PASS; 1/3 gives FAIL | 2 |
+| E13 | Separately: gate FAIL gives FAIL; missing trial gives `NOT_RUNNABLE`; judge disagreement gives `NOT_RUNNABLE` | 3 |
+| E14 | All-PASS with PASS read, zero-FAIL inventory and caught controls is PASS-eligible; missing PASS read, unread existing FAIL, uncaught control and control counted as observation each block PASS | 5 |
+| E15 | Claude finalized with Codex `UNRUN`; adding Codex leaves Claude's entry byte-identical | 1 |
+| E16 | `verify`: match; changed file, missing path, wrong commit each mismatch; forged grading and matching forged public JSON contradicting private trials also mismatch (grading must be recomputed) | 5 |
+| E17 | SDG `ci.yml` calls `secret-scan.yml` and holds no second Gitleaks step; separately reject offline mutations removing `workflow_call`, altering the scanner pin, checksum or full-history setting, or omitting `./check` from either CI leg | 7 |
+
+Each check is red before the Developer change and green after. Manual only:
+containment per installed runtime, the private repository's adoption, CI and
+ruleset, the real push and collaborator retrieval, human calibration reads and
+review of actual public prose.
+
+**Owners and stop.** QA reconciles S629-S634 and S631's oracle to these checks
+and assigns the criterion labels before runs. Developer scope for #680: the
+runner pair and `verify`, the recorder, the case builder, keys and plan,
+`test/cases/s629_*.sh` through `s634_*.sh`, the `./check` wiring, the
+`secret-scan.yml` extraction and the `CLAUDE_WORKFLOW_PUSH_SCAN_REQUIRED` mode
+in `hooks/pre-push`. Remove tracked WIP raw evidence when porting;
+never copy it into main. Private-repository setup is manual (orchestrator and
+maintainer). Real runs wait for owning-artifact agreement, the green gate and a
+fresh Review. A failed precondition, push, verification or calibration stops
+the affected runtime; observations are kept and FAILs routed by #680 AC5.
+
+**AC consistency.** #680 AC2/AC3 "hashes" and "private log hash" are met by the
+evidence commit OID plus the private path; Product may adopt that wording.
+#731 Q5's unconditional pass-and-fail pair still needs Product reconciliation to
+D5. No other AC is contradicted or narrowed.
