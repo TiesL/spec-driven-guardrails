@@ -333,8 +333,24 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Does this project split work into GitHub issues (epics/work items)?
 - **Default:** question
 - **Applies if:** always
-- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets split from the PRD into an `Epic` issue with `Work item` issues — see `templates/ISSUE_TEMPLATE/`.
+- **Meaning version:** 2 — #724 adds continuing issue/board metadata maintenance
+  and on-request read-only drift reporting. Answers under meaning v1 require
+  re-confirmation through the existing adoption process; no answer is changed here.
+- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets split
+  from the PRD into an `Epic` issue with `Work item` issues. Follow `write-spec`'s
+  issue and board maintenance rule at creation, relationship/stage changes,
+  reprioritization and closure: bodies own portable parent/dependency declarations,
+  native relations mirror settled records, and configured board fields own decided
+  order. Keep reciprocal relations, labels and membership aligned; record empty-field
+  decision evidence, verify closure and report partial or unchecked operations.
+  `backlog-drift.sh` reports drift on request without writes. A board is optional;
+  board-less projects keep portable records and applicable native mirrors.
 - **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails
+  task-loaded: skills/write-spec/SKILL.md through the workflow's maintenance route
+- **Draft notice — maintainer approval required at the release merge:** The exact
+  meaning-v2 notice above is a draft for epic #742's merge into `main`. D5 accepts
+  the v2 bump, not this final prose. Neither this draft nor a release-child merge
+  establishes maintainer approval of the notice or existing adopters' acceptance.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit

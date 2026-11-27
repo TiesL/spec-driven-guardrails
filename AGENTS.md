@@ -67,6 +67,8 @@ Three independent axes, applied to every issue going forward (issue #398 — bef
 
 Both `status:*` and `role:*` are deliberately hand-maintained, not mechanized — issue #371 (automatic activation of the pipeline, in this release) leaves pipeline-phase state hand-maintained by the orchestrator, and any mechanization would be a separate decision from this convention existing. This-repo-only for now (not yet offered via `CHANGES.md`/`adopt.sh` to adopted projects) — validate the convention here first.
 
+At creation, relationship or stage changes, reprioritization and closure, follow `write-spec`'s issue and board maintenance rule.
+
 ## Routing table
 
 This file holds what every session needs. For everything else: the table below resolves every moved topic in a single jump.

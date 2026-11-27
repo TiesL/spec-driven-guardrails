@@ -33,9 +33,8 @@ labels: ""
   the order doesn't read correctly from the other issue, and that's exactly
   where it gets read.
 
-  Deliberately this flat field, not native sub-issues: `gh issue view`
-  already shows blocked-by/blocking, and native relations would bind the
-  convention to GitHub Projects.
+  Issue-body Epic, Blocked by and Blocks fields are the portable authority; native parent/blocker relations mirror settled body declarations and do not require Projects. Follow write-spec's issue and board maintenance rule.
+  Write none for each empty dependency set.
 -->
 **Epic:** #
 **Covers:** <F1, S2>
