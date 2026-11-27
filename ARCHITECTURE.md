@@ -12264,15 +12264,23 @@ Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
 
 ### A56 addendum 9 (Architect, Planning, 2026-11-27): private originals and a closed public result (#731; resumes #680 only after reconciliation)
 
-**Authority and provenance.** #731 D2-D4 choose A-eval; amended #680 AC1-AC6
-govern execution. This entry replaces A56 D5, rather than reducing its scrub
-matrix. In this checkout (`6a37dc1`) A56 itself is absent: only references to it
+**Authority and provenance.** Keep #731 D1-D5: D1 commissioned the research,
+D2-D4 choose A-eval and typed aggregation; D5 (maintainer, 2026-11-27) resolves
+calibration as specified below. Amended #680 AC1-AC6 govern execution, with
+D5 superseding only the unconditional PASS/FAIL calibration pair and clarifying
+per-runtime finalization. Product must reconcile that wording in #731/#680;
+this entry does not edit Product-owned artifacts. This entry replaces A56 D5,
+rather than reducing its scrub matrix. In this checkout (`6a37dc1`) A56 itself is absent: only references to it
 exist. The precise historical source for A56 and addenda 1-8 is
 `origin/wip/680-run-meaning-exercises` at
 `cf13475a1b8152872eef487ea4c4568aa3883f98:ARCHITECTURE.md`.
 This self-contained amendment is intended for main; it imports no WIP code or
-claimed observations. AC contradictions/narrowing: **none against the supplied
-amended #680 and #731**. Earlier option-B qualifications are superseded where
+claimed observations. AC consistency: D5 changes the unconditional pair clause
+in #731 Q5 (referenced by AC3) and #680 AC2 to a real PASS read, a FAIL read
+whenever one exists, separate known-bad controls and per-runtime calibration.
+Product reconciliation is required, not assumed complete. **No additional AC
+contradiction or narrowing is proposed under D1-D5.** Earlier option-B
+qualifications are superseded where
 those ACs require fresh sessions for all six exercises and separate runtimes.
 
 | Historical decision | Disposition under this entry |
@@ -12281,7 +12289,8 @@ those ACs require fresh sessions for all six exercises and separate runtimes.
 | Addendum 1 | Retain one shared runner, containment modes, controls, ownership and S629-S634 allocation. Replace option-B release-import substitution and once/twice schedule: all six require fresh runtime-specific lab trials. Historical imports remain separately labelled supplementary evidence. Replace public captures, free-text result rendering and publication-size assumptions. No old pilot go or panel cycle authorizes a new run before this gate. |
 | Addendum 2 | Retain provenance and deterministic/semantic separation; its textual heading recognizer remains superseded by 3. |
 | Addendum 3 | Retain strict chronology events and one retained-state validator for report/judge/continuation; all payloads/witness quotes now private. |
-| Addenda 4-5 | Retain capture-before-validation, opaque unusable envelopes, bounded parsing, exact originals and once-only usage. Envelopes and recovery are private; public errors are closed codes. |
+| Base D5 exclusions | Retain exclusion of process environment, working-directory/home paths, tokens and emails, including before private storage. Replace public raw capture and its scrub oracle only. Complete canonical instructions are now retained privately as required by exact-input review; environment/authentication metadata is never evidence. |
+| Addenda 4-5 | Retain capture-before-semantic-validation, opaque unusable envelopes, bounded parsing, exact admitted originals and once-only usage. Apply the retained secret admission check before any persistent capture, including unusable envelopes/recovery; rejection cannot yield PASS. Public errors are closed codes. |
 | Addendum 6 | Supersede P1-P8's public-raw scrub, R/J/B/N views, catalogue, expansion and scrub mutants. Retain private recovery, structural retention, STOP/no-retry/no-later-call and accounting. Replace publication with the Interface and matrix below. |
 | Addendum 7 | Superseded as a publication oracle; no short-token regex is a public admission rule. Keep its conflict/witnesses as historical regression inputs. |
 | Addendum 8 | Supersede full K for the new publication design, **not** by factoring or sampling K. Until Product/Architect/QA artifacts agree and the replacement gate is established, full K and the affected-work STOP remain. D8/D9 and R11 remain historical, not erased or declared closed. |
@@ -12316,38 +12325,110 @@ synthetic input fixtures remain permitted; they are not observed evidence.
 `PrivateStore` and scratch roots must resolve outside the public tree; reject
 overlap, traversal and symlink escapes, including recovery destinations.
 
+**Private admission precedes persistence.** Never collect for evidence or serialize
+the process environment, authentication headers, credential files, actual working
+directory or home paths. Call bindings contain reviewed invocation-template ID/flags,
+relative synthetic lab IDs and call ordinals, not raw argv, cwd or env. Credentials
+may reach the runtime through its existing authentication mechanism, never through
+captured arguments or evidence. Refuse a credential-bearing invocation before
+launch; do not log it. Use a synthetic scratch layout; disable native transcript,
+debug, crash and session persistence and verify descriptor/spool handling for each
+Adapter before calls. An Adapter unable to establish this is not runnable.
+
+Capture complete streams in memory before parsing/grading; before **any** disk,
+Git object, recovery/spool file or push, scan all candidate original/envelope bytes
+and receipt fields, including unusable, binary/escaped and over-budget captures.
+Retain the historical pre-write rejection of `/Users/`, token-shaped strings and
+email addresses; also reject actual cwd/home values and known credential values
+from the narrowly required authentication inputs (compare in memory, never record
+those values or their hashes). QA freezes the scanner rules and decoded-byte
+checks with admitted/tainted controls before execution. No raw environment snapshot
+is needed for these comparisons. This is defense in depth for private admission,
+not a replacement for the closed public Interface or a proof of arbitrary-secret
+recognition. The historical scanner's bounded assurance is not widened into one.
+
+On a hit, unreadable scan input, undecodable envelope or scanner failure, write
+no tainted bytes anywhere, including an invalid-attempt envelope. Emit only
+`PRIVATE_ADMISSION_REFUSED`, account for any call already made using safe typed
+transport counts, record a safe attempt/gap marker, and STOP with no retry or
+later call. Earlier admitted originals stay exact; never redact a rejected body
+and represent it as complete evidence. Missing reviewable evidence blocks PASS
+and requires owning-role resolution before continuation. Exact-original retention
+applies to admitted evidence; this preserves the earlier exclusion/refusal rule,
+not permission to retain secrets privately. Any proposal to store a rejected body
+would require a new maintainer security decision; none is proposed here.
+
 Private evidence repository is fixed: `TiesL/sdg-eval-logs`. Each immutable
 evidence object is `objects/<digest>.bin`: bytes are the ASCII magic
 `sdg-eval-object-v1\n`, 32 cryptographically random **private** nonce bytes,
 then a UTF-8 JSON envelope containing length/hash-bound reversible byte encodings
 of complete originals and runner-owned call bindings. Digest is SHA-256 of the
 entire file, including nonce. Local original-byte hashes and nonce stay private.
-Make one object per trial/attempt and a final index object binding the complete
-plan, all objects, first/second judges, calibration receipts and aggregation.
+Make one object per admitted trial/attempt and an evidence index object binding
+the complete plan, all objects, first/second judges, separately labelled controls,
+private finding details, calibration receipts and aggregation.
 The index binds issue 680, canonical base/blob, packet/key/criterion-registry
 hashes, runtime, concrete model, UTC date, case/repetition and call identities.
-Finalization makes a new index; it never rewrites an original or old result.
+Each new result freezes a new evidence index before C; the receipt append at F
+never rewrites that index, an original or an old result.
 
 The orchestrator alone pushes objects/index to that repository and records the
-immutable private commit OID. Children have no network. Before final publication,
-an authorized reviewer fetches that commit, reads each named object by its
-derived path, checks file SHA-256, decodes originals, checks internal byte
-lengths/hashes and all index/result identities, then recomputes grading. Record
-this verification receipt privately and bind its object digest publicly. No
-public path/URL supplied by a model is a locator. The fixed repository, commit
-OID and object digest suffice for retrieval; untracked local success does not.
-History is the backup, collaborators control access, and objects/commits must
-remain retrievable while a published result relies on them. Missing, changed,
-incomplete or inaccessible evidence blocks PASS; later loss invalidates reliance
-on an earlier PASS and requires a superseding availability record.
+immutable private commit OID. Children have no network.
 
-**Closed public Interface and security argument.** Publish only
+**Finite receipt finalization, separately for each runtime.** Use two commit
+locators, never a receipt that claims to verify its own containing commit:
+
+1. Freeze a canonical typed result core P for this runtime: rows, aggregation,
+   models, counts and calibration/control object references. P excludes custody
+   locators (commit OIDs, index and verification digests). Produce index I binding
+   P's canonical bytes/digest, plan/registry/source identities and every required
+   admitted object, including human calibration receipts. For PASS, human reads
+   are already complete and bind immutable transcript digests before I is frozen.
+   A FAIL/not-runnable result can instead inventory missing evidence/calibration
+   as typed gaps with null locators, never a fabricated receipt or nonexistent
+   object reference. Verification checks the gaps and forbids PASS; all declared
+   object references must still resolve. Neither I nor a calibration receipt
+   refers to a future commit or verification receipt.
+2. Push immutable evidence commit C containing I and all objects it names. An
+   authorized reviewer clean-fetches C from the fixed repository, checks each
+   derived object path/SHA-256, decoded byte lengths/hashes, complete inventory,
+   calibration/control provenance and all identities, and independently recomputes
+   grading and P. On disagreement STOP; do not finalize the advertised result.
+3. Create admitted verification object V recording that review, its private
+   reviewer/date, C, I's digest, P's digest and the checks/outcome. V attests C,
+   not its own object or containing commit. Push final receipt commit F with
+   exactly one parent C and exactly C's tree plus the one new V object; no evidence,
+   index, result or calibration object may change. Push/read failure blocks PASS.
+4. Before public atomic publication, clean-fetch C and F using their OIDs. Verify
+   F's sole parent and tree delta, V's digest and C/I/P bindings; retrieve I,
+   calibration and every other evidence object at C, and V at F. Recompute the
+   advertised result core and compare its canonical digest with I and V. This
+   final retrieval check creates no further required receipt. Its finite proof
+   ends here; V is not presented as an attestation of F or of its own hash.
+5. Publish a per-runtime bundle containing C (`evidence_commit`), F
+   (`verification_commit`), I/V digests and calibration digests, together with P.
+   An authorized later reviewer needs only this bundle and the fixed repository
+   to repeat step 4 and the substantive review in step 2. All referenced objects
+   resolve at their stated commits, without local files or a branch-tip lookup.
+
+A new result/receipt makes a new bundle; never rewrite old evidence or silently
+substitute an object. Claude's bundle can finalize with Codex UNRUN; later Codex
+finalization leaves Claude's published bundle intact. No public path/URL supplied
+by a model is a locator. History is the backup, collaborators control access, and
+both commits and all objects must remain retrievable while a published result
+relies on them. Missing, changed, incomplete or inaccessible evidence blocks
+PASS; later loss invalidates reliance on an earlier PASS and requires a
+superseding availability record. A receipt is evidence of a recorded review,
+not authentication of the named human or proof that the review happened.
+
+**Closed public Interface and security argument.** Runner result files are only
 `test/behavior/temporary-panel-results.json` and a mechanically rendered
 `temporary-panel-results.md` beside it. The JSON is a versioned exact-key schema:
-fixed issue/repository identifiers; public-spec digests and private commit OID;
-index/verification/calibration object digests; rows keyed by runtime, exercise,
+fixed issue/repository identifiers; public-spec digests and per-runtime bundles
+with distinct evidence/verification commit OIDs and index/verification/calibration
+object digests; rows keyed by runtime, exercise,
 case, repetition and criterion; type, verdict/reason, evidence mode, coverage,
-sensitivity, model-registry ID, UTC date, usage and calibration counts. Include
+sensitivity, model-registry ID, UTC date, usage and calibration/control counts. Include
 per-trial and aggregate verdicts and separate Claude/Codex exercise summaries.
 A FAIL names criterion and private object digest, never a quote. Not runnable
 names a fixed reason enum; UNRUN is an observation state, not a fabricated trial.
@@ -12363,6 +12444,40 @@ unknown/duplicate keys, nonfinite numbers, duplicate rows and extra/trailing dat
 MD is constant headings/labels plus validated typed values only. QA's status
 prose also uses these values, not transcript excerpts.
 
+**Agent and human publication routes.** The same rule governs all evidence-derived
+public text, beyond the runner's five file/console/name sinks: (1) #680 AC5 routed
+findings, (2) AC6 maintainer reports/status prose, (3) PR descriptions, (4) commit
+messages, and (5) judge-derived issue/PR comments. It applies to both agent and
+human authors with private-log access. Actor/judge drafts, witness quotes,
+reasoning, filenames, exception text and human annotations stay private; no
+copy/paste or free-text summary of them is a publication path.
+
+The Module renders these five route payloads from the validated result and
+reviewed finite case/criterion/template registries. It accepts no public free-text
+field. AC5's public finding carries fixed field labels and reviewed criterion
+summary, class/severity enums, runtime/case/trial/criterion IDs, bound object
+references and a criterion-specific fixed falsifying-check template. The full
+failure scenario, quotes and analysis remain in an indexed private finding object
+for the authorized owning role. The public template identifies the replay inputs,
+expected criterion outcome and private digest; a generic “see logs” is insufficient.
+AC6 renders the six per-runtime results, models and usage from typed values.
+PR/commit templates use fixed work-item/result wording and the same bindings;
+judge output goes through capture and typed grading, never directly to a post.
+A missing template/criterion mapping stops that publication for owning-role review;
+new registry wording is reviewed against public specification sources, never
+admitted because an agent proposes it. No observation or routed finding is lost.
+
+Before posting or committing, the orchestrator compares the **entire** prepared
+payload/title/body/message to the applicable generated template output, rejects
+added text and audits attachments, links, names and CLI diagnostics. This includes
+manual human posts in the run's reporting procedure. Posting uses fixed
+repository/destination IDs and typed locators only; it grants no new posting
+authority. Independent Review audits the actual issue/PR/commit payloads and
+writer inventory. This is an operational rule for human/agent writers, not an
+interceptor for arbitrary manual publication; offline checks exercise payload
+construction/refusal, not human obedience. General specification prose independent
+of private evidence remains ordinary role-owned work.
+
 Replace `publish(destination, payload)` with `publish(validated_result)`:
 there is no caller-chosen public path, raw payload, arbitrary dictionary merge
 or generic evidence serializer in this Interface. It constructs a fresh public
@@ -12376,10 +12491,13 @@ only a complete valid result. A refusal preserves the prior safe result, records
 STOP privately where possible, emits a fixed code and launches no further call.
 Storage/STOP failure is a failed operation, not successful retention.
 
-Thus arbitrary original text has no serialization route to a public sink:
-only a newly constructed closed record crosses the Interface. This argument
-depends on auditing **all** writers, descriptor inheritance, error paths and
-root resolution, not on finding secret-shaped strings. Nonces prevent practical
+Thus the audited runner and posting payload builders expose only newly
+constructed closed records/templates across the Interface; arbitrary original
+text has no admitted serialization route through them. Extend the writer audit
+to every agent/human route above, descriptor inheritance, error paths and root
+resolution. Procedural compliance by external writers remains required; the
+runner alone cannot prove it. Public confidentiality does not depend on finding
+secret-shaped strings. Nonces prevent practical
 dictionary comparison against hashes of low-entropy transcripts; never publish
 unsalted hashes of private text or the nonce. Hashes still prove neither truth,
 availability nor runtime authenticity. Counts/verdicts reveal intended evaluation
@@ -12427,8 +12545,10 @@ With all gates satisfied and no prohibited violation, two adequate explanations
 and one poor explanation yield quality PASS (2/3) and aggregate PASS under both
 the original-clause mapping and these split IDs; the poor trial remains recorded.
 
-Fix **k=3** fresh actor trials per required case per runtime, including controls
-and the delegation pilot. Majority is at least 2/3 for each judgment criterion,
+Fix **k=3** fresh actor trials per required case per runtime, including existing
+actor sensitivity controls and the delegation pilot. The separate D5 known-bad
+judge-calibration controls below are excluded from this actor denominator.
+Majority is at least 2/3 for each judgment criterion,
 not an exercise-wide average; PASS needs every case/criterion. Any prohibited
 violation in any scheduled trial dominates majority and yields exercise FAIL.
 Every wrong-reason answer fails that trial's quality criterion. Keep all first
@@ -12449,41 +12569,77 @@ reinterpret old evidence into PASS. Route disputed labels as design/spec finding
 before new execution; preserve the old result and ask the maintainer about any
 changed scope/security trade-off.
 
-Human calibration requires at least one actual PASS and one actual FAIL transcript
-per exercise, identifiable by private object digest and trial/runtime, read by
-the maintainer or a contributor granted private read access. Record reviewer,
-date, judgment and comparison privately; publish only bound receipt/counts.
-Agent reads, stubs, expected answers and printed reference solutions do not count.
-If no qualifying pair exists, record CALIBRATION_MISSING; do not manufacture a
-failure, silently waive it or schedule extra trials to obtain the pair. Partial
-observations and genuine FAILs remain reportable; PASS remains blocked.
+**D5 human calibration and separate judge controls.** Calibration is per exercise
+**and runtime**, by the maintainer or a contributor granted private read access.
+The human reads at least one real PASS transcript and, whenever any genuine FAIL
+transcript exists among that exercise/runtime's retained scheduled observations,
+at least one such FAIL. Include minority quality failures even when aggregation
+passes. If every trial passes, a human PASS read plus an explicit zero-genuine-FAIL
+inventory satisfies the transcript-read requirement; absence of FAIL is not
+`CALIBRATION_MISSING`. Never manufacture a failure or schedule extra actor trials
+to obtain one. A genuine FAIL in another exercise/runtime cannot satisfy the read.
+
+Separately demonstrate each grading configuration's failure detection on reviewed,
+labelled known-bad control answers for the applicable criteria in that runtime.
+QA freezes control inputs/expected failed criteria and their finite judge schedule
+with the plan before calls; run them through the actual grading path, with fresh
+judges, quote checks and second-judge-on-FAIL. Missing controls, disagreement or
+failure to reject a known-bad answer blocks PASS. Store exact control inputs,
+outputs, judge/model/registry bindings and comparison privately as `CONTROL`,
+never `OBSERVATION`; these are not extra actor trials, not human FAIL reads and
+never enter k=3, majority, pass^k, observed counts or six-result claims. Include
+their sessions/usage in dry-run budgeting and actual accounting. No new actor
+retry policy is created.
+
+Record private calibration receipts binding exercise, runtime, trial/object
+identities, complete genuine-FAIL inventory, reviewer, date, human judgments and
+comparisons, plus the separately identified control results/configuration. Publish
+only bound receipt IDs and typed observation/read/control counts. Agent reads,
+stubs and reference answers cannot satisfy a real-transcript human read. Missing
+required PASS read, an existing FAIL left unread, wrong runtime or inaccessible
+originals gives `CALIBRATION_MISSING` and blocks PASS; established FAILs/partial
+observations remain reportable. Claude calibration/finalization never waits for
+Codex. D1-D4's exact evidence, first-failure retention and aggregation stay intact.
 
 **AC4 finite replacement gate (QA must independently enumerate).** The following
-is the replacement's **384 baseline checks plus 12 property-specific mutant
-checks = 396**, not a count of every retained S629-S634 regression. No live model
-or network is needed for these checks. Each check has a literal tuple ID, setup,
+is the replacement's **580 baseline checks plus 18 property-specific mutant
+checks = 598**, not a count of every retained S629-S634 regression. The former
+396 counted runner-only egress and the superseded calibration-pair oracle;
+these additions cover private admission, external writers and receipt finalization.
+No live model or network is needed for these checks. Each check has a literal tuple ID, setup,
 expected outputs/calls/private exactness and an assertion; no filtered generator
 defines its own completeness.
 
 | Family | Exact finite enumeration | Checks |
 | --- | --- | ---: |
-| Public egress | Claude/Codex fakes x 8 producers (input/import, actor, canary, first judge, second judge, unusable/error capture, bookkeeping, report) x 5 sinks (JSON, MD, stdout, stderr, filenames) x 4 sources (literal needle, nested JSON-escaped needle, binary/invalid-UTF8 needle, over-budget original). Inject into all opaque content fields for that producer together; assert exact private originals, no raw public bytes/names, typed outputs or safe STOP, no later calls. Exercise actual producer-to-sink paths, including early pre-store errors; each tuple must reach its named assertion. | 320 |
+| Public egress | Claude/Codex fakes x 8 producers (input/import, actor, canary, first judge, second judge, unusable/error capture, bookkeeping, report) x 5 sinks (JSON, MD, stdout, stderr, filenames) x 4 sources (literal needle, nested JSON-escaped needle, binary/invalid-UTF8 needle, over-budget original). Use admission-safe opaque confidentiality needles, not credentials/emails/host paths. Inject into all opaque content fields for that producer together; assert exact admitted private originals, no raw public bytes/names, typed outputs or safe STOP, no later calls. Exercise actual producer-to-sink paths, including early pre-store errors; each tuple must reach its named assertion. Byte scanners operate on reversible original bytes; invalid UTF-8 alone is not a secret hit. | 320 |
+| Agent/human posting | 2 runtime fakes x 5 routes (AC5 finding, AC6 report, PR description, commit message, judge-derived issue/PR comment) x 2 authors (agent, human) x the same 4 admission-safe source forms above. Exercise each prepared payload through its real template/comparison path; assert exact admitted private originals, criterion/object references, complete template equality, and rejection of appended text/attachment/name/diagnostic leakage together. A valid companion payload reaches that route's publication boundary; no real post/commit occurs. | 80 |
+| Private admission | 2 Adapter fakes x 8 locations (packet, actor stdout, actor stderr, invocation, recorder event, judge output, calibration receipt, verification receipt) x 6 refusal conditions (known forbidden environment-value specimen, credential/token specimen, actual cwd specimen, home-path specimen, email specimen, scanner unavailable). Assert zero tainted persistent writes/Git objects/recovery/pushes, fixed safe diagnostics/gap/counts, no later call, prior objects unchanged and no PASS; invocation/input refusal starts no call. Each tuple has an admitted companion reaching persistence. Exercise encoded fields after reversible decoding as well as raw bytes; production scanner rules and byte spies are independently audited. | 96 |
 | Schema | missing key, extra key, duplicate key, wrong primitive, bool-as-int, negative count, count overflow, nonfinite number, invalid enum, arbitrary model ID, malformed date, wrong digest length, model-supplied digest, traversal name, extra row, duplicate row, omitted row, wrong runtime binding, trailing data, valid complete control | 20 |
 | Retrieval/integrity | valid fetched commit; missing object; changed bytes; wrong commit; wrong trial binding; missing required original; unavailable collaborator access; nonce absent/reused | 8 |
+| Receipt finalization | valid clean-fetch C/I/P/V/F chain including calibration (and a non-PASS typed-gap companion); missing V object; missing calibration object; wrong C binding; wrong I binding; wrong P binding; wrong V digest; F parent mismatch; F tree mutation beyond adding V; unavailable F; failed F push; receipt self-reference/cycle. Only the valid control can finalize; every invalid setup preserves the prior safe result and stops. | 12 |
 | Aggregation | all pass; one prohibited fail among passes; two quality passes; two quality fails; unresolved judge; missing trial; unusable first judge; unusable second judge; missing chronology; label/hash edit; stub-only evidence; runtime result conflation | 12 |
-| Calibration | valid human pair; missing pass; missing fail; agent-only; stub pair; wrong exercise; changed receipt binding; unread/inaccessible object | 8 |
+| Calibration | all observations PASS with human PASS read and passing known-bad detection; mixed observations with required human PASS/FAIL reads; missing PASS read; existing minority FAIL unread; false no-FAIL inventory; agent-only read; stub read; control substituted for real read; wrong exercise; wrong runtime; changed receipt binding; unread/inaccessible object; judge accepts known-bad answer; missing known-bad control run; Claude finalized while Codex UNRUN; control included in observation denominator. The first, second and Claude-only controls meet calibration; every other case blocks PASS. | 16 |
 | Runtime/containment | each of 2 Adapters x (valid isolated invocation, failed canary, attempt-count mismatch, tool event in disabled mode) | 8 |
 | Storage/STOP | root overlap; symlink escape; private disk failure; interrupted capture; failed private push receipt; failed public atomic replace; failed STOP write; forbidden retry after STOP | 8 |
 
-The 12 scratch mutants respectively bypass schema closure, one raw-file write,
+The 18 scratch mutants respectively bypass schema closure, one raw-file write,
 stdout capture, stderr capture, filename derivation, private-root check,
 nonce inclusion, evidence binding, prohibited-fail dominance, frozen labels,
-human calibration, and STOP continuation. Each must be killed at its own
+human calibration, STOP continuation, private pre-write admission, posting-template
+comparison, an existing-FAIL human read, known-bad rejection, control/observation
+separation, and the verification-commit locator. Each must be killed at its own
 assertion with a valid companion control; setup failures get no kill credit.
-QA independently lists the 320 Cartesian keys and the 64 named keys above, then
-the 12 mutant keys; compare exact sets/counts with Developer output, rejecting
-duplicates, missing rows and unexercised sinks. This is a structural coverage
-argument plus bounded probes, not exhaustive testing of arbitrary private bytes.
+QA independently lists 320 runner-egress + 80 posting + 96 private-admission
+Cartesian keys (=496), and 20 schema + 8 retrieval + 12 finalization + 12
+aggregation + 16 calibration + 8 runtime + 8 storage named keys (=84), then the
+18 mutant keys. Compare exact sets/counts with Developer output, rejecting
+duplicates, missing rows and unexercised sinks. Companion controls are required
+inside each check, not separately counted rows; sub-assertions earn no extra count.
+The producer inventory includes known-bad control inputs/outputs in input/judge
+paths and calibration/verification/finding objects in bookkeeping/report paths.
+This is a structural coverage argument plus bounded probes, not exhaustive
+testing of arbitrary private bytes.
 Audit the writer graph separately: a new producer/sink/schema field changes the
 inventory and requires QA/Architect review before use. Reconcile R11's literal
 and escaped witnesses explicitly as no-public-copy checks; supersession alone
@@ -12495,19 +12651,23 @@ zero network. Budget for the new matrix: at most 60 seconds per leg; record
 actual count/time before real runs. Exceeding it stops for design resolution,
 not sampling. Manual-only work is installed-runtime containment verification,
 Claude pilot/remainder then Codex pilot/remainder, subscription accounting,
-private push/retrieval/access verification and actual human calibration. Offline
-retrieval/access fakes prove refusal logic, not real availability or human reads.
+private push/retrieval/access verification, actual human calibration and review
+of actual external publications. Offline retrieval/access/posting fakes prove
+construction/refusal logic, not real availability, human reads or writer obedience.
 `dry-run` prints only fixed codes/typed counts and records exact prompts privately;
 it computes the finite sessions/judges/canaries and usage estimate before calls.
 Keep session budget, stop-file and 3,000,000-byte threshold as stop controls;
-over-limit completed originals remain private/recoverable, never truncated.
+over-limit completed admitted originals remain private/recoverable, never
+truncated. Tainted captures follow pre-write refusal, never secret recovery.
 
 **Owners, remaining work and stop.** QA: reconcile S631's replacement oracle and
 S629-S634's runtime, identity, grading/status and human-calibration clauses;
-assign all criterion labels and exact matrices before runs. Test Seams are the
-four runner operations, injected runtime Adapter, private-store fault injection,
-public projection and shared retained-state validation. Developer scope for
-later #680: the runner pair, recorder, `temporary-panel-cases/` builder/keys/plan,
+assign all criterion labels, separate judge controls and exact matrices before
+runs. Test Seams are the four runner operations, injected runtime Adapter,
+private-store fault injection, public result/posting projection and shared
+retained-state validation. Admission and the two-commit finalization remain
+inside the same Module; no new command or hypothetical Adapter is introduced.
+Developer scope for later #680: the runner pair, recorder, `temporary-panel-cases/` builder/keys/plan,
 `test/cases/s629_*.sh` through `s634_*.sh`, their fixtures, generated typed
 results, and `test/run.sh`/`check` only if needed for offline wiring. Remove
 tracked WIP raw evidence when porting, without deleting its preserved branch;
@@ -12524,5 +12684,12 @@ unresolved security/scope trade-offs return to the maintainer, never another
 automatic bounded cycle. This entry neither runs an exercise nor closes R11/K,
 revives PR #697, grants network authority to children or approves a merge.
 Architect effort: moderate migration/audit; no new dependency or general harness.
-Open design questions: **none**; executable proof and live verification remain
-required work, not assumed facts.
+Review round 1 resolutions: `calibration-pair-blocks-clean-pass` follows D5;
+`private-originals-drop-env-secret-exclusion` retains pre-write exclusions;
+`egress-argument-omits-agent-posting-routes` extends typed projection and writer
+audit; `verification-receipt-finalization` uses the finite C then F chain. QA must
+independently falsify each with the rows above before claiming implementation.
+`children-no-network-overbroad` remains deferred under OR40, unchanged here;
+this entry supplies no new network permission or claim that its low is resolved.
+Open design questions: **none under D1-D5**; owning Product/QA reconciliation,
+executable proof and live verification remain required work, not assumed facts.
