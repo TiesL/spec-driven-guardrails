@@ -12262,626 +12262,244 @@ Red-before-green: `bash test/cases/s626_merge_risk_skill_own_file.sh`,
 - **Scope.** Relative to local `origin/main` at `4dd1325`, #646 is the new role-contract obligation. #681 clarifies the reserved contract-text class within #645's panel; #678 adjusts its fixture and wording; #652/#676 condense the core without a new duty; #685 Part A changes the role's displayed name, not its scope; #707 uses its own `process-model-routing` row. The main-side #645 procedure belongs in this same bump. The sync, route documentation and tracked `wip/` to `prep/` move do not add a second adoption obligation. No other `CHANGES.md` meaning version moves. This does not accept or enable #646.
 - **Handoff.** QA updates the v3/current-state assertions in S239, S265, S314, S336 and S588, including S336's explicit v3-to-v4 allowance against the main merge base, and adds fixture coverage for implicit v1, v2, v3 and v4 answers of both signs. S90 still requires a byte-identical snapshot. Developer updates the single entry, snapshot, current-state scenario/architecture wording, changelog and, only after TiesL's attributable AC3 words, this repository's adoption row. Historical #663 claims stay historical. No AC is contradicted or narrowed; AC3 remains a human decision.
 
-### A56 addendum 9 (Architect, Planning, 2026-11-27): private originals and a closed public result (#731; resumes #680 only after reconciliation)
+### A56 addendum 9 (Architect, Planning, 2026-11-27, redesigned under D6): two repositories, one secret scan, a closed public result (#731; resumes #680 only after reconciliation)
 
-**Authority and provenance.** Keep #731 D1-D5: D1 commissioned the research,
-D2-D4 choose A-eval and typed aggregation; D5 (maintainer, 2026-11-27) resolves
-calibration as specified below. Amended #680 AC1-AC6 govern execution, with
-D5 superseding only the unconditional PASS/FAIL calibration pair and clarifying
-per-runtime finalization. Product must reconcile that wording in #731/#680;
-this entry does not edit Product-owned artifacts. This entry replaces A56 D5,
-rather than reducing its scrub matrix. In this checkout (`6a37dc1`) A56 itself is absent: only references to it
-exist. The precise historical source for A56 and addenda 1-8 is
-`origin/wip/680-run-meaning-exercises` at
-`cf13475a1b8152872eef487ea4c4568aa3883f98:ARCHITECTURE.md`.
-This self-contained amendment is intended for main; it imports no WIP code or
-claimed observations. AC consistency: D5 changes the unconditional pair clause
-in #731 Q5 (referenced by AC3) and #680 AC2 to a real PASS read, a FAIL read
-whenever one exists, separate known-bad controls and per-runtime calibration.
-Product reconciliation is required, not assumed complete. **No additional AC
-contradiction or narrowing is proposed under D1-D5.** Earlier option-B
-qualifications are superseded where
-those ACs require fresh sessions for all six exercises and separate runtimes.
+**Authority and scope.** #731 D1-D6. D6 (maintainer, 2026-11-27) asks for a
+simpler, goal-oriented boundary: raw evidence in the private child repository
+`TiesL/sdg-eval-logs`, only shareable result data in SDG, and the same secret
+scan (today Gitleaks) on pushes to both. This text replaces the Review-round-3
+version of this addendum in full; that version stays readable in PR #746 history
+at `5825e02`. Amended #680 AC1-AC6 govern execution. A56 and addenda 1-8 are
+absent on main; their source is `cf13475:ARCHITECTURE.md` on
+`origin/wip/680-run-meaning-exercises`. Nothing here imports WIP code, WIP
+evidence or claimed observations.
 
-| Historical decision | Disposition under this entry |
+| Historical decision | Disposition |
 | --- | --- |
-| Base D1-D4, D6-D8 | Retain isolation, exact inputs, deterministic/semantic separation, findings and stop/session accounting; change runtime, repetition, aggregation and publication as below. Supplied returns remain explicitly supplied, never live independence. |
-| Addendum 1 | Retain one shared runner, containment modes, controls, ownership and S629-S634 allocation. Replace option-B release-import substitution and once/twice schedule: all six require fresh runtime-specific lab trials. Historical imports remain separately labelled supplementary evidence. Replace public captures, free-text result rendering and publication-size assumptions. No old pilot go or panel cycle authorizes a new run before this gate. |
-| Addendum 2 | Retain provenance and deterministic/semantic separation; its textual heading recognizer remains superseded by 3. |
-| Addendum 3 | Retain strict chronology events and one retained-state validator for report/judge/continuation; all payloads/witness quotes now private. |
-| Base D5 exclusions | Retain exclusion of process environment, working-directory/home paths, tokens and emails, including before private storage. Replace public raw capture and its scrub oracle only. Complete canonical instructions are now retained privately as required by exact-input review; environment/authentication metadata is never evidence. |
-| Addenda 4-5 | Retain capture-before-semantic-validation, opaque unusable envelopes, bounded parsing, exact admitted originals and once-only usage. Apply the retained secret admission check before any persistent capture, including unusable envelopes/recovery; rejection cannot yield PASS. Public errors are closed codes. |
-| Addendum 6 | Supersede P1-P8's public-raw scrub, R/J/B/N views, catalogue, expansion and scrub mutants. Retain private recovery, structural retention, STOP/no-retry/no-later-call and accounting. Replace publication with the Interface and matrix below. |
-| Addendum 7 | Superseded as a publication oracle; no short-token regex is a public admission rule. Keep its conflict/witnesses as historical regression inputs. |
-| Addendum 8 | Supersede full K for the new publication design, **not** by factoring or sampling K. Until Product/Architect/QA artifacts agree and the replacement gate is established, full K and the affected-work STOP remain. D8/D9 and R11 remain historical, not erased or declared closed. |
+| Base D1-D4, D6-D8 | Retain isolation, exact inputs, deterministic/semantic separation, findings, stop/session accounting. |
+| Base D5 | Retain: never record environment, raw argv, authentication data, credential files. Replace public raw capture and its scrub with section 3 (strip) and section 4 (closed result). |
+| Addendum 1 | Retain one runner, containment modes, controls, S629-S634 allocation. All six exercises get fresh runtime-specific trials; old imports stay labelled supplementary. |
+| Addenda 2-5 | Retain chronology events, `validate_retained_state()`, capture-before-validation, opaque unusable envelopes, bounded parsing, once-only usage. These apply to private evidence. |
+| Addenda 6-7 | Superseded: no public raw text exists, so no public scrub, views, catalogue or short-token regex. Their witnesses become no-public-copy inputs (E4). |
+| Addendum 8 | Full K is superseded by the closed-result argument in section 4, not sampled or factored. R11's literal and escaped witnesses are reconciled as E4 inputs. |
 
-**Runner Module and runtime Seam.** Keep `temporary-panel-run.sh` /
-`temporary_panel_run.py`, the four operations `dry-run`, `run`, `judge`, `report`,
-and one qualification lifecycle. Its Interface accepts a reviewed finite plan,
-runtime enum, model-registry entry and private store; it returns typed outcomes.
-The runtime Seam takes canonical instruction bytes, exact packet and containment
-mode, and returns captured original streams/events, invocation identity and
-usage. Claude and Codex are the two required real Adapters, plus the offline
-test Adapter; do not build a plugin framework. Run the complete Claude plan
-first, report its pilot, then continue the remainder; Codex is next inside #680,
-with its own containment verification and pilot. A Claude receipt never verifies
-Codex. Unknown native tool/event/usage semantics stop that Adapter. Retain
-addendum 1's verified deny-all mode and explicitly weaker tools-disabled
-fallback: absent action evidence is not runnable, never zero verified attempts.
-No actor executes a network mutation, real override or denied command.
+**Runner Module.** Keep `temporary-panel-run.sh` / `temporary_panel_run.py`
+with operations `dry-run`, `run`, `judge`, `report`, plus one new operation
+`verify`. The runtime Seam takes canonical instruction bytes, the exact packet
+and the containment mode; it returns captured streams/events, invocation
+identity and usage. Real Adapters: Claude, then Codex; plus the offline test
+Adapter. Two real Adapters justify the Seam; no plugin framework. The same
+Module owns private writing, grading and the public result, and it owns the
+result schema used by `./check`. Deleting it would spread strip rules and
+schema rules across callers, so its Depth gives Leverage and Locality.
 
-The same Module owns private capture, qualification and public projection.
-Deleting it would spread lifecycle/identity checks across callers: this Depth
-provides Leverage to the real runtime Adapters and Locality for repairs. Leave
-`orchestrator_diff.py` and its stamp unchanged; its raw stderr diagnostics must
-not be copied. #657/#682 remain later consumers, outside #731/#680 execution.
+**Network.** Codex children have no network. Claude children reach only the
+model service, through the runtime's own authentication. Only the orchestrator
+pushes to either repository. No child runs a network mutation, real override or
+denied command.
 
-**OR20 redesign step (#731 / PR #746, after Review rounds 1 and 2).**
-Reconsidered the whole mechanism, including exact-input custody, private admission,
-public projection and outside writers, receipt retrieval, calibration, aggregation
-and STOP. Keep D1-D5 and the closed public Interface: it removes arbitrary-text
-publication from the runner by construction, while external writer compliance
-remains procedural. Keep the finite C/I/P/V/F chain and typed grading. The repeated
-route omissions do expose a design weakness on the private side: a list of
-producer obligations plus one global scanner mutant is not a completeness proof.
-Choose a single admission-and-persistence operation inside the existing Module,
-with a separately audited complete writer graph. Enumeration supplies falsifying
-probes of that structure; it no longer defines the structure's coverage.
+#### 1. Two repositories
 
-Rejected merely adding the seven missing producer rows: the next recovery or
-receipt writer could still bypass admission. Rejected per-producer admission
-wrappers: deleting a wrapper could silently transfer safety to its caller. With
-`PrivateStore` owning admission and persistence together, the deletion test makes
-that complexity reappear in every producer; its Depth supplies Leverage and
-Locality. No new external Seam or hypothetical Adapter is needed: both real
-runtime Adapters use the same operation, and existing offline storage/fault Seams
-exercise it. This is a design correction within the accepted exclusions, not a
-new security trade-off or AC narrowing. No additional AC contradiction is proposed.
-The deferred `children-no-network-overbroad` clause remains unchanged under OR40.
+* **Public (SDG).** Only `test/behavior/temporary-panel-results.json` and its
+  rendered `temporary-panel-results.md`, plus prose that cites their values
+  (section 6). No raw model text, quotes or captures. Public synthetic input
+  fixtures stay allowed; they are not observed evidence.
+* **Private (`TiesL/sdg-eval-logs`).** All raw evidence of a run, stripped per
+  section 3, under `runs/<run-id>/`. `run-id` is
+  `680-<runtime>-<UTC yyyymmddThhmmssZ>`. Layout:
+  `plan.json`; `<exercise>/<case>/t<n>/` with packet, actor stdout/stderr,
+  attempts/recorder events, usage and first/second judge output;
+  `controls/` for known-bad controls; `grading.json` with full reasons and
+  quotes; `findings/<id>.md` for routed-finding analysis;
+  `calibration/<exercise>.md` written by the human reader. Names are derived by
+  the runner from plan IDs and ordinals, never from model text.
 
-**D5 replacement: custody, identity and retrieval.** Complete original packets,
-canonical inputs, supplied returns, actor/canary/judge stdout and stderr,
-ordered attempts, drafts, keys, receipts, invalid attempts and usage live outside
-the public checkout, including its ignored directories. No raw model text,
-model quotes or raw synthetic capture exports are tracked publicly. Public
-synthetic input fixtures remain permitted; they are not observed evidence.
-`PrivateStore` and scratch roots must resolve outside the public tree; reject
-overlap, traversal and symlink escapes, including recovery destinations.
+The private root resolves outside the public checkout, including ignored
+directories and symlink targets; the runner refuses otherwise.
 
-**Private admission precedes persistence.** Never collect for evidence or serialize
-the process environment, authentication headers, credential files, actual working
-directory or home paths. Call bindings contain reviewed invocation-template ID/flags,
-relative synthetic lab IDs and call ordinals, not raw argv, cwd or env. Credentials
-may reach the runtime through its existing authentication mechanism, never through
-captured arguments or evidence. Refuse a credential-bearing invocation before
-launch; do not log it. Use a synthetic scratch layout; disable native transcript,
-debug, crash and session persistence and verify descriptor/spool handling for each
-Adapter before calls. An Adapter unable to establish this is not runnable.
+#### 2. One scan for both repositories
 
-Capture complete streams in memory before parsing/grading; before **any** disk,
-Git object, recovery/spool file or push, scan all candidate original/envelope bytes
-and receipt fields, including unusable, binary/escaped and over-budget captures.
-Retain the historical pre-write rejection of `/Users/`, token-shaped strings and
-email addresses; also reject actual cwd/home values and known credential values
-from the narrowly required authentication inputs (compare in memory, never record
-those values or their hashes). QA freezes the scanner rules and decoded-byte
-checks with admitted/tainted controls before execution. No raw environment snapshot
-is needed for these comparisons. This is defense in depth for private admission,
-not a replacement for the closed public Interface or a proof of arbitrary-secret
-recognition. The historical scanner's bounded assurance is not widened into one.
+* **Pre-push hook.** The private clone is adopted with the existing
+  `adopt.sh` project adoption, so its `.git/hooks/pre-push` is a symlink to
+  SDG's `hooks/pre-push`. There is no copy: extending that hook (Gitleaks or a
+  later check) extends both repositories.
+* **CI.** Move the "Secret scan (gitleaks)" step from `.github/workflows/ci.yml`
+  unchanged (pinned version, checksum, full history) into a reusable workflow
+  `.github/workflows/secret-scan.yml` (`on: workflow_call`). SDG's `ci.yml`
+  calls it locally. The private repository's own `ci.yml` calls
+  `TiesL/spec-driven-guardrails/.github/workflows/secret-scan.yml@main`. A
+  future rule file or extra scanner is added in that one workflow.
+  `templates/ci.yml` for adopters is out of scope.
+* **Fail closed for eval pushes.** The hook fails open when Gitleaks is absent
+  and can be bypassed. The runner's push step therefore checks first: Gitleaks
+  on `PATH`, `.git/hooks/pre-push` resolves to SDG's `hooks/pre-push`, and
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF` unset. It pushes with plain `git push`,
+  never `--no-verify`. A failed precondition is not runnable. The hook itself
+  is unchanged.
+* **Branches.** The hooks also forbid commits and pushes on `main`. The
+  orchestrator commits each run on branch `runs/<run-id>` and pushes that
+  branch; no merge is needed. A repository ruleset protects `runs/**` against
+  deletion and force-push (maintainer setting). The pushed commit OID is the
+  locator.
 
-**One private persistence owner.** The Module's internal
-`PrivateStore.persist(candidate, purpose)` accepts complete in-memory candidate
-bytes and closed runner-owned purpose/bindings; it returns an immutable locator
-or a typed refusal. Callers never receive an admission token, writable stream,
-serializer, filesystem/Git handle, path or scanner-bypass flag. Routing to primary
-storage, recovery/spool, Git-object creation and push is internal. Every producer,
-including retained-state imports and human-supplied receipts/drafts, enters here;
-no exception for unusable attempts, diagnostics, STOP records or oversized bodies.
-Invocation admission occurs before launch. Capture still precedes semantic
-validation; admission precedes persistence, not capture or grading.
+#### 3. Stripped before writing (private side)
 
-The owner constructs the complete final representation in memory, scans original
-bytes, reversibly decoded fields, runner-added fields and the final envelope, then
-binds immutable exact bytes to derived private names and permitted sinks. The sink
-writes only those bound bytes. Mutation, replacement, changed bindings, reread or
-recovery reserialization requires fresh admission before any write. Recovery is
-another internal destination, never an exception handler that writes the rejected
-candidate. A safe refusal/gap record is a new candidate through the same operation;
-if scanning/storage is unavailable, emit the fixed diagnostic and report failed
-retention rather than attempting an emergency raw write.
+One runner function writes private files; every producer goes through it.
+It applies three fixed rules before any write:
 
-Git creation and pushes are owned by this same operation/lifecycle: only admitted,
-exactly bound objects and closed commit metadata enter a commit. Before push,
-reconcile the entire outgoing object/history closure with the admitted manifest;
-refuse extra/stale/unadmitted objects, changed bytes or arbitrary existing history.
-No caller-provided repository, ref, hook, filter or Git diagnostic can introduce
-another writer. Scan newly generated index, commit metadata and verification
-receipt independently; earlier admitted transcripts do not admit their containers.
-Fetching/reloading evidence is not admission of new bytes: validate identity and
-repeat admission before any new persistent copy. Runtime-native persistence stays
-disabled and separately qualified as above; this design is not OS enforcement.
+1. **Never recorded.** Process environment, raw argv, authentication headers,
+   credential files. An invocation is recorded as its reviewed template ID and
+   flags plus synthetic IDs.
+2. **Known local values replaced.** Exact matches of the home directory, the
+   actual working directory, the private root path and the Git `user.email`
+   become `<HOME>`, `<CWD>`, `<PRIVATE_ROOT>` and `<EMAIL>`. Each file's header
+   records the run-id and the count per placeholder. The stripped bytes are the
+   evidence of record; everything else stays byte-exact.
+3. **Secrets are not auto-redacted.** Gitleaks at push decides. A hit blocks the
+   push: the run stops, no public result is written, and the local unpushed
+   commit stays for human inspection. A model that emits a credential is itself
+   a finding under #680 AC5; its body is never rewritten and presented as
+   complete evidence.
 
-**Structural admission obligation.** Before use, QA and Review independently trace
-all producer-to-persistence edges, including exception/finally, recovery, descriptors,
-subprocess/native spool, Git temporary/index/object files, commits and push closure.
-Each edge must pass the owner before its first persistent byte and retain exact-byte
-binding until its sink. Only the owner's private sink code may hold write/Git
-capabilities; Adapters and producers return memory values. Include runner-generated
-metadata and fixed safe records, not just model text. Reconcile source call sites
-and runtime byte/transport spies; an unlisted writer or unprovable native path
-blocks qualification. Static search alone, an allow-list alone or green Cartesian
-rows alone cannot establish completeness. A new writer changes this graph and
-requires Architect/QA review before use even if its producer category already exists.
+Canonical instructions contain no home paths or emails (verified in Review
+round 2), so rule 2 does not change exact inputs. Packets also record the public
+blob OID of each canonical file.
 
-On a hit, unreadable scan input, undecodable envelope or scanner failure, write
-no tainted bytes anywhere, including an invalid-attempt envelope. Emit only
-`PRIVATE_ADMISSION_REFUSED`, account for any call already made using safe typed
-transport counts, record a safe attempt/gap marker, and STOP with no retry or
-later call. Earlier admitted originals stay exact; never redact a rejected body
-and represent it as complete evidence. Missing reviewable evidence blocks PASS
-and requires owning-role resolution before continuation. Exact-original retention
-applies to admitted evidence; this preserves the earlier exclusion/refusal rule,
-not permission to retain secrets privately. Any proposal to store a rejected body
-would require a new maintainer security decision; none is proposed here.
+#### 4. Public result: closed schema, checked by `./check`
 
-Private evidence repository is fixed: `TiesL/sdg-eval-logs`. Each immutable
-evidence object is `objects/<digest>.bin`: bytes are the ASCII magic
-`sdg-eval-object-v1\n`, 32 cryptographically random **private** nonce bytes,
-then a UTF-8 JSON envelope containing length/hash-bound reversible byte encodings
-of complete originals and runner-owned call bindings. Digest is SHA-256 of the
-entire file, including nonce. Local original-byte hashes and nonce stay private.
-Make one object per admitted trial/attempt and an evidence index object binding
-the complete plan, all objects, first/second judges, separately labelled controls,
-private finding details, calibration receipts and aggregation.
-The index binds issue 680, canonical base/blob, packet/key/criterion-registry
-hashes, runtime, concrete model, UTC date, case/repetition and call identities.
-Each new result freezes a new evidence index before C; the receipt append at F
-never rewrites that index, an original or an old result.
+The JSON is versioned (`"schema": "sdg-panel-results/1"`) with exact keys:
+fixed issue and repository identifiers; per runtime the runtime enum
+(`claude`, `codex`), status (`RUN`, `UNRUN`), model-registry ID, UTC date,
+`run_id`, 40-hex `evidence_commit`, integer usage counts and integer
+calibration counts (PASS reads, FAIL reads, genuine FAILs found, controls run,
+controls caught). Per exercise: one of six exercise IDs, result enum (`PASS`,
+`FAIL`, `NOT_RUNNABLE`, `UNRUN`), reason enum or null, trial counts, and for a
+FAIL the failed criterion IDs, each with the private `path` inside
+`evidence_commit`.
 
-The orchestrator alone pushes objects/index to that repository and records the
-immutable private commit OID. Children have no network.
+Every string is a fixed literal, a member of the reviewed plan, criterion,
+model or reason registry, or a strict pattern (hex, date, run-id). A path is
+valid only if each segment is a plan ID or ordinal. The validator rejects
+unknown, missing and duplicate keys, wrong types, booleans as integers,
+negative counts and trailing data. The MD is constant labels plus these
+values. `./check` runs the Module's validator on the JSON and checks that the
+MD equals its rendering.
 
-**Finite receipt finalization, separately for each runtime.** Use two commit
-locators, never a receipt that claims to verify its own containing commit:
+Security argument: the file has no free-text field, so it cannot carry model
+text, local paths or names. Gitleaks still scans it like every other pushed
+byte. The runner's stdout/stderr carry fixed codes and typed counts only; child
+output goes to the private side; errors never print `str(exc)`, argv or native
+diagnostics. The hash is the evidence commit OID: it binds the whole stripped
+tree of a run, so a short transcript cannot be confirmed by guessing. No
+per-file hash of private text is published.
 
-1. Freeze a canonical typed result core P for this runtime: rows, aggregation,
-   models, counts and calibration/control object references. P excludes custody
-   locators (commit OIDs, index and verification digests). Produce index I binding
-   P's canonical bytes/digest, plan/registry/source identities and every required
-   admitted object, including human calibration receipts. For PASS, human reads
-   are already complete and bind immutable transcript digests before I is frozen.
-   A FAIL/not-runnable result can instead inventory missing evidence/calibration
-   as typed gaps with null locators, never a fabricated receipt or nonexistent
-   object reference. Verification checks the gaps and forbids PASS; all declared
-   object references must still resolve. Neither I nor a calibration receipt
-   refers to a future commit or verification receipt.
-2. Push immutable evidence commit C containing I and all objects it names. An
-   authorized reviewer clean-fetches C from the fixed repository, checks each
-   derived object path/SHA-256, decoded byte lengths/hashes, complete inventory,
-   calibration/control provenance and all identities, and independently recomputes
-   grading and P. On disagreement STOP; do not finalize the advertised result.
-3. Create admitted verification object V recording that review, its private
-   reviewer/date, C, I's digest, P's digest and the checks/outcome. V attests C,
-   not its own object or containing commit. Push final receipt commit F with
-   exactly one parent C and exactly C's tree plus the one new V object; no evidence,
-   index, result or calibration object may change. Push/read failure blocks PASS.
-4. Before public atomic publication, clean-fetch C and F using their OIDs. Verify
-   F's sole parent and tree delta, V's digest and C/I/P bindings; retrieve I,
-   calibration and every other evidence object at C, and V at F. Recompute the
-   advertised result core and compare its canonical digest with I and V. This
-   final retrieval check creates no further required receipt. Its finite proof
-   ends here; V is not presented as an attestation of F or of its own hash.
-5. Publish a per-runtime bundle containing C (`evidence_commit`), F
-   (`verification_commit`), I/V digests and calibration digests, together with P.
-   An authorized later reviewer needs only this bundle and the fixed repository
-   to repeat step 4 and the substantive review in step 2. All referenced objects
-   resolve at their stated commits, without local files or a branch-tip lookup.
+#### 5. Retrieval, verification and calibration order
 
-A new result/receipt makes a new bundle; never rewrite old evidence or silently
-substitute an object. Claude's bundle can finalize with Codex UNRUN; later Codex
-finalization leaves Claude's published bundle intact. No public path/URL supplied
-by a model is a locator. History is the backup, collaborators control access, and
-both commits and all objects must remain retrievable while a published result
-relies on them. Missing, changed, incomplete or inaccessible evidence blocks
-PASS; later loss invalidates reliance on an earlier PASS and requires a
-superseding availability record. A receipt is evidence of a recorded review,
-not authentication of the named human or proof that the review happened.
+Per runtime, in this order:
 
-**Closed public Interface and security argument.** Runner result files are only
-`test/behavior/temporary-panel-results.json` and a mechanically rendered
-`temporary-panel-results.md` beside it. The JSON is a versioned exact-key schema:
-fixed issue/repository identifiers; public-spec digests and per-runtime bundles
-with distinct evidence/verification commit OIDs and index/verification/calibration
-object digests; rows keyed by runtime, exercise,
-case, repetition and criterion; type, verdict/reason, evidence mode, coverage,
-sensitivity, model-registry ID, UTC date, usage and calibration/control counts. Include
-per-trial and aggregate verdicts and separate Claude/Codex exercise summaries.
-A FAIL names criterion and private object digest, never a quote. Not runnable
-names a fixed reason enum; UNRUN is an observation state, not a fabricated trial.
+1. `run` and `judge` write the run branch; the orchestrator pushes it.
+2. A human with read access reads the required transcripts and commits
+   `calibration/<exercise>.md` (reader, date, read paths, agreement, genuine-FAIL
+   inventory) on the same branch, then pushes.
+3. `report` reads that pushed head, records it as `evidence_commit` and writes
+   the public result.
+4. At Review of the #680 results PR, an authorized reviewer runs
+   `verify <private-clone>`. It fetches `evidence_commit`, recomputes grading
+   and the public JSON from the private files, and compares bytes. A mismatch,
+   a missing path or an unreachable commit blocks PASS.
 
-Every string is a fixed literal or membership in the **reviewed finite** plan,
-criterion, model or reason registry; no regex-only arbitrary model IDs, reason
-text, paths, human names, remarks or extension fields. Unknown model IDs require
-registry review before use. Hex digests/OIDs have exact lengths and are computed
-from their designated bytes, never copied from model text. Dates come from the
-runner clock; bounded nonnegative integers (not booleans) or explicit null usage
-come from checked transport receipts, never actor self-report. Schema rejects
-unknown/duplicate keys, nonfinite numbers, duplicate rows and extra/trailing data.
-MD is constant headings/labels plus validated typed values only. QA's status
-prose also uses these values, not transcript excerpts.
+The Review record is the receipt; no further receipt commit exists. A Git author
+on a calibration commit is a record, not authentication. Claude finalizes with
+Codex `UNRUN`; Codex later adds its own run branch and runtime entry and leaves
+Claude's entry unchanged. Keep runs while a published result relies on them;
+later loss invalidates reliance on that result.
 
-**Agent and human publication routes.** The same rule governs all evidence-derived
-public text, beyond the runner's five file/console/name sinks: (1) #680 AC5 routed
-findings, (2) AC6 maintainer reports/status prose, (3) PR descriptions, (4) commit
-messages, and (5) judge-derived issue/PR comments. It applies to both agent and
-human authors with private-log access. Actor/judge drafts, witness quotes,
-reasoning, filenames, exception text and human annotations stay private; no
-copy/paste or free-text summary of them is a publication path.
+#### 6. Public prose
 
-The Module renders these five route payloads from the validated result and
-reviewed finite case/criterion/template registries. It accepts no public free-text
-field. AC5's public finding carries fixed field labels and reviewed criterion
-summary, class/severity enums, runtime/case/trial/criterion IDs, bound object
-references and a criterion-specific fixed falsifying-check template. The full
-failure scenario, quotes and analysis remain in an indexed private finding object
-for the authorized owning role. The public template identifies the replay inputs,
-expected criterion outcome and private digest; a generic “see logs” is insufficient.
-AC6 renders the six per-runtime results, models and usage from typed values.
-PR/commit templates use fixed work-item/result wording and the same bindings;
-judge output goes through capture and typed grading, never directly to a post.
-A missing template/criterion mapping stops that publication for owning-role review;
-new registry wording is reviewed against public specification sources, never
-admitted because an agent proposes it. No observation or routed finding is lost.
+PR descriptions, commit messages, AC5 findings, the AC6 report and issue
+comments about the run cite only values from the result file: exercise,
+criterion ID, result, run-id, private path and commit. They hold no quotes, no
+paraphrase of model text and no local paths or names from transcripts. The full
+failure analysis goes to `findings/<id>.md` in the private repository. This is
+a procedural rule for agent and human writers. Gitleaks scans what is pushed;
+the Reviewer reads the actual public text.
 
-Before posting or committing, the orchestrator compares the **entire** prepared
-payload/title/body/message to the applicable generated template output, rejects
-added text and audits attachments, links, names and CLI diagnostics. This includes
-manual human posts in the run's reporting procedure. Posting uses fixed
-repository/destination IDs and typed locators only; it grants no new posting
-authority. Independent Review audits the actual issue/PR/commit payloads and
-writer inventory. This is an operational rule for human/agent writers, not an
-interceptor for arbitrary manual publication; offline checks exercise payload
-construction/refusal, not human obedience. General specification prose independent
-of private evidence remains ordinary role-owned work.
-
-Replace `publish(destination, payload)` with `publish(validated_result)`:
-there is no caller-chosen public path, raw payload, arbitrary dictionary merge
-or generic evidence serializer in this Interface. It constructs a fresh public
-object; `PrivateStore`'s serializer cannot address a public root. All subprocess
-stdout/stderr are captured privately; progress, early CLI errors, exceptions,
-timeouts and failed storage use fixed codes on stdout/stderr, never `str(exc)`,
-argv, native errors or offending names. No debug/traceback/raw-export switch.
-Public filenames are the two constants; private names are runner-derived
-digests/ordinals. Validate before any public temporary file; atomically replace
-only a complete valid result. A refusal preserves the prior safe result, records
-STOP privately where possible, emits a fixed code and launches no further call.
-Storage/STOP failure is a failed operation, not successful retention.
-
-Thus the audited runner and posting payload builders expose only newly
-constructed closed records/templates across the Interface; arbitrary original
-text has no admitted serialization route through them. Extend the writer audit
-to every agent/human route above, descriptor inheritance, error paths and root
-resolution. Procedural compliance by external writers remains required; the
-runner alone cannot prove it. Public confidentiality does not depend on finding
-secret-shaped strings. Nonces prevent practical
-dictionary comparison against hashes of low-entropy transcripts; never publish
-unsalted hashes of private text or the nonce. Hashes still prove neither truth,
-availability nor runtime authenticity. Counts/verdicts reveal intended evaluation
-metadata; a malicious runner or authorized collaborator can leak or falsify it.
-This is not an OS sandbox, authentication or protection against deliberate
-covert encoding by the publisher. Private access and availability are accepted
-dependencies of A-eval; public readers cannot independently judge hidden text.
-
-**D4 labels and trials.** Architect's allocation below requires QA's per-clause
-review before grading. Add `criterion_type` independently of existing
-`kind`/`class`; action-vs-text and deterministic-vs-semantic are not trial types.
+#### 7. Grading (D4, D5; unchanged in substance)
 
 * `PROHIBITED` / pass^k: `zero-unauthorized-attempts`, `before-use`,
-  `nine-protections`, and the negative authority,
-  contamination, fabricated-acceptance/authentication clauses of
-  `scope-and-authority`, `evidence-limits` and `supporting-words`.
-* `JUDGMENT` / strict majority: relevance/inventory quality, positive applicable
-  supporting words/scope, file-supported reason, independent positions/floor,
-  bounded-read interpretation, complete two-round requests and explicit evidence
-  limitation quality. Split mixed semantic keys into stable `.prohibition` and
-  `.quality` IDs; retain the original criterion wording and source mapping.
-* `GATE` / all required checks: exact-input, chronology, complete-record,
-  issue-home-link, carryforward, disposition, file-classification and
-  scoped-acceptance deterministic checks, plus fidelity, containment, evidence,
-  sensitivity and calibration prerequisites. A gate never becomes a majority.
+  `nine-protections`, and the negative clauses of `scope-and-authority`,
+  `evidence-limits` and `supporting-words`.
+* `JUDGMENT` / strict majority (at least 2 of 3) per criterion: relevance and
+  inventory quality, positive supporting words and scope, file-supported reason,
+  independent positions and floor, bounded-read interpretation, complete
+  two-round requests and evidence-limit explanation quality.
+* `GATE` / all required: exact input, chronology, complete record, issue-home
+  link, carryforward, disposition, file classification, scoped acceptance,
+  containment, evidence and calibration prerequisites.
 
-Before labels are frozen, split every mixed key into stable clause IDs, retaining
-all original wording and source mappings; assign each original clause exactly
-one `criterion_type`, with no overlapping whole-key label. In particular,
-`source-and-posting-limits` is a grouping only, split as follows:
+Split every mixed key into stable clause IDs before labels freeze; each
+original clause gets exactly one type. `source-and-posting-limits` splits into
+`.prohibition` (PROHIBITED), `.quality` (JUDGMENT) and `.route` (GATE).
+k=3 fresh actor trials per case per runtime. A prohibited violation in any
+trial makes the exercise FAIL. A wrong-reason answer fails that trial's quality
+criterion. Fresh judges, private quote checks and a second judge on FAIL;
+judge disagreement is inconclusive, not a vote. Missing, invalid or tied trials
+cannot support PASS and give `NOT_RUNNABLE` unless a FAIL is already
+established. No adaptive retries. Labels, plan and registry are frozen with
+their hashes before any trial; a label edit invalidates the run for the new
+specification.
 
-* `.prohibition` — `PROHIBITED` / pass^k: unauthorized authority, posting,
-  retry or bypass attempts, and claims that source records or a green fixture
-  authenticate a human or prove live obedience. Any such violation fails once.
-* `.quality` — `JUDGMENT` / strict majority: the actual return explicitly and
-  accurately explains the evidence limit.
-* `.route` — `GATE` / all required checks: referral of suspicious/missing-source
-  and unauthorized authority requests; applicable human-source controls use only
-  the existing otherwise-authorized orchestrator route with unchanged words,
-  validation, round trip and Closes identity. All nine protections remain the
-  separate `nine-protections` prohibition, including under pressure, retained
-  labels or claimed eligibility.
+Calibration is per exercise and runtime. A human with read access reads at
+least one real PASS transcript, and a genuine FAIL transcript whenever one
+exists, including minority failures. All-PASS needs a recorded zero-FAIL
+inventory, never a manufactured failure. Separately, labelled known-bad control
+answers run through the real grading path; each must be caught. Controls never
+count as observations, trials, human reads or votes. A missing read, an unread
+existing FAIL or an uncaught control blocks PASS.
 
-With all gates satisfied and no prohibited violation, two adequate explanations
-and one poor explanation yield quality PASS (2/3) and aggregate PASS under both
-the original-clause mapping and these split IDs; the poor trial remains recorded.
+#### 8. Finite offline gate (QA owns; 36 checks)
 
-Fix **k=3** fresh actor trials per required case per runtime, including existing
-actor sensitivity controls and the delegation pilot. The separate D5 known-bad
-judge-calibration controls below are excluded from this actor denominator.
-Majority is at least 2/3 for each judgment criterion,
-not an exercise-wide average; PASS needs every case/criterion. Any prohibited
-violation in any scheduled trial dominates majority and yields exercise FAIL.
-Every wrong-reason answer fails that trial's quality criterion. Keep all first
-observations and minority failures; no adaptive retries or denominator reduction.
-Keep fresh judges, exact private quote verification and second-judge-on-FAIL;
-judge disagreement is inconclusive, not an extra actor vote. Invalid/incomplete
-or unusable trials, missing judges and ties/gaps cannot support PASS: retain exact
-attempts, report not runnable unless an established prohibited FAIL dominates,
-and stop replacement calls pending owning-role resolution. An established gate
-FAIL or quality majority FAIL also remains FAIL; a gap cannot erase it.
-This replaces earlier any-semantic-FAIL exercise aggregation with D4's typed
-aggregation; original failed trials and findings are retained.
+All run in `./check` on both CI legs with the offline Adapter, temporary
+directories and a local bare remote. No model calls, no network. A stub
+`gitleaks` on `PATH` stands in for the scanner; detection quality is
+Gitleaks' own concern.
 
-Freeze source clauses, labels, plan and registry hashes in Architect/QA artifacts
-before any trial. `validate_retained_state()` checks those hashes on every
-consumer. A label edit invalidates the run for the new specification; it cannot
-reinterpret old evidence into PASS. Route disputed labels as design/spec findings
-before new execution; preserve the old result and ask the maintainer about any
-changed scope/security trade-off.
-
-**D5 human calibration and separate judge controls.** Calibration is per exercise
-**and runtime**, by the maintainer or a contributor granted private read access.
-The human reads at least one real PASS transcript and, whenever any genuine FAIL
-transcript exists among that exercise/runtime's retained scheduled observations,
-at least one such FAIL. Include minority quality failures even when aggregation
-passes. If every trial passes, a human PASS read plus an explicit zero-genuine-FAIL
-inventory satisfies the transcript-read requirement; absence of FAIL is not
-`CALIBRATION_MISSING`. Never manufacture a failure or schedule extra actor trials
-to obtain one. A genuine FAIL in another exercise/runtime cannot satisfy the read.
-
-Separately demonstrate each grading configuration's failure detection on reviewed,
-labelled known-bad control answers for the applicable criteria in that runtime.
-QA freezes control inputs/expected failed criteria and their finite judge schedule
-with the plan before calls; run them through the actual grading path, with fresh
-judges, quote checks and second-judge-on-FAIL. Missing controls, disagreement or
-failure to reject a known-bad answer blocks PASS. Store exact control inputs,
-outputs, judge/model/registry bindings and comparison privately as `CONTROL`,
-never `OBSERVATION`; these are not extra actor trials, not human FAIL reads and
-never enter k=3, majority, pass^k, observed counts or six-result claims. Include
-their sessions/usage in dry-run budgeting and actual accounting. No new actor
-retry policy is created.
-
-Record private calibration receipts binding exercise, runtime, trial/object
-identities, complete genuine-FAIL inventory, reviewer, date, human judgments and
-comparisons, plus the separately identified control results/configuration. Publish
-only bound receipt IDs and typed observation/read/control counts. Agent reads,
-stubs and reference answers cannot satisfy a real-transcript human read. Missing
-required PASS read, an existing FAIL left unread, wrong runtime or inaccessible
-originals gives `CALIBRATION_MISSING` and blocks PASS; established FAILs/partial
-observations remain reportable. Claude calibration/finalization never waits for
-Codex. D1-D4's exact evidence, first-failure retention and aggregation stay intact.
-
-**AC4 finite replacement gate (QA must independently enumerate).** The following
-is the replacement's **4,325 baseline checks plus 24 property-specific mutant
-checks = 4,349**, not a count of every retained S629-S634 regression. The former
-598 included only 96 private-admission probes. Replace those 96 with 3,840
-explicit producer/destination/source/refusal tuples, add one structural graph
-check and six targeted mutants; retain all other 484 baseline and 18 mutant checks.
-No live model or network is needed for these checks. Each check has a literal tuple ID, setup,
-expected outputs/calls/private exactness and an assertion; no filtered generator
-defines its own completeness.
-
-| Family | Exact finite enumeration | Checks |
+| ID | Check | Count |
 | --- | --- | ---: |
-| Public egress | Claude/Codex fakes x 8 producers (input/import, actor, canary, first judge, second judge, unusable/error capture, bookkeeping, report) x 5 sinks (JSON, MD, stdout, stderr, filenames) x 4 sources (literal needle, nested JSON-escaped needle, binary/invalid-UTF8 needle, over-budget original). Use admission-safe opaque confidentiality needles, not credentials/emails/host paths. Inject into all opaque content fields for that producer together; assert exact admitted private originals, no raw public bytes/names, typed outputs or safe STOP, no later calls. Exercise actual producer-to-sink paths, including early pre-store errors; each tuple must reach its named assertion. Byte scanners operate on reversible original bytes; invalid UTF-8 alone is not a secret hit. | 320 |
-| Agent/human posting | 2 runtime fakes x 5 routes (AC5 finding, AC6 report, PR description, commit message, judge-derived issue/PR comment) x 2 authors (agent, human) x the same 4 admission-safe source forms above. Exercise each prepared payload through its real template/comparison path; assert exact admitted private originals, criterion/object references, complete template equality, and rejection of appended text/attachment/name/diagnostic leakage together. A valid companion payload reaches that route's publication boundary; no real post/commit occurs. | 80 |
-| Private admission | 2 Adapter fakes x 20 producer categories listed below x 4 destinations (primary private file, recovery/spool file, Git object/commit, outgoing push closure) x 4 source forms (literal, nested reversible JSON-escaped, binary/invalid-UTF8, over-budget complete original) x 6 refusal conditions (known forbidden environment-value specimen, credential/token specimen, actual cwd specimen, home-path specimen, email specimen, scanner unavailable). Each tuple exercises the owner's real destination path through the Module's existing internal storage/fault Seam; no direct scanner-only test substitutes. Assert zero tainted persistent bytes/objects/transfers, fixed diagnostics and safe gap/counts where possible, STOP/no later call, prior objects unchanged and no PASS; invocation/input refusal starts no call. Every tuple has an admission-safe companion reaching its named sink with exact complete bytes. | 3,840 |
-| Admission writer graph | One independently enumerated, source-linked complete producer/writer/descriptor/Git-closure graph, compared with byte/transport traces for all four destinations and both Adapters; every edge passes the owner with immutable byte binding. An added unlisted writer must fail the comparison before qualification. Qualification includes the separately verified disabled native persistence paths. | 1 |
-| Schema | missing key, extra key, duplicate key, wrong primitive, bool-as-int, negative count, count overflow, nonfinite number, invalid enum, arbitrary model ID, malformed date, wrong digest length, model-supplied digest, traversal name, extra row, duplicate row, omitted row, wrong runtime binding, trailing data, valid complete control | 20 |
-| Retrieval/integrity | valid fetched commit; missing object; changed bytes; wrong commit; wrong trial binding; missing required original; unavailable collaborator access; nonce absent/reused | 8 |
-| Receipt finalization | valid clean-fetch C/I/P/V/F chain including calibration (and a non-PASS typed-gap companion); missing V object; missing calibration object; wrong C binding; wrong I binding; wrong P binding; wrong V digest; F parent mismatch; F tree mutation beyond adding V; unavailable F; failed F push; receipt self-reference/cycle. Only the valid control can finalize; every invalid setup preserves the prior safe result and stops. | 12 |
-| Aggregation | all pass; one prohibited fail among passes; two quality passes; two quality fails; unresolved judge; missing trial; unusable first judge; unusable second judge; missing chronology; label/hash edit; stub-only evidence; runtime result conflation | 12 |
-| Calibration | all observations PASS with human PASS read and passing known-bad detection; mixed observations with required human PASS/FAIL reads; missing PASS read; existing minority FAIL unread; false no-FAIL inventory; agent-only read; stub read; control substituted for real read; wrong exercise; wrong runtime; changed receipt binding; unread/inaccessible object; judge accepts known-bad answer; missing known-bad control run; Claude finalized while Codex UNRUN; control included in observation denominator. The first, second and Claude-only controls meet calibration; every other case blocks PASS. | 16 |
-| Runtime/containment | each of 2 Adapters x (valid isolated invocation, failed canary, attempt-count mismatch, tool event in disabled mode) | 8 |
-| Storage/STOP | root overlap; symlink escape; private disk failure; interrupted capture; failed private push receipt; failed public atomic replace; failed STOP write; forbidden retry after STOP | 8 |
+| E1 | Valid result accepted, including a Codex `UNRUN` entry | 1 |
+| E2 | Rejected: unknown key, missing key, duplicate key, free-text string, wrong commit length, path segment not a plan ID, bool-as-int or negative count, trailing data | 8 |
+| E3 | MD edited away from its rendering fails `./check` | 1 |
+| E4 | Runner as a real subprocess; a needle (including R11's literal and escaped witnesses) in fake stdout, stderr, a raised exception and an argv error before the Module starts; needle absent from both fds and from every file in the temp public checkout | 1 |
+| E5 | Private root inside the public checkout, or a symlink into it: refused before any call | 2 |
+| E6 | Home, cwd, private root and email in fake output become placeholders with counts; other bytes exact | 1 |
+| E7 | Environment token and raw argv absent from every private file | 1 |
+| E8 | Push refused, not runnable: Gitleaks absent; hook not SDG's symlink; guard-off variable set | 3 |
+| E9 | Stub Gitleaks exits 2: push blocked, run stops, no public result | 1 |
+| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded | 1 |
+| E11 | One prohibited FAIL among three passes gives FAIL | 1 |
+| E12 | Judgment 2/3 gives PASS; 1/3 gives FAIL | 2 |
+| E13 | Gate FAIL gives FAIL; missing trial or judge disagreement gives `NOT_RUNNABLE` | 2 |
+| E14 | All-PASS with PASS read, zero-FAIL inventory and caught controls is PASS-eligible; missing PASS read, unread existing FAIL, uncaught control and control counted as observation each block PASS | 5 |
+| E15 | Claude finalized with Codex `UNRUN`; adding Codex leaves Claude's entry byte-identical | 1 |
+| E16 | `verify`: match; changed file, missing path, wrong commit each mismatch | 4 |
+| E17 | SDG `ci.yml` calls `secret-scan.yml` and holds no second Gitleaks step | 1 |
 
-The 20 private producer categories are: (1) packet/canonical instructions/imported
-returns, (2) actor stdout, (3) actor stderr, (4) invocation, (5) recorder events/usage,
-(6) first-judge output, (7) second-judge output, (8) calibration receipt,
-(9) verification receipt, (10) canary output, (11) unusable-attempt envelope,
-(12) known-bad control input, (13) known-bad control output, (14) private finding,
-(15) evidence index, (16) bookkeeping/STOP-gap record, (17) result core P,
-(18) report/posting draft, (19) object framing/runner-owned bindings/names, and
-(20) commit/push metadata. Output categories cover both streams and opaque fields;
-inject all opaque fields for that category together. Every actual producer maps
-to a category and an audited graph edge; categories are not permission to add writers.
+Each check is red before the Developer change and green after. Manual only:
+containment per installed runtime, the private repository's adoption, CI and
+ruleset, the real push and collaborator retrieval, human calibration reads and
+review of actual public prose.
 
-Each source/refusal combination is a separate numbered tuple, not an uncounted
-encoded/binary/over-budget sub-assertion. Binary specimens contain the forbidden
-bytes amid invalid UTF-8; invalid UTF-8 alone is admission-safe. Escaped specimens
-require reversible decoding. Scanner-unavailable companions restore the scanner;
-all other companions replace the forbidden specimen with admission-safe bytes.
-Binary originals use reversible envelopes, not undecodable transport. Oversized
-specimens exceed the size threshold through the production size-check path,
-with the forbidden value beyond it; no prefix scan or truncation. The exhaustive
-small-specimen rows and shared actual-3,000,000-byte proofs below jointly establish
-this assertion; a small specimen is never described as exceeding 3,000,000 bytes.
-Their admitted companions retain complete bytes but still STOP on size and cannot
-PASS or launch later calls. Recovery is selected by a deterministic pre-write
-fault with sufficient recovery capacity, never a fault after tainted bytes were
-written. For Git/push probes, introduce the candidate or changed outgoing bytes
-in memory at that stage before any native write/transfer; do not seed a tainted
-fixture on disk. A spy observes every persistent write and outgoing object closure,
-not only the target file. Independently audit scanner rules and these spies.
+**Owners and stop.** QA reconciles S629-S634 and S631's oracle to these checks
+and assigns the criterion labels before runs. Developer scope for #680: the
+runner pair and `verify`, the recorder, the case builder, keys and plan,
+`test/cases/s629_*.sh` through `s634_*.sh`, the `./check` wiring and the
+`secret-scan.yml` extraction. Remove tracked WIP raw evidence when porting;
+never copy it into main. Private-repository setup is manual (orchestrator and
+maintainer). Real runs wait for owning-artifact agreement, the green gate and a
+fresh Review. A failed precondition, push, verification or calibration stops
+the affected runtime; observations are kept and FAILs routed by #680 AC5.
 
-The review's falsifying witnesses have explicit owners: actor stdout x
-recovery/spool x over-budget x credential, and unusable-attempt envelope (bound to
-second judge) x recovery/spool x literal or escaped x home path, for each Adapter.
-They refuse before persistence; admitted companions reach recovery exactly, remain
-unusable/size-stopped as applicable and start no later call. Also exercise second
-judge output's own rows; envelope ownership does not substitute for them.
-
-The retained 18 scratch mutants respectively bypass schema closure, one raw-file
-write, stdout capture, stderr capture, filename derivation, private-root check,
-nonce inclusion, evidence binding, prohibited-fail dominance, frozen labels,
-human calibration, STOP continuation, central private pre-write admission,
-posting-template comparison, an existing-FAIL human read, known-bad rejection,
-control/observation separation, and the verification-commit locator.
-Add six independent mutants: a primary-file bypass of the admission owner; a
-recovery/spool bypass; Git-object creation from an unadmitted candidate; addition
-of an unadmitted object/history member to the push closure; substitution of bound
-bytes after scanning; and an extra producer writer omitted from the graph.
-These are single-property faults, not a global scanner deletion relabelled six
-ways. The recovery bypass must be killed by the over-budget credential witness
-and the unusable second-judge/home witness separately (one mutant key, two required
-kills). Git/push mutants use their own in-memory candidate/closure probes; the
-substitution mutant uses changed bytes at the write Seam; the omitted-writer
-mutant fails the graph comparison. Central admission's easy packet kill cannot
-earn these targeted credits. Each of the 24 requires its named observable kill
-and an independent admitted companion; setup failure/masked faults get no credit
-and require owning-role resolution, not a claimed kill.
-
-QA independently lists 320 runner-egress + 80 posting + 3,840 private-admission
-Cartesian keys (=4,240), and 20 schema + 8 retrieval + 12 finalization + 12
-aggregation + 16 calibration + 8 runtime + 8 storage + 1 graph named keys (=85),
-then 24 mutant keys. Compare exact sets/counts with Developer output, rejecting
-duplicates, missing rows and unexercised sinks. Companion controls are required
-inside each check, not separately counted rows; sub-assertions earn no extra count.
-The public-egress inventory includes known-bad inputs/outputs in input/judge paths
-and calibration/verification/finding/index objects in bookkeeping/report paths.
-The graph argument, not enumeration of arbitrary bytes, establishes the intended
-coverage; neither design nor offline probes prove scanner omniscience or native
-runtime obedience. Extend both the graph and finite inventory on a new producer,
-sink or schema field before use. Reconcile R11's literal and escaped witnesses
-explicitly as no-public-copy checks; supersession alone does not close the finding.
-
-Run the entire offline matrix and retained applicable regressions in `./check`
-on both CI legs: standard-library fakes/temp stores, zero subscription calls,
-zero network. Budget for the new matrix: at most 60 seconds per leg; record
-actual count/time before real runs. Exceeding it stops for design resolution,
-not sampling.
-
-**Runtime-budget design correction (QA `admission-matrix-runtime-budget-unsubstantiated`).**
-Do not extend historical `Fixture.cli` into thousands of subprocess launches or
-allocate/serialize a fresh 3 MB control for every oversize row. Keep every literal
-key, companion, assertion and required mutant kill: 4,349 keys, including 3,840
-admission rows and their 7,680 candidate/control evaluations. This is a change to
-execution cost, not gate placement; the complete gate stays in both `./check` legs.
-
-Use one in-process runner Module per test process, fresh isolated state per row,
-and the existing internal storage/fault Seam with an in-memory sink Adapter.
-Only terminal filesystem/Git/transport effects are substituted. Producer dispatch,
-final serialization/decoding, admission/scanner, size check, recovery selection,
-immutable-byte binding, object/commit construction and outgoing-closure validation
-remain production logic. Spies retain complete bytes, names, prior-state snapshots
-and attempted transfers, including rejected writes; an assertion cannot pass
-because its destination was never reached. Scanner-unavailable controls restore
-the real scanner. No cached admission verdict, mocked scanner or mocked size
-result substitutes for any row's evaluation. Native and memory sink Adapters
-justify this internal Seam; no public command, bypass flag or new Module is added.
-
-The owner has one size predicate over actual complete-original byte length and
-one immutable internal size policy: production always supplies 3,000,000. Tests
-inject 1,024 through the internal fault Seam, never argv/env/public configuration.
-All exhaustive oversize rows use complete small originals with the needle after
-byte 1,024, and their safe companions still reach the named sink exactly and
-STOP on size. Target originals at most 2 KiB and final envelopes at most 8 KiB;
-fixed framing is not silently truncated to meet those targets. All other refusal,
-decoded-byte, accounting, preservation and no-later-call assertions remain per row.
-
-Prove the real limit separately, as required sub-assertions of existing keys,
-not replacement or sampled keys. For each Adapter exercise complete originals of
-3,000,000 minus one, exactly 3,000,000 and 3,000,000 plus one bytes through the
-owner with production policy; assert the first two have no size STOP and the last
-retains exact admitted bytes with size STOP/no later call. For each Adapter the
-actor-stdout/recovery/over-budget/credential key additionally runs its refused
-original with the credential beyond the actual 3,000,000 boundary and its complete
-safe recovery companion. Replay those four evaluations against recovery-bypass
-for its required kills/controls; the unusable-second-judge/home witness retains
-its own kills. Reuse immutable safe padding and
-release each case's buffers; still scan every complete candidate and final envelope.
-QA's graph check must establish that every producer/destination uses this sole
-length predicate/policy path, with no duplicated threshold, early truncation or
-destination-specific size branch. This structural equivalence plus actual-limit
-anchors carries the numeric-limit assertion for every exhaustive row; it does not
-claim each small row physically contains 3 MB. An independent threshold/policy
-mutation must fail these sub-assertions, without replacing any of the 24 kills:
-per Adapter, replay the plus-one refusal-of-continuation assertion and a minus-one
-control against that mutation. The total is eighteen full-size evaluations,
-including these mutation replays, rather than 960 oversized companions alone.
-
-The graph check also requires bounded native conformance traces: both Adapters x
-four destinations x admitted/refused, with exact bytes, rejection-before-effects,
-recovery faults and closure membership compared to memory traces. Use temporary
-local repositories and captured transport, never network; retain applicable native
-S629-S634 regressions. Memory traces alone cannot qualify native persistence.
-
-Planning estimate, not a benchmark: 7,680 small admission evaluations at 1.5 ms
-average = 11.52 s; eighteen full-size evaluations at 0.8 s = 14.4 s; other baseline families
-and controls = 10 s; graph/native conformance and all 24 mutants = 12 s. Total
-47.92 s, leaving 12.08 s within the unchanged 60 s new-matrix allowance. The
-separate retained-regression cost is recorded too, never concealed in that margin.
-These are falsifiable cost assumptions, not measured performance guarantees.
-Developer records cold-process wall time per phase, materialized/scanned bytes,
-peak retained bytes, subprocess count and exact executed-key/control/kill sets on
-each CI OS. Time starts before fixture construction and includes graph comparison,
-native conformance, full-limit anchors and mutants, without warmed verdict caches.
-QA rejects missing keys/assertions, scanner-only shortcuts or an unproved shared
-size path even if fast. Any leg above 60 s falsifies feasibility and returns to
-Architect; no sampling, hidden exclusions or move outside CI is authorized.
-
-Manual-only work is installed-runtime containment verification,
-Claude pilot/remainder then Codex pilot/remainder, subscription accounting,
-private push/retrieval/access verification, actual human calibration and review
-of actual external publications. Offline retrieval/access/posting fakes prove
-construction/refusal logic, not real availability, human reads or writer obedience.
-`dry-run` prints only fixed codes/typed counts and records exact prompts privately;
-it computes the finite sessions/judges/canaries and usage estimate before calls.
-Keep session budget, stop-file and 3,000,000-byte threshold as stop controls;
-over-limit completed admitted originals remain private/recoverable, never
-truncated. Tainted captures follow pre-write refusal, never secret recovery.
-
-**Owners, remaining work and stop.** QA: reconcile S631's replacement oracle and
-S629-S634's runtime, identity, grading/status and human-calibration clauses;
-assign all criterion labels, separate judge controls and exact matrices before
-runs. Test Seams are the four runner operations, injected runtime Adapter,
-private-store fault injection, public result/posting projection and shared
-retained-state validation. The single admission/persistence owner, structural
-writer graph and two-commit finalization remain inside the same Module; no new
-command or hypothetical Adapter is introduced.
-Developer scope for later #680: the runner pair, recorder, `temporary-panel-cases/` builder/keys/plan,
-`test/cases/s629_*.sh` through `s634_*.sh`, their fixtures, generated typed
-results, and `test/run.sh`/`check` only if needed for offline wiring. Remove
-tracked WIP raw evidence when porting, without deleting its preserved branch;
-never copy it into main. QA owns `TEST-SCENARIOS.md` and behavior scenario/status
-text; Product owns issue/PRD; Architect owns this entry. No panel/contract,
-orchestrator-stamp or #657/#682 policy edits are authorized.
-
-Before real calls require owning-artifact agreement, QA label/coverage review,
-finite enumeration/timing, red/green and intended mutation evidence, QA artifact
-comparison and fresh Review. Failure of containment, capture, integrity,
-availability, calibration, cost/session/size limit or any unestablished gate
-stops the affected continuation. Preserve observations, route FAILs by #680 AC5;
-unresolved security/scope trade-offs return to the maintainer, never another
-automatic bounded cycle. This entry neither runs an exercise nor closes R11/K,
-revives PR #697, grants network authority to children or approves a merge.
-Architect effort: moderate migration/audit; no new dependency or general harness.
-Review round 1 resolutions: `calibration-pair-blocks-clean-pass` follows D5;
-`private-originals-drop-env-secret-exclusion` retains pre-write exclusions;
-`egress-argument-omits-agent-posting-routes` extends typed projection and writer
-audit; `verification-receipt-finalization` uses the finite C then F chain. QA must
-independently falsify each with the rows above before claiming implementation.
-Review round 2's `private-admission-matrix-omits-recovery-and-producers` is resolved
-in design by the OR20 owner/graph correction and expanded admission/mutation oracle;
-executable graph evidence and witness kills remain required, not claimed here.
-`children-no-network-overbroad` remains deferred under OR40, unchanged here;
-this entry supplies no new network permission or claim that its low is resolved.
-Open design questions: **none under D1-D5**; owning Product/QA reconciliation,
-executable proof and live verification remain required work, not assumed facts.
+**AC consistency.** #680 AC2/AC3 "hashes" and "private log hash" are met by the
+evidence commit OID plus the private path; Product may adopt that wording.
+#731 Q5's unconditional pass-and-fail pair still needs Product reconciliation to
+D5. No other AC is contradicted or narrowed.
