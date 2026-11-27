@@ -72,14 +72,14 @@ including old parents and removed blockers. Remove obsolete edges and old
 parent entries from both bodies and native mirrors when their removal is
 settled. Contradictory bodies need owner reconciliation before mirroring.
 
-Maintain type/status and the active-role label using the existing vocabulary
-and canonical stage order. Inactive/backlog/closed items need no invented active
-role. Closed items drop active status/role labels. For this repository's Project
-1, mirror backlog to Backlog, Discovery through Implementation to In progress,
-Review to In review, verified closure to Done; Ready requires an explicit ready
-decision. Blocked work retains its applicable stage Status and visible blocker
-reason/label: there is no Blocked option. Other projects use their documented
-mapping; missing mapping/options are unchecked, never authority to configure.
+Maintain applicable labels and board lifecycle Status according to the
+project's documented vocabulary and mapping. Preserve the canonical role
+names and stage order when the role pipeline applies. Inactive items
+need no invented active role. Follow the project's closure and blocked-work
+conventions; do not infer an unblocked state from a board option. This
+rule does not adopt spec-driven-guardrails' type/status/role label axes
+or Project 1 option names for another project. Missing mapping or options
+are unchecked, never authority to create labels or configure a project.
 
 **Membership and ordering.** Confirm automatic membership before attempting an
 add; allow existing auto-add workflows to act, add only confirmed missing items

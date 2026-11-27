@@ -41,7 +41,7 @@ printf '[]' > "$box/fields"
 uncheck() { printf 'unchecked: %s\n' "$*" >> "$box/unchecked"; }
 # Nonzero exit, invalid JSON, and incomplete page streams never establish absence.
 rest() {
-  local endpoint="$1" list="$2" rc=0
+  local endpoint="$1" list="$2" rc=0 status
   if [ "$list" = yes ]; then
     gh api --method GET "$endpoint" --paginate --slurp > "$box/raw" 2>/dev/null || rc=$?
     if [ "$rc" -ne 0 ] || ! jq -e 'type=="array" and length>0 and all(.[]; type=="array")' "$box/raw" >/dev/null 2>&1; then
@@ -55,7 +55,20 @@ rest() {
     fi
     jq 'add // []' "$box/raw"
   else
-    gh api --method GET "$endpoint" > "$box/raw" 2>/dev/null || rc=$?
+    if [[ "$endpoint" = */parent ]]; then
+      # gh's supported 204 has an empty body. Inspect status explicitly so
+      # empty 200s and ambiguous 404s can never establish parent absence.
+      gh api --method GET "$endpoint" --include > "$box/http" 2>/dev/null || rc=$?
+      sed 's/\r$//' "$box/http" > "$box/response"
+      status="$(awk 'NR==1 && /^HTTP\/[0-9.]+ / {print $2}' "$box/response")"
+      awk 'body {print} /^$/ {body=1}' "$box/response" > "$box/raw"
+      if [ "$rc" -eq 0 ] && [ "$status" = 204 ] && [ ! -s "$box/raw" ]; then
+        printf 'null'; return
+      fi
+      case "$status" in 200|204) ;; *) rc=1;; esac
+    else
+      gh api --method GET "$endpoint" > "$box/raw" 2>/dev/null || rc=$?
+    fi
     if [ "$rc" -ne 0 ] || ! jq -e 'type=="object" or type=="null"' "$box/raw" >/dev/null 2>&1; then
       uncheck "gh REST $endpoint"; printf '{"_unchecked":true}'; return
     fi
@@ -98,8 +111,8 @@ for n in $(printf '%s' "$issues" | jq -r '.[] | select(.pull_request==null) | .n
       jq --arg text "$clive" '. + [$text]' "$box/notes" > "$box/next" && mv "$box/next" "$box/notes" || exit 1
     done < "$box/comments"
   else uncheck "$prefix/$n comments"; fi
-  # A successful explicit null response (e.g. supported 204) means no parent.
-  # An ambiguous 404/unsupported relation is recorded by rest(), never absence.
+  # rest() normalizes supported empty 204s; null remains compatible with
+  # historical snapshots. An ambiguous 404/unsupported read is never absence.
   parent="$(rest "$prefix/$n/parent" no)"
   if ! printf '%s' "$parent" | jq -e '.==null or (type=="object" and (.number|type=="number"))' >/dev/null; then
     uncheck "$prefix/$n parent object"; parent='{"_unchecked":true}'
@@ -126,9 +139,10 @@ graphql() {
 }
 # Values and field declarations must carry their types, field IDs and names.
 field_selection='__typename ... on ProjectV2Field { id name dataType } ... on ProjectV2SingleSelectField { id name dataType options { id name } } ... on ProjectV2IterationField { id name dataType }'
-value_selection='__typename ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldSingleSelectValue { name optionId field { ... on ProjectV2FieldCommon { id name } } }'
+value_selection='__typename ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldSingleSelectValue { name optionId field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldTextValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldDateValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldIterationValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldLabelValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldMilestoneValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldRepositoryValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldUserValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldPullRequestValue { field { ... on ProjectV2FieldCommon { id name } } } ... on ProjectV2ItemFieldReviewerValue { field { ... on ProjectV2FieldCommon { id name } } }'
 connection_page() {
   local connection="$1" cursor='' seen='|' after='' envelope query response page next has_next nodes
+  connection_complete=true
   printf '[]' > "$box/connection"
   while :; do
     after=''
@@ -149,33 +163,39 @@ connection_page() {
       page="$(printf '%s' "$response" | jq --arg c "$connection" '[.. | objects | .projectV2? // empty | .[$c] // empty][0] // null')"
     fi
     if ! printf '%s' "$page" | jq -e 'type=="object" and (.nodes|type=="array") and (.pageInfo|type=="object" and (.hasNextPage|type=="boolean") and (has("endCursor")))' >/dev/null; then
+      connection_complete=false
       uncheck "project $project_owner/$project $connection ${2:-} pageInfo/nodes"; break
     fi
     if ! printf '%s' "$page" | jq -e 'all(.nodes[]; type=="object")' >/dev/null 2>&1; then
+      connection_complete=false
       uncheck "project $project_owner/$project $connection malformed nodes"
     fi
     jq --argjson p "$page" '. + [$p.nodes[]|select(type=="object")]' "$box/connection" > "$box/next" && mv "$box/next" "$box/connection" || exit 1
     has_next="$(printf '%s' "$page" | jq -r '.pageInfo.hasNextPage')"
     [ "$has_next" = true ] || break
     next="$(printf '%s' "$page" | jq -r '.pageInfo.endCursor | select(type=="string" and length>0)')"
-    if [ -z "$next" ]; then uncheck "project $project_owner/$project $connection missing cursor"; break; fi
-    case "$seen" in *"|$next|"*) uncheck "project $project_owner/$project $connection cursor cycle"; break;; esac
+    if [ -z "$next" ]; then connection_complete=false; uncheck "project $project_owner/$project $connection missing cursor"; break; fi
+    case "$seen" in *"|$next|"*) connection_complete=false; uncheck "project $project_owner/$project $connection cursor cycle"; break;; esac
     seen="$seen$next|"; cursor="$next"
   done
 }
+inventory_complete=false
 if [ -n "$project" ]; then
   connection_page fields
   cp "$box/connection" "$box/fields"
   connection_page items
+  inventory_complete="$connection_complete"
   cp "$box/connection" "$box/item-pages"
   jq -c '.[]' "$box/item-pages" > "$box/item-lines"
   while IFS= read -r item; do
     if ! printf '%s' "$item" | jq -e '(.id|type=="string") and (.content==null or (.content|type=="object" and (.__typename|type=="string")))' >/dev/null; then
+      inventory_complete=false
       uncheck 'project items identity/content'; continue
     fi
     # Pull requests and other-repository items are outside this report's scope.
-    if ! printf '%s' "$item" | jq -e --arg r "$repo" '.content.__typename=="Issue" and .content.repository.nameWithOwner==$r' >/dev/null; then continue; fi
+    if ! printf '%s' "$item" | jq -e --arg r "$repo" '.content.__typename=="Issue" and (.content.repository.nameWithOwner|ascii_downcase)==($r|ascii_downcase)' >/dev/null; then continue; fi
     if ! printf '%s' "$item" | jq -e '(.content.number|type=="number") and (.content.url|type=="string") and (.content.state=="OPEN" or .content.state=="CLOSED")' >/dev/null; then
+      inventory_complete=false
       uncheck 'project issue content fields'; continue
     fi
     item_id="$(printf '%s' "$item" | jq -r '.id')"
@@ -214,7 +234,19 @@ def bodies:
 def coverage:
   [.live|split("\n")[]|select(startswith("**Covers:**"))] as $lines |
   ($lines|length)==1 and ($lines[0]|test("^\\*\\*Covers:\\*\\*\\s*[A-Z]{1,2}[0-9]+[a-z]?(\\s*,\\s*[A-Z]{1,2}[0-9]+[a-z]?)*\\s*$"));
-def native($x): if $x==null then null else [$x[].number]|unique|sort end;
+# Bare body #N references resolve to fetched objects in the selected repo.
+# Keep both numeric/node IDs and repository identity; numbers alone collide.
+def identity:
+  . as $o |
+  ((try (.html_url|capture("^https://github.com/(?<repo>[^/]+/[^/]+)/issues/(?<n>[1-9][0-9]*)$")) catch null) // null) as $url |
+  if ($o.id|type)=="number" and ($o.node_id|type)=="string" and
+     $url!=null and ($url.n|tonumber)==$o.number
+  then {repository:($url.repo|ascii_downcase), number:$o.number,
+        id:$o.id, node_id:$o.node_id, url:$o.html_url} else null end;
+def native($x): if $x==null then null else
+  [$x[]|identity] | if any(.[]; .==null) then null
+  else unique | sort_by(.repository,.number,.id,.node_id) end end;
+def edgekeys: map(del(.url));
 def notes($field): [.notes[]|split("\n")[]|select(startswith("|"))|split("|")|.[1:-1]|map(gsub("^\\s+|\\s+$";""))|
   select(length==5 and .[0]==$field and .[1]!="" and .[2]!="" and (.[3]=="awaiting-maintainer" or .[3]=="parked") and (.[4]|test("^https://")))] | unique;
 def fieldvalue($item;$name): [$item.fieldValues[] | select(.field.name==$name)] | if length==1 then .[0].number // .[0].name else null end;
@@ -227,6 +259,8 @@ def lifecycle:
   else null end;
 ($records[0]|map(bodies)) as $rs | ($items[0]) as $is | ($fields[0]) as $fs |
 [
+  (if $label_mapping|not then incomplete($repo+" label/lifecycle vocabulary mapping unavailable") else empty end),
+  (if $board and ($status_mapping|not) then incomplete("project Status lifecycle mapping unavailable") else empty end),
   (if $board then
     ["Backlog rank","Horizon","Status"][] as $name |
     ([$fs[]|select(.name==$name)]) as $matched |
@@ -244,10 +278,14 @@ def lifecycle:
     (if ($r|coverage|not) then incomplete($url+" Covers missing/duplicate/malformed") else empty end),
     (["parent","blocked_by","blocking","children"][] as $edge |
       $r.decl[$edge] as $d |
-      (if $edge=="parent" then (if $r.parent._unchecked==true then null elif $r.parent==null then [] else [$r.parent.number] end)
+      (if $edge=="parent" then (if $r.parent._unchecked==true then null elif $r.parent==null then [] else native([$r.parent]) end)
        else native($r[$edge]) end) as $actual |
+      ([$d.values[] as $target | $rs[] | select(.issue.number==$target) | .issue]) as $targets |
+      native($targets) as $expected |
       if ($d.ok|not) or ($edge=="parent" and (($d.values|length)>1 or (($d.values|length)==0 and ($r.issue.labels|map(.name)|index("epic"))==null))) then incomplete($url+" body "+({parent:"Epic",blocked_by:"Blocked by",blocking:"Blocks",children:"Work items"}[$edge])+" missing/duplicate/malformed")
-      elif $actual!=null and $actual!=$d.values then finding($url;("native "+$edge);$actual;$d.values) else empty end),
+      elif $actual==null then incomplete($url+" native "+$edge+" identity/read unchecked")
+      elif ($targets|length)!=($d.values|length) or $expected==null then incomplete($url+" native "+$edge+" expected object unread")
+      elif ($actual|edgekeys)!=($expected|edgekeys) then finding($url;("native "+$edge);$actual;$expected) else empty end),
     ($r.decl as $d |
       if $d.parent.ok then $d.parent.values[] as $p |
         ([$rs[]|select(.issue.number==$p)][0]) as $parent |
@@ -259,13 +297,20 @@ def lifecycle:
         if $other==null then incomplete($url+" referenced "+$pair.from+" #"+($target|tostring)+" unread")
         elif $other.decl[$pair.to].ok and ($other.decl[$pair.to].values|index($n))==null then finding($url;("body reciprocal "+$pair.from+" #"+($target|tostring));$other.decl[$pair.to].values;[$n]) else empty end else empty end),
     ($r.issue.labels|map(.name)) as $labels |
+    (if $label_mapping then
     (if (["bug","documentation","enhancement","process"]|map(. as $t|$labels|index($t))|map(select(.!=null))|length)!=1 then finding($url;"type labels";$labels;"one existing type") else empty end),
     (if $r.issue.state=="closed" and any($labels[];test("^(status:|role:)")) then finding($url;"closed status/role labels";$labels;"no active status/role labels") else empty end),
     (if $r.issue.state=="open" and ([$labels[]|select(startswith("status:"))]|length)!=1 then finding($url;"status labels";$labels;"one existing lifecycle status") else empty end),
     (if ([$labels[]|select(startswith("role:"))]|length)>1 or any($labels[];test("^role:") and (test("^role:(product|architect|qa|dev|reviewer)$")|not)) then incomplete($url+" ambiguous/unrecognized active role label") else empty end),
+    (if $r.issue.state=="open" and any($labels[]; startswith("status:") and (test("^status:(backlog|in-progress|blocked)$")|not)) then
+      finding($url;"invalid status labels";$labels;"status:backlog, status:in-progress or status:blocked"),
+      incomplete($url+" status lifecycle unchecked: invalid status label") else empty end)
+    else empty end),
     (if $board then
       ([$is[]|select(.content.number==$n)]) as $matches |
-      if ($matches|length)==0 then finding($url;"membership";"missing";"project item")
+      if ($matches|length)==0 then
+        if $inventory_complete then finding($url;"membership";"missing";"project item")
+        else incomplete($url+" membership unchecked: project inventory incomplete") end
       elif ($matches|length)>1 then incomplete($url+" duplicate project membership")
       else $matches[0] as $item |
         ($item.fieldValues[] as $v |
@@ -275,9 +320,10 @@ def lifecycle:
           else empty end),
         (["Backlog rank","Horizon","Status"][] as $name |
           if ([$item.fieldValues[]|select(.field.name==$name)]|length)>1 then incomplete($url+" duplicate project fieldValues "+$name) else empty end),
-        (if ($r|lifecycle)!=null and
+        (if $status_mapping and ($r|lifecycle)==null then incomplete($url+" status lifecycle mapping indeterminate") else empty end),
+        (if $status_mapping and ($r|lifecycle)!=null and
           ([$fs[]|select(.name=="Status")|.options[]?.name]|index($r|lifecycle))==null then incomplete($url+" project Status mapping/option unavailable") else empty end),
-        (if ($r|lifecycle)!=null and fieldvalue($item;"Status")!=($r|lifecycle) then finding($url;"Status";fieldvalue($item;"Status");($r|lifecycle)) else empty end),
+        (if $status_mapping and ($r|lifecycle)!=null and fieldvalue($item;"Status")!=($r|lifecycle) then finding($url;"Status";fieldvalue($item;"Status");($r|lifecycle)) else empty end),
         (["Backlog rank","Horizon"][] as $name | if fieldvalue($item;$name)==null then
           ($r|notes($name)) as $notes |
           if ($notes|length)==1 then {kind:"exception",text:($url+" "+$name+" exception "+($notes[0]|join(" | ")))}
@@ -289,6 +335,10 @@ def lifecycle:
 ] | sort_by(.text) | .[] | [.kind,.text] | @tsv
 JQ
 jq -r --slurpfile records "$box/records" --slurpfile items "$box/items" --slurpfile fields "$box/fields" \
+  --arg repo "$repo" \
+  --argjson label_mapping "$(printf '%s' "$repo" | jq -R '.|ascii_downcase=="tiesl/spec-driven-guardrails"')" \
+  --argjson status_mapping "$(jq -n --arg r "$repo" --arg o "$project_owner" --arg p "$project" '($r|ascii_downcase)=="tiesl/spec-driven-guardrails" and ($o|ascii_downcase)=="tiesl" and $p=="1"')" \
+  --argjson inventory_complete "$inventory_complete" \
   --argjson board "$([ -n "$project" ] && echo true || echo false)" -n -f "$box/compare.jq" > "$box/findings" || exit 1
 cat "$box/unchecked"
 cut -f2- "$box/findings"
