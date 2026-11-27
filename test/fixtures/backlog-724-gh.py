@@ -80,9 +80,8 @@ if mode == 'network':
 def emit(value, status=200):
     if '--include' in args or '-i' in args:
         print('HTTP/2 ' + str(status) + '\n')
-    # Real gh emits no JSON body for 204. JSON null is available only as an
-    # explicitly labelled historical comparator-isolation input.
-    if (status == 204 and config.get('parent_response') != 'json-null') or (value is None and config.get('parent_response') == 'empty-200'):
+    # Synthetic successful empty-parent control; no live 204 claim.
+    if status == 204:
         return
     jq = option('--jq', '-q')
     if jq:
@@ -98,9 +97,6 @@ if graphql:
     if mode == 'board-denied':
         print('permission denied: token=SECRET_724', file=sys.stderr)
         sys.exit(1)
-    if mode == 'graphql-errors':
-        emit({'data': None, 'errors': [{'message': 'fixture denied'}]})
-        sys.exit(0)
     if mode == 'graphql-page-two-failure' and 'items-next' in json.dumps(fields):
         sys.exit(1)
     project = config['project']
@@ -149,30 +145,30 @@ if graphql:
         if isinstance(obj, list):
             return [selected_values(v) for v in obj]
         return obj
-    emit(selected_values({'data': {'organization': {'projectV2': project}, 'user': {'projectV2': project}, 'node': node}}))
+    response = selected_values({'data': {'repositoryOwner': {'projectV2': project}, 'node': node}})
+    if mode == 'graphql-errors':
+        # Data looks usable: checking only data/null or process exit is unsound.
+        response['errors'] = [{'message': 'SERVER_DIAGNOSTIC_724 token=SECRET_724'}]
+    emit(response)
     sys.exit(0)
 
 if endpoint is None:
     refuse('missing-endpoint')
-repo = config['repo']
-endpoint = endpoint.replace('{owner}/{repo}', repo)
-# GitHub repository names are case insensitive; returned identities remain
-# canonical, independently of the spelling in the requested endpoint.
-endpoint = re.sub(r'^repos/' + re.escape(repo) + r'(?=/|\?|$)',
-                  lambda _: 'repos/' + repo, endpoint, flags=re.I)
+repo = 'TiesL/spec-driven-guardrails'
 endpoint, _, parameters = endpoint.partition('?')
-if endpoint == 'repos/' + repo:
-    emit({'full_name': repo, 'owner': {'login': repo.split('/')[0], 'type': 'Organization'}, 'name': repo.split('/')[1]})
-    sys.exit(0)
 if endpoint not in config['rest']:
     refuse('unexpected-endpoint')
-if mode == 'rest-denied' and endpoint.endswith('/dependencies/blocked_by'):
-    print('403 fixture denied', file=sys.stderr)
+if mode == 'rest-denied' and endpoint == 'repos/' + repo + '/issues/20/dependencies/blocked_by':
+    print('403 SERVER_DIAGNOSTIC_724 token=SECRET_724', file=sys.stderr)
     sys.exit(1)
-if mode == 'unsupported-parent' and endpoint.endswith('/parent'):
-    print('404 unsupported endpoint', file=sys.stderr)
+# Live failure shape provenance: gh-capture-724-sanitized/09.txt and 09.body
+# (only exit/status/message retained; issue 20 is a synthetic target).
+if mode == 'parent-404' and endpoint == 'repos/' + repo + '/issues/20/parent':
+    if '--include' in args or '-i' in args:
+        print('HTTP/2.0 404 Not Found\n')
+    print('gh: No parent issue found (HTTP 404)', file=sys.stderr)
     sys.exit(1)
-if mode == 'comments-denied' and endpoint.endswith('/comments'):
+if mode == 'comments-denied' and endpoint == 'repos/' + repo + '/issues/20/comments':
     sys.exit(1)
 value = config['rest'][endpoint]
 if mode == 'malformed-json' and endpoint == 'repos/' + repo + '/issues':
@@ -187,7 +183,7 @@ if isinstance(value, dict) and '_pages' in value:
     pages = value['_pages']
     start = int(re.search(r'(?:^|&)page=(\d+)', parameters)[1]) - 1 if re.search(r'(?:^|&)page=(\d+)', parameters) else 0
     selected = pages[start:] if '--paginate' in args else pages[start:start+1]
-    if '--slurp' in args and mode != 'page-two-failure':
+    if '--slurp' in args and not (mode == 'page-two-failure' and endpoint == 'repos/' + repo + '/issues'):
         emit(selected)
         sys.exit(0)
     for index, page in enumerate(selected, start):
@@ -196,4 +192,4 @@ if isinstance(value, dict) and '_pages' in value:
             sys.exit(1)
         emit(page)
 else:
-    emit(value, 204 if value is None and config.get('parent_response') != 'empty-200' else 200)
+    emit(value, 204 if value is None else 200)

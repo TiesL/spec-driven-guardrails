@@ -3,7 +3,6 @@
 Snapshots are inputs, never expected comparator output. Fake-gh itself is built
 by test/lib.sh:fake_gh_bin in the shell case. No production implementation import.
 """
-import copy
 import json
 import os
 from pathlib import Path
@@ -29,7 +28,7 @@ def issue(n, body, state='open', labels=None):
             'title': 'Fixture ' + str(n), 'labels': [{'name': s} for s in (labels or ['enhancement', 'status:backlog'])]}
 
 
-def snapshot(repo=REPO):
+def snapshot():
     # 10 is a supported top-level epic; 20 is nested; 30 is closed and on page 2.
     issues = [issue(10, '**Covers:** F77, S726\n**Blocked by:** none\n**Blocks:** none\n## Work items\n- [ ] #20\n', labels=['epic', 'enhancement', 'status:backlog']),
               issue(20, '**Epic:** #10\n**Covers:** F77, S726\n**Blocked by:** #30\n**Blocks:** none\n'),
@@ -56,13 +55,9 @@ def snapshot(repo=REPO):
                           {'__typename': 'ProjectV2ItemFieldSingleSelectValue', 'name': 'Done' if i['state'] == 'closed' else 'Backlog', 'optionId': '4' if i['state'] == 'closed' else '0', 'field': fields[0]},
                           {'__typename': 'ProjectV2ItemFieldSingleSelectValue', 'name': 'Next', 'optionId': 'Next', 'field': fields[1]}],
                           [{'__typename': 'ProjectV2ItemFieldNumberValue', 'number': 4, 'field': fields[2]}]]}})
-    result = {'repo': REPO, 'rest': rest, 'project': {'id': 'PROJECT_1', 'number': 1, 'title': 'Fixture backlog', 'url': 'https://github.com/orgs/TiesL/projects/1',
+    result = {'rest': rest, 'project': {'id': 'PROJECT_1', 'number': 1, 'title': 'Fixture backlog', 'url': 'https://github.com/orgs/TiesL/projects/1',
                                     'fields': {'_pages': [fields[:2], fields[2:]]}, 'items': {'_pages': [items[:2], items[2:]]}}}
-    # The historical JSON-null adapter isolates comparison tests. The explicit
-    # empty-204 witness below is the supported-absence transport regression;
-    # this compatibility shape is never offered as live endpoint evidence.
-    result['parent_response'] = 'json-null'
-    return json.loads(json.dumps(result).replace(REPO, repo))
+    return result
 
 
 def body(config, n, value):
@@ -89,20 +84,17 @@ def check(label, condition, detail):
         errors.append(f'S{GROUP}/{label} at {Path(caller.f_code.co_filename).name}:{caller.f_lineno}: {detail}')
 
 
-def run(label, config, expected, tokens=(), board=True, nogh=False,
-        owner='TiesL', project='1', repo_arg=None):
+def run(label, config, expected, tokens=(), nogh=False, cwd=None):
     before = len(errors)
     (BOX / 'snapshot.json').write_text(json.dumps(config))
     for name in ('calls.jsonl', 'requests.jsonl', 'witness.jsonl'):
         (BOX / name).write_text('')
-    argv = [str(ROOT / 'backlog-drift.sh'), '--repo', repo_arg or config['repo']]
-    if board:
-        argv += ['--project-owner', owner, '--project', project]
+    argv = [str(ROOT / 'backlog-drift.sh')]
     env = dict(os.environ)
     if nogh:
         env['PATH'] = env['BACKLOG_724_NOGH']
     try:
-        p = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True, timeout=15)
+        p = subprocess.run(argv, cwd=cwd or ROOT, env=env, capture_output=True, text=True, timeout=15)
         output, code = p.stdout, p.returncode
         diagnostics = p.stderr
     except FileNotFoundError:
@@ -116,10 +108,10 @@ def run(label, config, expected, tokens=(), board=True, nogh=False,
     for token in tokens:
         check(label + '/' + token, token.lower() in output.lower(), 'missing finding/evidence: ' + token)
     if expected == 'incomplete':
-        check(label + '/never-clean', 'result=clean' not in output and re.search(r'unchecked', output, re.I), 'incomplete evidence must name unchecked scope')
+        check(label + '/never-clean', 'result=clean' not in output, 'incomplete evidence must never become clean')
     if expected == 'drift':
         check(label + '/observed-expected', re.search(r'observed|actual', output, re.I) and re.search(r'expected', output, re.I), 'finding must distinguish observed and expected values')
-    check(label + '/no-secret', 'SECRET_724' not in output + diagnostics, 'raw credential-bearing stderr escaped')
+    check(label + '/no-raw-diagnostic', not any(s in output + diagnostics for s in ('SECRET_724', 'SERVER_DIAGNOSTIC_724')), 'raw server diagnostic escaped')
     check(label + '/read-only', not (BOX / 'witness.jsonl').read_text(), (BOX / 'witness.jsonl').read_text())
     print(f'CASE S{GROUP}/{label}: {"PASS" if len(errors) == before else "RED"} exit={code} '
           + next((line for line in output.splitlines() if line.startswith('result=')), 'result=absent'))
@@ -151,31 +143,7 @@ if GROUP == 726:
     c = snapshot(); c['rest'][PREFIX + '/20']['labels'].append({'name': 'epic'})
     body(c, 20, c['rest'][PREFIX + '/20']['body'] + '\n## Work items\nnone\n')
     run('nested-epic', c, 'clean')
-    # Review R1: transport absence, identity collisions and canonical statuses.
-    run('r1-local-edge-valid-control', snapshot(), 'clean')
-    c = snapshot(); c['parent_response'] = 'empty-204'
-    run('r1-empty-204-top-level', c, 'clean')
-    for include in (False, True):
-        p = subprocess.run(['gh', 'api', '--method', 'GET', PREFIX + '/10/parent',
-                            *(['--include'] if include else [])], capture_output=True, text=True)
-        check('r1-real-shaped-204-adapter-control-' + str(include),
-              p.returncode == 0 and p.stdout == ('HTTP/2 204\n\n' if include else ''),
-              '204 adapter must expose exit 0, empty body and optional status headers: ' + repr(p.stdout))
-    print('CONTROL: HTTP 204 adapter exposes exit 0, empty body and optional status headers')
-    c['rest'][PREFIX + '/20/parent'] = None
-    run('r1-empty-204-declared-parent-missing-control', c, 'drift', (URL + '20', 'parent'))
-    c = snapshot(); c['parent_response'] = 'empty-200'
-    run('r1-empty-200-not-established-absence-control', c, 'incomplete', ('parent',))
-    c = snapshot()
-    foreign = copy.deepcopy(c['rest'][PREFIX + '/30'])
-    foreign.update(id=880030, node_id='FOREIGN_30',
-                   url='https://api.github.com/repos/other/repo/issues/30',
-                   html_url='https://github.com/other/repo/issues/30')
-    c['rest'][PREFIX + '/20/dependencies/blocked_by']['_pages'][0].append(foreign)
-    out, _ = run('r1-foreign-colliding-blocker', c, 'drift',
-                 (URL + '20', 'https://github.com/other/repo/issues/30', 'blocked_by'))
-    check('r1-foreign-edge-linked-finding', any('observed=' in line and 'https://github.com/other/repo/issues/30' in line for line in out.splitlines()),
-          'distinct foreign edge needs linked observed/expected evidence, not merely an aggregate warning: ' + out)
+    run('local-edge-valid-control', snapshot(), 'clean')
     for status in ('status:typo', 'status:garbage'):
         c = snapshot(); c['rest'][PREFIX + '/20']['labels'] = [{'name': 'enhancement'}, {'name': status}]
         run('r1-unknown-' + status, c, 'incomplete', (URL + '20', status, 'status'))
@@ -263,70 +231,124 @@ elif GROUP == 728:
     check('query-post-allowed-control', p.returncode == 0 and not (BOX / 'witness.jsonl').read_text(), 'read-only GraphQL transport POST was rejected')
     print('CONTROL: reachable unknown/REST/GraphQL/JSON/swallowed-write witnesses rejected injections; query POST allowed')
 elif GROUP == 729:
-    for failure in ('network', 'rest-denied', 'unsupported-parent', 'board-denied', 'graphql-errors', 'graphql-page-two-failure', 'malformed-json', 'missing-issue-fields', 'page-two-failure', 'cursor-cycle', 'cursor-truncated', 'missing-page-info', 'missing-project-field', 'comments-denied'):
+    # Every shape is independent; no certainty taxonomy or fallback probe.
+    for failure, operation in [
+        ('network', 'gh'), ('rest-denied', 'blocked_by'),
+        ('parent-404', 'parent'), ('board-denied', 'project'),
+        ('graphql-errors', 'project'), ('graphql-page-two-failure', 'project'),
+        ('malformed-json', 'issues'), ('missing-issue-fields', '20'),
+        ('page-two-failure', 'issues'), ('cursor-cycle', 'items'),
+        ('cursor-truncated', 'items'), ('missing-page-info', 'items'),
+        ('missing-project-field', 'Horizon'), ('comments-denied', 'comments')]:
         c = snapshot(); c['failure'] = failure
-        operation = {'network': 'gh', 'rest-denied': 'blocked_by', 'unsupported-parent': 'parent', 'board-denied': 'project', 'graphql-errors': 'project', 'graphql-page-two-failure': 'project', 'malformed-json': 'issues', 'missing-issue-fields': '20', 'page-two-failure': 'issues', 'cursor-cycle': 'items', 'cursor-truncated': 'items', 'missing-page-info': 'items', 'missing-project-field': 'Horizon', 'comments-denied': 'comments'}[failure]
-        run(failure, c, 'incomplete', (operation,))
+        out, _ = run(failure, c, 'incomplete', (operation,))
+        # Independent transport control: prove faults are reachable even while
+        # the current reporter still stops at the new fixed-scope boundary.
+        probes = {
+            'network': (PREFIX + '?state=all', []),
+            'rest-denied': (PREFIX + '/20/dependencies/blocked_by', ['--paginate', '--slurp']),
+            'parent-404': (PREFIX + '/20/parent', ['--include']),
+            'comments-denied': (PREFIX + '/20/comments', ['--paginate', '--slurp']),
+            'malformed-json': (PREFIX, ['--paginate', '--slurp']),
+            'missing-issue-fields': (PREFIX + '/20', []),
+            'page-two-failure': (PREFIX, ['--paginate', '--slurp']),
+        }
+        if failure in probes:
+            endpoint, flags = probes[failure]
+            p = subprocess.run(['gh', 'api', '--method', 'GET', endpoint, *flags],
+                               capture_output=True, text=True)
+            if failure in ('malformed-json', 'missing-issue-fields'):
+                injected = p.stdout == '{bad\n' if failure == 'malformed-json' else json.loads(p.stdout).get('body') is None
+                check(failure + '/fault-control', p.returncode == 0 and injected, 'malformed-data injection was not reachable')
+            else:
+                check(failure + '/fault-control', p.returncode != 0, 'non-success injection was not reachable')
+        else:
+            p = subprocess.run(['gh', 'api', 'graphql', '-f',
+                                'query=query { repositoryOwner(login:"TiesL") { ... on User { projectV2(number:1) { items(first:100, after:"items-next") { pageInfo { hasNextPage endCursor } } fields(first:100) { nodes { ... on ProjectV2Field { id name } } } } } } }',
+                                '-f', 'cursor=items-next'], capture_output=True, text=True)
+            data = json.loads(p.stdout) if p.stdout else {}
+            if failure in ('board-denied', 'graphql-page-two-failure'):
+                injected = p.returncode != 0
+            elif failure == 'graphql-errors':
+                injected = p.returncode == 0 and bool(data.get('errors'))
+            else:
+                project = data['data']['repositoryOwner']['projectV2']
+                page_info = project['items'].get('pageInfo')
+                injected = {
+                    'cursor-cycle': page_info == {'hasNextPage': True, 'endCursor': 'items-next'},
+                    'cursor-truncated': page_info == {'hasNextPage': True, 'endCursor': None},
+                    'missing-page-info': page_info is None,
+                    'missing-project-field': all(f['name'] != 'Horizon' for f in project['fields']['nodes']),
+                }[failure]
+            check(failure + '/fault-control', injected, 'GraphQL fault injection was not reachable')
+        check(failure + '/no-invented-finding', not any('observed=' in line for line in out.splitlines()),
+              'a consistent snapshot plus failed reads must not invent drift: ' + out)
+        if failure not in ('network', 'malformed-json'):
+            affected = (20,) if failure in ('rest-denied', 'parent-404', 'missing-issue-fields', 'comments-denied') else (10, 20, 30, 40)
+            # A failed global inventory can only enumerate already-known URLs.
+            if failure != 'page-two-failure':
+                for n in affected:
+                    check(failure + '/affected-' + str(n), URL + str(n) in out,
+                          'human diagnostic must identify affected issue URL')
+        if failure in ('malformed-json', 'page-two-failure'):
+            check(failure + '/unknown-remainder',
+                  re.search(r'unknown|unenumerat|inventory.{0,60}incomplete|incomplete.{0,60}inventory', out, re.I),
+                  'failed global inventory must not claim the unknown remainder was enumerated')
+    print('CONTROL: independent REST/GraphQL failure injections exercised')
     run('no-gh', snapshot(), 'incomplete', ('gh',), nogh=True)
-    c = snapshot(); c['failure'] = 'comments-denied'; field(c, 30, 'Status', 'Backlog')
-    run('known-drift-survives-failed-comments', c, 'incomplete', (URL + '30', 'Done'))
+    for failure in ('rest-denied', 'parent-404', 'missing-issue-fields', 'comments-denied'):
+        c = snapshot(); c['failure'] = failure
+        # Successful reads would expose these deliberate issue-20 mismatches;
+        # failure means skip all remaining checks for 20, not partial findings.
+        c['rest'][PREFIX + '/20/dependencies/blocked_by'] = {'_pages': [[], []]}
+        field(c, 20, 'Status', 'Ready')
+        # Issue 10 precedes the failed issue; issue 30 is unaffected and later.
+        c['rest'][PREFIX + '/10/sub_issues'] = {'_pages': [[], []]}
+        field(c, 30, 'Status', 'Backlog')
+        out, calls = run('skip-and-continue-' + failure, c, 'incomplete',
+                         (URL + '20', URL + '10', URL + '30', 'Done'))
+        finding_lines = [line for line in out.splitlines() if 'observed=' in line]
+        check(failure + '/skip-affected', not any(URL + '20 ' in line for line in finding_lines),
+              'failed issue must have no downstream comparison findings: ' + out)
+        for n in (10, 30):
+            check(failure + '/retain-or-continue-' + str(n),
+                  any(URL + str(n) + ' ' in line for line in finding_lines),
+                  'retain prior findings and continue unaffected issues: ' + out)
+        operation = {'rest-denied': 'dependencies/blocked_by', 'parent-404': 'parent',
+                     'missing-issue-fields': '', 'comments-denied': 'comments'}[failure]
+        endpoints = [a for a in calls if any(PREFIX + '/20' in x for x in a)]
+        failed_index = next((i for i, a in enumerate(endpoints)
+                             if any(re.search(re.escape(PREFIX + '/20' + ('/' + operation if operation else '')) + r'(?:\?|$)', x) for x in a)), None)
+        check(failure + '/stop-dependent-reads', failed_index is not None and failed_index == len(endpoints)-1,
+              'remaining issue reads must stop at the failed operation: ' + json.dumps(endpoints))
     for failure in ('board-denied', 'graphql-page-two-failure'):
         c = snapshot(); c['failure'] = failure
-        out, _ = run('r1-unverified-membership-' + failure, c, 'incomplete', ('membership',))
-        check('r1-no-invented-absence-' + failure,
+        c['rest'][PREFIX + '/10/sub_issues'] = {'_pages': [[], []]}
+        out, _ = run('prior-finding-survives-' + failure, c, 'incomplete',
+                     (URL + '10', 'observed='))
+        check(failure + '/no-missing-membership',
               not re.search(r'membership[^\n]*observed="missing"', out),
-              'partial/denied inventory invented missing membership: ' + out)
-        check('r1-unchecked-membership-' + failure,
-              any('unchecked' in line.lower() and 'membership' in line.lower() for line in out.splitlines()),
-              'name unchecked membership scope: ' + out)
-    c = snapshot(); c['failure'] = 'board-denied'
-    c['rest'][PREFIX + '/20/dependencies/blocked_by'] = {'_pages': [[], []]}
-    run('r1-independent-edge-survives-denied-inventory', c, 'incomplete', (URL + '20', 'blocked_by', 'observed='))
+              'failed inventory cannot establish missing membership: ' + out)
 elif GROUP == 730:
     c = snapshot(); field(c, 30, 'Status', 'In review')
     run('closed-not-done', c, 'drift', (URL + '30', 'In review', 'Done'))
     run('closed-done-archived-second-page', snapshot(), 'clean')
 elif GROUP == 731:
-    output, calls = run('board-omitted', snapshot(), 'clean', ('not-applicable',), board=False)
-    check('board-omitted-no-discovery', bool(calls) and not any('graphql' in a for a in calls), 'must still read native relations without discovering an arbitrary board')
-    c = snapshot(); c['rest'][PREFIX + '/20/parent'] = None
-    run('board-omitted-native-drift', c, 'drift', (URL + '20', 'parent', 'not-applicable'), board=False)
-    c = snapshot(); c['failure'] = 'board-denied'
-    run('configured-board-is-not-na', c, 'incomplete')
-    c = snapshot('other/adopter')
-    c['rest']['repos/other/adopter/issues/20']['labels'] = [{'name': 'feature'}]
-    out, _ = run('r1-foreign-feature-boardless', c, 'incomplete', ('label', 'not-applicable'), board=False)
-    check('r1-no-exported-label-drift', not re.search(r'(type|status|role) labels[^\n]*observed=', out),
-          'SDG label policy leaked to adopter: ' + out)
-    check('r1-unchecked-label-mapping', any('unchecked' in line.lower() and re.search(r'label|vocabulary', line, re.I) for line in out.splitlines()),
-          'unsupported label vocabulary must be explicitly unchecked: ' + out)
-    c['rest']['repos/other/adopter/issues/20/dependencies/blocked_by'] = {'_pages': [[], []]}
-    run('r1-foreign-independent-edge-retained', c, 'incomplete',
-        ('https://github.com/other/adopter/issues/20', 'blocked_by', 'observed='), board=False)
-    for owner, project in [('other', '1'), ('TiesL', '2')]:
-        c = snapshot(); field(c, 20, 'Status', 'Queue')
-        c['project'].update(number=int(project), url=f'https://github.com/orgs/{owner}/projects/{project}')
-        for page in c['project']['fields']['_pages']:
-            for f in page:
-                if f['name'] == 'Status':
-                    f['options'] = [{'id': 'queue', 'name': 'Queue'}]
-        out, _ = run('r1-unsupported-board-' + owner + '-' + project, c, 'incomplete', ('Status',), owner=owner, project=project)
-        check('r1-no-exported-Status-' + owner + '-' + project,
-              not re.search(r'\bStatus observed=', out), 'SDG board mapping leaked: ' + out)
-        check('r1-unchecked-board-mapping-' + owner + '-' + project,
-              any('unchecked' in line.lower() and re.search(r'Status|lifecycle|mapping', line, re.I) for line in out.splitlines()),
-              'unsupported board lifecycle must be explicitly unchecked: ' + out)
-    for missing in ('membership', 'Backlog rank', 'Horizon'):
-        c = snapshot()
-        if missing == 'membership':
-            c['project']['items']['_pages'][1] = [i for i in c['project']['items']['_pages'][1] if i['content']['number'] != 30]
-        else:
-            field(c, 30, missing, None)
-        run('r1-unmapped-board-independent-' + missing, c, 'incomplete',
-            (URL + '30', missing, 'observed='), owner='other')
-    run('r1-supported-SDG-project-control', snapshot(), 'clean')
-    run('r1-case-insensitive-repository-control', snapshot(), 'clean', board=False,
-        repo_arg='tiesl/SPEC-DRIVEN-GUARDRAILS')
+    out, calls = run('fixed-SDG-project-from-other-directory', snapshot(), 'clean',
+                     ('TiesL/spec-driven-guardrails', 'TiesL/1'), cwd=BOX)
+    check('no-current-repo-discovery', not any('repos/{owner}/{repo}' in str(a) for a in calls),
+          'fixed scope must not discover the checkout repository')
+    requests = [json.loads(line) for line in (BOX / 'requests.jsonl').read_text().splitlines()]
+    check('fixed-project-read', any(re.search(r'login:\s*"TiesL"', r['fields'].get('query', ''))
+                                   and re.search(r'projectV2\(number:\s*1\)', r['fields'].get('query', ''))
+                                   for r in requests if r['endpoint'] == 'graphql'),
+          'no-argument invocation must read TiesL Project 1')
+    for args in [('--repo', REPO), ('--project-owner', 'TiesL', '--project', '1')]:
+        (BOX / 'calls.jsonl').write_text('')
+        p = subprocess.run([str(ROOT / 'backlog-drift.sh'), *args], cwd=BOX,
+                           capture_output=True, text=True)
+        check('reject-' + args[0], p.returncode == 2 and not (BOX / 'calls.jsonl').read_text(),
+              'removed scope option must be rejected before gh: ' + p.stdout + p.stderr)
 else:
     raise AssertionError(GROUP)
 
