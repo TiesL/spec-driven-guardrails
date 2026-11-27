@@ -13445,3 +13445,140 @@ contradicted or narrowed. D5's approval reservation and D6 remain intact;
 unchanged core/scenario bytes do not require a new behavior run solely for
 this redesign. Revisit if a captured shape cannot satisfy verified absence
 or the same certainty rule cannot be enforced locally within this Module.
+
+#### A65 addendum 3 — SDG-only maintenance and direct failure reporting (D6/D7, #747)
+
+Planning, 2026-11-27, input head `ab80a00`; narrowed issue AC1–AC6 and
+Product's reconciled F77 govern. This entry supersedes conflicting parts
+of A65 and addenda 1–2: portable delivery, arbitrary repo/project selection,
+adopter mappings, foreign-edge identity reconciliation, the observation
+certainty layer and its capture prerequisite, template expansion, and D5's
+meaning-v2/release-notice path are withdrawn. Keep D1–D4 and the local
+relations, ordering, read-back, closure and advisory-report requirements.
+No narrowed AC is contradicted or further narrowed by this design.
+
+**One local rule owner.** Put the complete maintenance recipe in
+`README.md`, under “How this repo builds itself”, in a subsection
+“Keeping this repository's backlog current”. Include the Project 1
+lifecycle table from addendum 2 there, rather than in a separate rule:
+Backlog → Backlog; active Discovery/Planning/Test/Implementation → In
+progress; Review → In review; verified CLOSED → Done; Ready requires an
+explicit maintainer decision. Blocked work retains its stage Status and
+visible blocked reason. Indeterminate lifecycle cannot establish agreement.
+This is SDG's own workflow documentation, outside adopter payloads.
+
+Retain the original operational recipe here with fixed SDG names:
+Product authors reconciled bodies and reciprocal declarations; the
+orchestrator publishes them unchanged and mirrors settled metadata only.
+Cover creation, relation/stage changes, reprioritization and closure;
+explicit empty dependency sets, nested/top-level epics, realized Covers,
+inverse/removal updates, type/status/active-role labels, automatic membership
+before manual add, confirmed rank/Horizon and independent field-specific
+pending/parked/inheritance records. Contradictions return to their owner.
+Use actual numeric/node/item IDs where operations require them; removing
+foreign identity machinery does not make issue numbers interchangeable
+with those IDs. Preserve safe body-file publication and read-before/read-back.
+Use enabled workflows first; verify PR linkage, membership and CLOSED/Done.
+A release child's PR merge alone is insufficient: record completion/link,
+explicitly close under the release workflow, then verify. Preserve epic
+closure rules; add no automation or project-setting authority.
+
+**Small report Interface.** `./backlog-drift.sh` always reads
+`TiesL/spec-driven-guardrails` and TiesL Project 1, regardless of checkout
+directory. Delete repo/project switches, current-repository discovery,
+board-less mode and mapping selection. No foreign graph traversal,
+multi-project support or adopter configuration. Keep one read-only Module
+and the existing gh-on-PATH Seam with real gh and recording fake adapters.
+Its Depth hides paginated collection and local comparisons behind one
+invocation; its deletion would spread those chores to callers. Fixed scope
+improves Locality and Leverage. A configurable transport/mapping framework
+fails the two-adapters test for actual variation here.
+
+Read open/closed issues, live bodies, comments, native relations and Project
+1 items (including exposed archived items), fields and nested values with
+pagination. Keep the markdown live-text convention, ordinary unrelated
+field support, deterministic linked observed/expected findings, visible
+exception references and a complete consistent clean control. Preserve the
+read-only request witness; GraphQL query transport POST is still allowed.
+
+**Failure means report and skip, without classification.** Any non-success
+gh response, including REST 404 or GraphQL errors with process exit 0,
+prints a safe operation description, affected issue URL(s), failure and
+checks left incomplete to the AI session's human. Skip that issue's remaining
+checks; the failed response establishes neither clean nor a finding.
+Unavailable gh/network, invalid required data or incomplete/cyclic pagination
+follow the same report-and-skip path. A board-wide failure identifies all
+affected issues and leaves their dependent checks incomplete. Preserve
+findings already established from successful evidence; continue other issues
+whose required reads succeeded. Never infer missing membership, empty order
+or absent relations from failed/partial reads. If a global issue inventory
+fails, report that inventory scope and known affected URLs without claiming
+the unknown remainder was enumerated.
+
+Delete `present|verified-absent|unchecked` observation records, certainty
+normalization, ambiguous-response taxonomies, alternate absence probes and
+the mandatory live-capture/manifest stage. Parse supported successful
+response shapes directly; unsupported shapes are incomplete, never guessed
+absence. Simple operation/page success flags and early skip suffice; do not
+recreate the layer under new names. Keep aggregate clean/drift/incomplete
+output and advisory exit 0 (usage 2, internal defect 1); any skipped issue
+precludes aggregate clean. Maintenance failures also reach the human and
+durable Pipeline log/note with desired state and completed/failed/unattempted
+steps. Stop dependent writes; no blind repair, rollback or synchronization
+claim without read-back. Suppress credentials/raw server stderr.
+
+**D4: keep the exact permission.** OR46's shared core is loaded by every
+adopter, but SDG still needs direct decided native/project writes and its
+closed list otherwise permits only labels/log, read-only calls and named
+commands. README cannot extend that list. Reverting D4 would require a
+different execution owner or a writer command merely to route around it.
+Keep only `(d) labels/log; mirror decided metadata;` replacing
+`(d) set label, edit Pipeline log;`; D4 already authorizes this exact edit.
+It adds no adopter maintenance obligation. Keep Product ownership,
+undecided-order referral and the existing no-repair prohibition. No extra
+core pointer or permission is needed. Recheck S309/S318 budgets unchanged.
+Final scenario changes below require another real whole-file differential
+behavior run and runner-generated stamp; reverting the core instead would
+also change hashed bytes and require that evidence. Prior stamps cannot
+cover either revised corpus. Log the actual base, commands and results;
+commit generated evidence before clean exact-head D6.
+
+**Minimal file scope and QA handoff.** Keep/simplify `backlog-drift.sh`;
+add the README subsection; retain Product's F77/F14 reconciliation and this
+design record. QA owns `TEST-SCENARIOS.md`, S726–S731 cases and
+`backlog-724-{cases,gh,text}.py`. Retain only D4-required core/inventory,
+S317/S725, exact-substitution consumers and final genuine stamp/pin changes.
+Preserve historical #706 pairs and unrelated owner-approved route corrections.
+Restore #724 changes in `skills/write-spec/SKILL.md`, all four issue-template
+copies, `CHANGES.md` and `test/fixtures/baseline/CHANGES.md.snapshot` to
+`origin/release/742-process-hygiene` text. Remove D5's S336 exception.
+Remove the write-spec maintenance pointer from `policy/WORKFLOW.md` and
+`adapters/codex/AGENTS.md`; regenerate `WORKFLOW.md`/`AGENTS.md` normally.
+Preserve unrelated release work when reconciling these files.
+
+- S726: retain local parent/blocker inverses, removals, labels, body parsing
+  and distinct operation IDs; delete foreign-number collisions and certainty
+  classifications. A failed parent read is reported/skipped, never absence.
+- S727: retain confirmed ordering and separate pending/parked/inherited
+  exceptions, including comment pagination; retarget recipe checks to README.
+- S728: retain complete pagination, closed/archived issues, ordinary values,
+  missing-membership control, clean snapshot and mutation/unexpected-call
+  witnesses. Invoke with no repo/project arguments.
+- S729: simplify independent non-success/malformed/truncated cases to human
+  diagnostics, affected-issue skipping, no fabricated finding/clean, retained
+  prior findings and unaffected-issue continuation. Delete certainty states,
+  fallback/classification and capture-provenance oracles.
+- S730: retain verified linkage/membership/CLOSED/Done, release-child close,
+  read-back and reuse of existing automation; inspect the local README rule.
+- S731: replace portability/adoption assertions with fixed-scope/local-rule
+  and exact release-base restoration checks. Delete board-less, alternate
+  owner/project, case-normalization/mapping and meaning-v2 parser fixtures.
+  Rename its case to describe SDG scope. Keep D4 protection checks; narrow
+  OB92–OB95/OB97 to SDG and direct failure reporting; retire board-less OB96
+  without reusing its ID and reconcile reciprocal inventory/exact allowances.
+
+QA establishes revised red cases before Developer, then fresh Review. Do
+not preserve superseded broad assertions as regression requirements or mark
+old findings resolved merely by this design. Implementation is principally
+deletion plus local documentation; the full behavior run remains the main
+validation cost. No new maintainer decision is required by this design.
