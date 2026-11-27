@@ -12708,8 +12708,11 @@ encoded/binary/over-budget sub-assertion. Binary specimens contain the forbidden
 bytes amid invalid UTF-8; invalid UTF-8 alone is admission-safe. Escaped specimens
 require reversible decoding. Scanner-unavailable companions restore the scanner;
 all other companions replace the forbidden specimen with admission-safe bytes.
-Binary originals use reversible envelopes, not undecodable transport. Oversized specimens exceed the actual 3,000,000-byte
-threshold, with the forbidden value beyond it; no prefix scan or truncation.
+Binary originals use reversible envelopes, not undecodable transport. Oversized
+specimens exceed the size threshold through the production size-check path,
+with the forbidden value beyond it; no prefix scan or truncation. The exhaustive
+small-specimen rows and shared actual-3,000,000-byte proofs below jointly establish
+this assertion; a small specimen is never described as exceeding 3,000,000 bytes.
 Their admitted companions retain complete bytes but still STOP on size and cannot
 PASS or launch later calls. Recovery is selected by a deterministic pre-write
 fault with sufficient recovery capacity, never a fault after tainted bytes were
@@ -12763,7 +12766,78 @@ Run the entire offline matrix and retained applicable regressions in `./check`
 on both CI legs: standard-library fakes/temp stores, zero subscription calls,
 zero network. Budget for the new matrix: at most 60 seconds per leg; record
 actual count/time before real runs. Exceeding it stops for design resolution,
-not sampling. Manual-only work is installed-runtime containment verification,
+not sampling.
+
+**Runtime-budget design correction (QA `admission-matrix-runtime-budget-unsubstantiated`).**
+Do not extend historical `Fixture.cli` into thousands of subprocess launches or
+allocate/serialize a fresh 3 MB control for every oversize row. Keep every literal
+key, companion, assertion and required mutant kill: 4,349 keys, including 3,840
+admission rows and their 7,680 candidate/control evaluations. This is a change to
+execution cost, not gate placement; the complete gate stays in both `./check` legs.
+
+Use one in-process runner Module per test process, fresh isolated state per row,
+and the existing internal storage/fault Seam with an in-memory sink Adapter.
+Only terminal filesystem/Git/transport effects are substituted. Producer dispatch,
+final serialization/decoding, admission/scanner, size check, recovery selection,
+immutable-byte binding, object/commit construction and outgoing-closure validation
+remain production logic. Spies retain complete bytes, names, prior-state snapshots
+and attempted transfers, including rejected writes; an assertion cannot pass
+because its destination was never reached. Scanner-unavailable controls restore
+the real scanner. No cached admission verdict, mocked scanner or mocked size
+result substitutes for any row's evaluation. Native and memory sink Adapters
+justify this internal Seam; no public command, bypass flag or new Module is added.
+
+The owner has one size predicate over actual complete-original byte length and
+one immutable internal size policy: production always supplies 3,000,000. Tests
+inject 1,024 through the internal fault Seam, never argv/env/public configuration.
+All exhaustive oversize rows use complete small originals with the needle after
+byte 1,024, and their safe companions still reach the named sink exactly and
+STOP on size. Target originals at most 2 KiB and final envelopes at most 8 KiB;
+fixed framing is not silently truncated to meet those targets. All other refusal,
+decoded-byte, accounting, preservation and no-later-call assertions remain per row.
+
+Prove the real limit separately, as required sub-assertions of existing keys,
+not replacement or sampled keys. For each Adapter exercise complete originals of
+3,000,000 minus one, exactly 3,000,000 and 3,000,000 plus one bytes through the
+owner with production policy; assert the first two have no size STOP and the last
+retains exact admitted bytes with size STOP/no later call. For each Adapter the
+actor-stdout/recovery/over-budget/credential key additionally runs its refused
+original with the credential beyond the actual 3,000,000 boundary and its complete
+safe recovery companion. Replay those four evaluations against recovery-bypass
+for its required kills/controls; the unusable-second-judge/home witness retains
+its own kills. Reuse immutable safe padding and
+release each case's buffers; still scan every complete candidate and final envelope.
+QA's graph check must establish that every producer/destination uses this sole
+length predicate/policy path, with no duplicated threshold, early truncation or
+destination-specific size branch. This structural equivalence plus actual-limit
+anchors carries the numeric-limit assertion for every exhaustive row; it does not
+claim each small row physically contains 3 MB. An independent threshold/policy
+mutation must fail these sub-assertions, without replacing any of the 24 kills:
+per Adapter, replay the plus-one refusal-of-continuation assertion and a minus-one
+control against that mutation. The total is eighteen full-size evaluations,
+including these mutation replays, rather than 960 oversized companions alone.
+
+The graph check also requires bounded native conformance traces: both Adapters x
+four destinations x admitted/refused, with exact bytes, rejection-before-effects,
+recovery faults and closure membership compared to memory traces. Use temporary
+local repositories and captured transport, never network; retain applicable native
+S629-S634 regressions. Memory traces alone cannot qualify native persistence.
+
+Planning estimate, not a benchmark: 7,680 small admission evaluations at 1.5 ms
+average = 11.52 s; eighteen full-size evaluations at 0.8 s = 14.4 s; other baseline families
+and controls = 10 s; graph/native conformance and all 24 mutants = 12 s. Total
+47.92 s, leaving 12.08 s within the unchanged 60 s new-matrix allowance. The
+separate retained-regression cost is recorded too, never concealed in that margin.
+These are falsifiable cost assumptions, not measured performance guarantees.
+Developer records cold-process wall time per phase, materialized/scanned bytes,
+peak retained bytes, subprocess count and exact executed-key/control/kill sets on
+each CI OS. Time starts before fixture construction and includes graph comparison,
+native conformance, full-limit anchors and mutants, without warmed verdict caches.
+QA rejects missing keys/assertions, scanner-only shortcuts or an unproved shared
+size path even if fast. Any leg above 60 s falsifies feasibility and returns to
+Architect; no sampling, hidden exclusions or move outside CI is authorized.
+
+Manual-only work is installed-runtime containment verification,
 Claude pilot/remainder then Codex pilot/remainder, subscription accounting,
 private push/retrieval/access verification, actual human calibration and review
 of actual external publications. Offline retrieval/access/posting fakes prove
