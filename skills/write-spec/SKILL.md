@@ -145,7 +145,7 @@ not live server success; record authorized add/remove/read-back evidence before
 claiming live maintenance.
 
 **On-request report.** `backlog-drift.sh` is a read-only report with no write mode:
-`./backlog-drift.sh --repo OWNER/REPO --project-owner OWNER --project N`.
+`"$SPEC_DRIVEN_GUARDRAILS_DIR/backlog-drift.sh" --repo OWNER/REPO --project-owner OWNER --project N`.
 Adopters can invoke `$SPEC_DRIVEN_GUARDRAILS_DIR/backlog-drift.sh`; omitted repo
 uses gh's current-repository placeholders. Board arguments are a pair from the
 project's documented configuration; do not discover an arbitrary board. The
