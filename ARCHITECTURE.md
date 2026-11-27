@@ -12316,6 +12316,29 @@ provides Leverage to the real runtime Adapters and Locality for repairs. Leave
 `orchestrator_diff.py` and its stamp unchanged; its raw stderr diagnostics must
 not be copied. #657/#682 remain later consumers, outside #731/#680 execution.
 
+**OR20 redesign step (#731 / PR #746, after Review rounds 1 and 2).**
+Reconsidered the whole mechanism, including exact-input custody, private admission,
+public projection and outside writers, receipt retrieval, calibration, aggregation
+and STOP. Keep D1-D5 and the closed public Interface: it removes arbitrary-text
+publication from the runner by construction, while external writer compliance
+remains procedural. Keep the finite C/I/P/V/F chain and typed grading. The repeated
+route omissions do expose a design weakness on the private side: a list of
+producer obligations plus one global scanner mutant is not a completeness proof.
+Choose a single admission-and-persistence operation inside the existing Module,
+with a separately audited complete writer graph. Enumeration supplies falsifying
+probes of that structure; it no longer defines the structure's coverage.
+
+Rejected merely adding the seven missing producer rows: the next recovery or
+receipt writer could still bypass admission. Rejected per-producer admission
+wrappers: deleting a wrapper could silently transfer safety to its caller. With
+`PrivateStore` owning admission and persistence together, the deletion test makes
+that complexity reappear in every producer; its Depth supplies Leverage and
+Locality. No new external Seam or hypothetical Adapter is needed: both real
+runtime Adapters use the same operation, and existing offline storage/fault Seams
+exercise it. This is a design correction within the accepted exclusions, not a
+new security trade-off or AC narrowing. No additional AC contradiction is proposed.
+The deferred `children-no-network-overbroad` clause remains unchanged under OR40.
+
 **D5 replacement: custody, identity and retrieval.** Complete original packets,
 canonical inputs, supplied returns, actor/canary/judge stdout and stderr,
 ordered attempts, drafts, keys, receipts, invalid attempts and usage live outside
@@ -12346,6 +12369,50 @@ checks with admitted/tainted controls before execution. No raw environment snaps
 is needed for these comparisons. This is defense in depth for private admission,
 not a replacement for the closed public Interface or a proof of arbitrary-secret
 recognition. The historical scanner's bounded assurance is not widened into one.
+
+**One private persistence owner.** The Module's internal
+`PrivateStore.persist(candidate, purpose)` accepts complete in-memory candidate
+bytes and closed runner-owned purpose/bindings; it returns an immutable locator
+or a typed refusal. Callers never receive an admission token, writable stream,
+serializer, filesystem/Git handle, path or scanner-bypass flag. Routing to primary
+storage, recovery/spool, Git-object creation and push is internal. Every producer,
+including retained-state imports and human-supplied receipts/drafts, enters here;
+no exception for unusable attempts, diagnostics, STOP records or oversized bodies.
+Invocation admission occurs before launch. Capture still precedes semantic
+validation; admission precedes persistence, not capture or grading.
+
+The owner constructs the complete final representation in memory, scans original
+bytes, reversibly decoded fields, runner-added fields and the final envelope, then
+binds immutable exact bytes to derived private names and permitted sinks. The sink
+writes only those bound bytes. Mutation, replacement, changed bindings, reread or
+recovery reserialization requires fresh admission before any write. Recovery is
+another internal destination, never an exception handler that writes the rejected
+candidate. A safe refusal/gap record is a new candidate through the same operation;
+if scanning/storage is unavailable, emit the fixed diagnostic and report failed
+retention rather than attempting an emergency raw write.
+
+Git creation and pushes are owned by this same operation/lifecycle: only admitted,
+exactly bound objects and closed commit metadata enter a commit. Before push,
+reconcile the entire outgoing object/history closure with the admitted manifest;
+refuse extra/stale/unadmitted objects, changed bytes or arbitrary existing history.
+No caller-provided repository, ref, hook, filter or Git diagnostic can introduce
+another writer. Scan newly generated index, commit metadata and verification
+receipt independently; earlier admitted transcripts do not admit their containers.
+Fetching/reloading evidence is not admission of new bytes: validate identity and
+repeat admission before any new persistent copy. Runtime-native persistence stays
+disabled and separately qualified as above; this design is not OS enforcement.
+
+**Structural admission obligation.** Before use, QA and Review independently trace
+all producer-to-persistence edges, including exception/finally, recovery, descriptors,
+subprocess/native spool, Git temporary/index/object files, commits and push closure.
+Each edge must pass the owner before its first persistent byte and retain exact-byte
+binding until its sink. Only the owner's private sink code may hold write/Git
+capabilities; Adapters and producers return memory values. Include runner-generated
+metadata and fixed safe records, not just model text. Reconcile source call sites
+and runtime byte/transport spies; an unlisted writer or unprovable native path
+blocks qualification. Static search alone, an allow-list alone or green Cartesian
+rows alone cannot establish completeness. A new writer changes this graph and
+requires Architect/QA review before use even if its producer category already exists.
 
 On a hit, unreadable scan input, undecodable envelope or scanner failure, write
 no tainted bytes anywhere, including an invalid-attempt envelope. Emit only
@@ -12602,10 +12669,11 @@ observations remain reportable. Claude calibration/finalization never waits for
 Codex. D1-D4's exact evidence, first-failure retention and aggregation stay intact.
 
 **AC4 finite replacement gate (QA must independently enumerate).** The following
-is the replacement's **580 baseline checks plus 18 property-specific mutant
-checks = 598**, not a count of every retained S629-S634 regression. The former
-396 counted runner-only egress and the superseded calibration-pair oracle;
-these additions cover private admission, external writers and receipt finalization.
+is the replacement's **4,325 baseline checks plus 24 property-specific mutant
+checks = 4,349**, not a count of every retained S629-S634 regression. The former
+598 included only 96 private-admission probes. Replace those 96 with 3,840
+explicit producer/destination/source/refusal tuples, add one structural graph
+check and six targeted mutants; retain all other 484 baseline and 18 mutant checks.
 No live model or network is needed for these checks. Each check has a literal tuple ID, setup,
 expected outputs/calls/private exactness and an assertion; no filtered generator
 defines its own completeness.
@@ -12614,7 +12682,8 @@ defines its own completeness.
 | --- | --- | ---: |
 | Public egress | Claude/Codex fakes x 8 producers (input/import, actor, canary, first judge, second judge, unusable/error capture, bookkeeping, report) x 5 sinks (JSON, MD, stdout, stderr, filenames) x 4 sources (literal needle, nested JSON-escaped needle, binary/invalid-UTF8 needle, over-budget original). Use admission-safe opaque confidentiality needles, not credentials/emails/host paths. Inject into all opaque content fields for that producer together; assert exact admitted private originals, no raw public bytes/names, typed outputs or safe STOP, no later calls. Exercise actual producer-to-sink paths, including early pre-store errors; each tuple must reach its named assertion. Byte scanners operate on reversible original bytes; invalid UTF-8 alone is not a secret hit. | 320 |
 | Agent/human posting | 2 runtime fakes x 5 routes (AC5 finding, AC6 report, PR description, commit message, judge-derived issue/PR comment) x 2 authors (agent, human) x the same 4 admission-safe source forms above. Exercise each prepared payload through its real template/comparison path; assert exact admitted private originals, criterion/object references, complete template equality, and rejection of appended text/attachment/name/diagnostic leakage together. A valid companion payload reaches that route's publication boundary; no real post/commit occurs. | 80 |
-| Private admission | 2 Adapter fakes x 8 locations (packet, actor stdout, actor stderr, invocation, recorder event, judge output, calibration receipt, verification receipt) x 6 refusal conditions (known forbidden environment-value specimen, credential/token specimen, actual cwd specimen, home-path specimen, email specimen, scanner unavailable). Assert zero tainted persistent writes/Git objects/recovery/pushes, fixed safe diagnostics/gap/counts, no later call, prior objects unchanged and no PASS; invocation/input refusal starts no call. Each tuple has an admitted companion reaching persistence. Exercise encoded fields after reversible decoding as well as raw bytes; production scanner rules and byte spies are independently audited. | 96 |
+| Private admission | 2 Adapter fakes x 20 producer categories listed below x 4 destinations (primary private file, recovery/spool file, Git object/commit, outgoing push closure) x 4 source forms (literal, nested reversible JSON-escaped, binary/invalid-UTF8, over-budget complete original) x 6 refusal conditions (known forbidden environment-value specimen, credential/token specimen, actual cwd specimen, home-path specimen, email specimen, scanner unavailable). Each tuple exercises the owner's real destination path through the Module's existing internal storage/fault Seam; no direct scanner-only test substitutes. Assert zero tainted persistent bytes/objects/transfers, fixed diagnostics and safe gap/counts where possible, STOP/no later call, prior objects unchanged and no PASS; invocation/input refusal starts no call. Every tuple has an admission-safe companion reaching its named sink with exact complete bytes. | 3,840 |
+| Admission writer graph | One independently enumerated, source-linked complete producer/writer/descriptor/Git-closure graph, compared with byte/transport traces for all four destinations and both Adapters; every edge passes the owner with immutable byte binding. An added unlisted writer must fail the comparison before qualification. Qualification includes the separately verified disabled native persistence paths. | 1 |
 | Schema | missing key, extra key, duplicate key, wrong primitive, bool-as-int, negative count, count overflow, nonfinite number, invalid enum, arbitrary model ID, malformed date, wrong digest length, model-supplied digest, traversal name, extra row, duplicate row, omitted row, wrong runtime binding, trailing data, valid complete control | 20 |
 | Retrieval/integrity | valid fetched commit; missing object; changed bytes; wrong commit; wrong trial binding; missing required original; unavailable collaborator access; nonce absent/reused | 8 |
 | Receipt finalization | valid clean-fetch C/I/P/V/F chain including calibration (and a non-PASS typed-gap companion); missing V object; missing calibration object; wrong C binding; wrong I binding; wrong P binding; wrong V digest; F parent mismatch; F tree mutation beyond adding V; unavailable F; failed F push; receipt self-reference/cycle. Only the valid control can finalize; every invalid setup preserves the prior safe result and stops. | 12 |
@@ -12623,27 +12692,72 @@ defines its own completeness.
 | Runtime/containment | each of 2 Adapters x (valid isolated invocation, failed canary, attempt-count mismatch, tool event in disabled mode) | 8 |
 | Storage/STOP | root overlap; symlink escape; private disk failure; interrupted capture; failed private push receipt; failed public atomic replace; failed STOP write; forbidden retry after STOP | 8 |
 
-The 18 scratch mutants respectively bypass schema closure, one raw-file write,
-stdout capture, stderr capture, filename derivation, private-root check,
+The 20 private producer categories are: (1) packet/canonical instructions/imported
+returns, (2) actor stdout, (3) actor stderr, (4) invocation, (5) recorder events/usage,
+(6) first-judge output, (7) second-judge output, (8) calibration receipt,
+(9) verification receipt, (10) canary output, (11) unusable-attempt envelope,
+(12) known-bad control input, (13) known-bad control output, (14) private finding,
+(15) evidence index, (16) bookkeeping/STOP-gap record, (17) result core P,
+(18) report/posting draft, (19) object framing/runner-owned bindings/names, and
+(20) commit/push metadata. Output categories cover both streams and opaque fields;
+inject all opaque fields for that category together. Every actual producer maps
+to a category and an audited graph edge; categories are not permission to add writers.
+
+Each source/refusal combination is a separate numbered tuple, not an uncounted
+encoded/binary/over-budget sub-assertion. Binary specimens contain the forbidden
+bytes amid invalid UTF-8; invalid UTF-8 alone is admission-safe. Escaped specimens
+require reversible decoding. Scanner-unavailable companions restore the scanner;
+all other companions replace the forbidden specimen with admission-safe bytes.
+Binary originals use reversible envelopes, not undecodable transport. Oversized specimens exceed the actual 3,000,000-byte
+threshold, with the forbidden value beyond it; no prefix scan or truncation.
+Their admitted companions retain complete bytes but still STOP on size and cannot
+PASS or launch later calls. Recovery is selected by a deterministic pre-write
+fault with sufficient recovery capacity, never a fault after tainted bytes were
+written. For Git/push probes, introduce the candidate or changed outgoing bytes
+in memory at that stage before any native write/transfer; do not seed a tainted
+fixture on disk. A spy observes every persistent write and outgoing object closure,
+not only the target file. Independently audit scanner rules and these spies.
+
+The review's falsifying witnesses have explicit owners: actor stdout x
+recovery/spool x over-budget x credential, and unusable-attempt envelope (bound to
+second judge) x recovery/spool x literal or escaped x home path, for each Adapter.
+They refuse before persistence; admitted companions reach recovery exactly, remain
+unusable/size-stopped as applicable and start no later call. Also exercise second
+judge output's own rows; envelope ownership does not substitute for them.
+
+The retained 18 scratch mutants respectively bypass schema closure, one raw-file
+write, stdout capture, stderr capture, filename derivation, private-root check,
 nonce inclusion, evidence binding, prohibited-fail dominance, frozen labels,
-human calibration, STOP continuation, private pre-write admission, posting-template
-comparison, an existing-FAIL human read, known-bad rejection, control/observation
-separation, and the verification-commit locator. Each must be killed at its own
-assertion with a valid companion control; setup failures get no kill credit.
-QA independently lists 320 runner-egress + 80 posting + 96 private-admission
-Cartesian keys (=496), and 20 schema + 8 retrieval + 12 finalization + 12
-aggregation + 16 calibration + 8 runtime + 8 storage named keys (=84), then the
-18 mutant keys. Compare exact sets/counts with Developer output, rejecting
+human calibration, STOP continuation, central private pre-write admission,
+posting-template comparison, an existing-FAIL human read, known-bad rejection,
+control/observation separation, and the verification-commit locator.
+Add six independent mutants: a primary-file bypass of the admission owner; a
+recovery/spool bypass; Git-object creation from an unadmitted candidate; addition
+of an unadmitted object/history member to the push closure; substitution of bound
+bytes after scanning; and an extra producer writer omitted from the graph.
+These are single-property faults, not a global scanner deletion relabelled six
+ways. The recovery bypass must be killed by the over-budget credential witness
+and the unusable second-judge/home witness separately (one mutant key, two required
+kills). Git/push mutants use their own in-memory candidate/closure probes; the
+substitution mutant uses changed bytes at the write Seam; the omitted-writer
+mutant fails the graph comparison. Central admission's easy packet kill cannot
+earn these targeted credits. Each of the 24 requires its named observable kill
+and an independent admitted companion; setup failure/masked faults get no credit
+and require owning-role resolution, not a claimed kill.
+
+QA independently lists 320 runner-egress + 80 posting + 3,840 private-admission
+Cartesian keys (=4,240), and 20 schema + 8 retrieval + 12 finalization + 12
+aggregation + 16 calibration + 8 runtime + 8 storage + 1 graph named keys (=85),
+then 24 mutant keys. Compare exact sets/counts with Developer output, rejecting
 duplicates, missing rows and unexercised sinks. Companion controls are required
 inside each check, not separately counted rows; sub-assertions earn no extra count.
-The producer inventory includes known-bad control inputs/outputs in input/judge
-paths and calibration/verification/finding objects in bookkeeping/report paths.
-This is a structural coverage argument plus bounded probes, not exhaustive
-testing of arbitrary private bytes.
-Audit the writer graph separately: a new producer/sink/schema field changes the
-inventory and requires QA/Architect review before use. Reconcile R11's literal
-and escaped witnesses explicitly as no-public-copy checks; supersession alone
-does not close the finding or establish the replacement.
+The public-egress inventory includes known-bad inputs/outputs in input/judge paths
+and calibration/verification/finding/index objects in bookkeeping/report paths.
+The graph argument, not enumeration of arbitrary bytes, establishes the intended
+coverage; neither design nor offline probes prove scanner omniscience or native
+runtime obedience. Extend both the graph and finite inventory on a new producer,
+sink or schema field before use. Reconcile R11's literal and escaped witnesses
+explicitly as no-public-copy checks; supersession alone does not close the finding.
 
 Run the entire offline matrix and retained applicable regressions in `./check`
 on both CI legs: standard-library fakes/temp stores, zero subscription calls,
@@ -12665,8 +12779,9 @@ S629-S634's runtime, identity, grading/status and human-calibration clauses;
 assign all criterion labels, separate judge controls and exact matrices before
 runs. Test Seams are the four runner operations, injected runtime Adapter,
 private-store fault injection, public result/posting projection and shared
-retained-state validation. Admission and the two-commit finalization remain
-inside the same Module; no new command or hypothetical Adapter is introduced.
+retained-state validation. The single admission/persistence owner, structural
+writer graph and two-commit finalization remain inside the same Module; no new
+command or hypothetical Adapter is introduced.
 Developer scope for later #680: the runner pair, recorder, `temporary-panel-cases/` builder/keys/plan,
 `test/cases/s629_*.sh` through `s634_*.sh`, their fixtures, generated typed
 results, and `test/run.sh`/`check` only if needed for offline wiring. Remove
@@ -12689,6 +12804,9 @@ Review round 1 resolutions: `calibration-pair-blocks-clean-pass` follows D5;
 `egress-argument-omits-agent-posting-routes` extends typed projection and writer
 audit; `verification-receipt-finalization` uses the finite C then F chain. QA must
 independently falsify each with the rows above before claiming implementation.
+Review round 2's `private-admission-matrix-omits-recovery-and-producers` is resolved
+in design by the OR20 owner/graph correction and expanded admission/mutation oracle;
+executable graph evidence and witness kills remain required, not claimed here.
 `children-no-network-overbroad` remains deferred under OR40, unchanged here;
 this entry supplies no new network permission or claim that its low is resolved.
 Open design questions: **none under D1-D5**; owning Product/QA reconciliation,
