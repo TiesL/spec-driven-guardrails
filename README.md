@@ -412,6 +412,88 @@ and gets the `release-branch-workflow` skill installed.
 described above — and ran on its own release branch, `release/370-release-branch-workflow`,
 dogfooding the mechanism it specifies.
 
+### Keeping this repository's backlog current
+
+This recipe applies to TiesL/spec-driven-guardrails and TiesL Project 1.
+Maintain the backlog at creation, relation or stage changes, reprioritization
+and closure. Issue-body fields are the source of truth for scope and relations;
+native relations mirror settled body declarations. Board Backlog rank and
+Horizon are authoritative for ordering, subject to confirmed maintainer decisions.
+
+Product authors reconciled bodies and reciprocal declarations. The orchestrator
+publishes Product's bodies unchanged, using a temporary body file and
+`gh issue create/edit --body-file`, and mirrors only settled metadata under
+OR46(d). Contradictions return to the owner; an undecided priority returns to
+Product for a proposal and the maintainer for confirmation.
+
+- Work items declare `**Epic:** #N`; nested epics name their parent, while
+  top-level epics have no parent. Keep each epic's `## Work items` list reciprocal.
+  Record realized `**Covers:**` identifiers, rather than proposed coverage.
+- Write `**Blocked by:** none` and `**Blocks:** none` for empty dependency sets.
+  Keep both dependency ends consistent, including inverse `Blocks` declarations.
+  Remove obsolete edges and old parent links when relations change; reconcile
+  the old and new epic child lists before mirroring native relations.
+- Maintain type/status/active-role labels using the existing issue-label rules.
+  Inactive items need no invented active role. Closed issues shed active
+  status/role labels.
+- Read current bodies, labels, native relations and project data before applying
+  settled changes, then read back and verify each result. Use REST numeric IDs
+  for native operations, distinct from issue numbers, node IDs and project-item
+  IDs; read the actual identifiers required by each operation. Confirm automatic
+  membership before attempting a manual add to Project 1.
+
+Apply only confirmed rank and Horizon values. Retain epic ordering; child rank
+follows inheritance from its epic when that is the decided order. Proposals
+remain unapplied until confirmed. Each empty field needs a durable note naming
+its reason, proposed value (or explicitly undecided value), disposition
+`awaiting-maintainer` or `parked`, and a decision/reference URL. Parked fields
+cite a documented decision reference. Explain inheritance explicitly in the
+child's note. One documented field cannot excuse the other missing field:
+Backlog rank and Horizon each need their own record. Use this table in the body
+or a linked issue comment:
+
+| Field | Reason | Proposed value | Disposition | Decision/reference |
+| --- | --- | --- | --- | --- |
+| Backlog rank | Reason for leaving this field empty, including inheritance | Value or undecided | awaiting-maintainer or parked | Decision URL |
+| Horizon | Reason for leaving this field empty | Value or undecided | awaiting-maintainer or parked | Decision URL |
+
+Project 1's lifecycle follows this mapping:
+
+| Issue lifecycle | Project 1 Status |
+| --- | --- |
+| Backlog | Backlog |
+| Active Discovery / Planning / Test / Implementation | In progress |
+| Review | In review |
+| Verified CLOSED | Done |
+
+Ready requires an explicit maintainer decision. Blocked work retains its stage
+Status and a visible blocked reason. Indeterminate lifecycle cannot establish
+agreement; obtain the owner's decision before claiming consistency.
+
+Use existing enabled workflows first before manual corrections. Verify actual
+PR linkage (including the closing reference in the PR body), issue membership,
+and freshly read issue state and board Status. A release child's PR merge alone
+is insufficient for closure: record completion and the PR link, explicitly close
+the child under the release-branch workflow, then verify CLOSED and board Done.
+Keep the epic closure rules: all work items complete or accounted for, epic
+acceptance criteria verified, required completion review recorded and owner
+confirmation obtained. Do not add duplicate automation or change project settings.
+
+Run `./backlog-drift.sh` on request for a read-only snapshot of this repository
+and Project 1, from any directory. It reports linked observed and expected values
+with evidence URLs, and aggregate clean, drift or incomplete results; it performs
+no repairs. Any non-success gh response is reported to the human with a safe
+operation description, affected issue URLs and checks left incomplete. Skip the
+affected issue's remaining checks. A failed or partial read establishes neither
+absence nor drift nor clean; retain prior findings and continue unaffected issues.
+A failed global inventory leaves its unknown remainder explicitly unenumerated.
+
+For maintenance failures, record desired state and log completed, failed and
+unattempted operations in the Pipeline log or a durable issue note. Stop dependent
+writes and report the failure to the human. Never call a partial sequence
+synchronized or complete without read-back. Never guess a repair or rollback
+state, retry blindly, or expose credentials or raw server stderr.
+
 ## Reference
 
 <details>

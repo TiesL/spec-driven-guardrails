@@ -5,27 +5,15 @@ set -uo pipefail
 export LC_ALL=C
 own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$own_dir/lib/markdown.sh"
-usage() {
-  echo 'Usage: backlog-drift.sh [--repo OWNER/REPO] [--project-owner OWNER --project N]'
-}
-repo='' project_owner='' project=''
+usage() { echo 'Usage: backlog-drift.sh'; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --repo|--project-owner|--project)
-      [ "$#" -ge 2 ] || { usage >&2; exit 2; }
-      case "$1" in --repo) repo="$2";; --project-owner) project_owner="$2";; --project) project="$2";; esac
-      shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
 done
-if { [ -n "$repo" ] && ! [[ "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; } ||
-   { [ -n "$project_owner" ] && ! [[ "$project_owner" =~ ^[A-Za-z0-9_.-]+$ ]]; } ||
-   { [ -n "$project" ] && ! [[ "$project" =~ ^[1-9][0-9]*$ ]]; } ||
-   { [ -n "$project_owner" ] && [ -z "$project" ]; } ||
-   { [ -n "$project" ] && [ -z "$project_owner" ]; }; then usage >&2; exit 2; fi
-printf 'Backlog snapshot repo=%s project=%s time=%s\n' "${repo:-current}" "${project_owner:+$project_owner/}${project:-not-applicable}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-[ -n "$project" ] || echo 'Board checks: not-applicable (no configured board arguments)'
+repo='TiesL/spec-driven-guardrails' project_owner='TiesL' project=1
+printf 'Backlog snapshot repo=%s project=%s/%s time=%s\n' "$repo" "$project_owner" "$project" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 for prerequisite in gh jq; do
   if ! command -v "$prerequisite" >/dev/null 2>&1; then
     printf 'unchecked: %s unavailable; repository/native/project scope unread\nresult=incomplete\n' "$prerequisite"
@@ -38,26 +26,31 @@ trap 'rm -rf "$box"' EXIT
 printf '[]' > "$box/records"
 printf '[]' > "$box/items"
 printf '[]' > "$box/fields"
-uncheck() { printf 'unchecked: %s\n' "$*" >> "$box/unchecked"; }
-# Nonzero exit, invalid JSON, and incomplete page streams never establish absence.
+# Only operation/page success controls dependent reads. No failed response is data.
+uncheck() {
+  local detail="$*" n
+  printf 'unchecked: %s; failed or invalid read; remaining dependent checks incomplete\n' "$detail" >> "$box/unchecked"
+  case "$detail" in
+    *"$repo/issues/"*)
+      n="${detail#*"$repo/issues/"}"; n="${n%%[!0-9]*}"
+      [ -z "$n" ] || printf 'Affected: https://github.com/%s/issues/%s; skip remaining issue checks\n' "$repo" "$n" >> "$box/unchecked" ;;
+    *project*)
+      jq -r '.[].issue.html_url + " project checks incomplete; skip dependent checks"' "$box/records" >> "$box/unchecked" ;;
+    *issues*)
+      printf 'Issue inventory incomplete; unknown remainder unenumerated\n' >> "$box/unchecked" ;;
+  esac
+}
 rest() {
   local endpoint="$1" list="$2" rc=0 status
   if [ "$list" = yes ]; then
     gh api --method GET "$endpoint" --paginate --slurp > "$box/raw" 2>/dev/null || rc=$?
     if [ "$rc" -ne 0 ] || ! jq -e 'type=="array" and length>0 and all(.[]; type=="array")' "$box/raw" >/dev/null 2>&1; then
-      uncheck "gh REST $endpoint (all pages)"
-      # gh may already have emitted complete early pages before a later failure.
-      # Retain those objects for known findings, while the unchecked flag forbids clean.
-      if jq -se 'length>0 and all(.[]; type=="array" and all(.[]; type=="object"))' "$box/raw" >/dev/null 2>&1; then
-        jq -s 'add' "$box/raw"
-      else printf 'null'; fi
-      return
+      uncheck "gh REST $endpoint (all pages)"; return 1
     fi
     jq 'add // []' "$box/raw"
   else
     if [[ "$endpoint" = */parent ]]; then
-      # gh's supported 204 has an empty body. Inspect status explicitly so
-      # empty 200s and ambiguous 404s can never establish parent absence.
+      # Successful empty 204 is supported; every non-success is reported/skipped.
       gh api --method GET "$endpoint" --include > "$box/http" 2>/dev/null || rc=$?
       sed 's/\r$//' "$box/http" > "$box/response"
       status="$(awk 'NR==1 && /^HTTP\/[0-9.]+ / {print $2}' "$box/response")"
@@ -65,32 +58,24 @@ rest() {
       if [ "$rc" -eq 0 ] && [ "$status" = 204 ] && [ ! -s "$box/raw" ]; then
         printf 'null'; return
       fi
-      case "$status" in 200|204) ;; *) rc=1;; esac
+      [ "$status" = 200 ] || rc=1
     else
       gh api --method GET "$endpoint" > "$box/raw" 2>/dev/null || rc=$?
     fi
     if [ "$rc" -ne 0 ] || ! jq -e 'type=="object" or type=="null"' "$box/raw" >/dev/null 2>&1; then
-      uncheck "gh REST $endpoint"; printf '{"_unchecked":true}'; return
+      uncheck "gh REST $endpoint"; return 1
     fi
     cat "$box/raw"
   fi
 }
-if [ -z "$repo" ]; then
-  repo_data="$(rest 'repos/{owner}/{repo}' no)"
-  repo="$(printf '%s' "$repo_data" | jq -r '.full_name // empty')"
-  if ! [[ "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
-    uncheck 'gh repository identity'; cat "$box/unchecked"; echo 'result=incomplete'; exit 0
-  fi
-  printf 'Resolved repository: %s\n' "$repo"
-fi
 prefix="repos/$repo/issues"
-issues="$(rest "$prefix?state=all&per_page=100" yes)"
-if ! printf '%s' "$issues" | jq -e 'type=="array" and all(.[]; type=="object" and (.number|type=="number"))' >/dev/null; then
+issues="$(rest "$prefix?state=all&per_page=100" yes)" || issues='[]'
+if ! printf '%s' "$issues" | jq -e 'type=="array" and all(.[]; type=="object" and (.number|type=="number") and (.id|type=="number") and (.node_id|type=="string"))' >/dev/null; then
   uncheck "$prefix issues inventory"; issues='[]'
 fi
 # Read current objects rather than relying on possibly stale list bodies.
 for n in $(printf '%s' "$issues" | jq -r '.[] | select(.pull_request==null) | .number' | sort -nu); do
-  issue="$(rest "$prefix/$n" no)"
+  issue="$(rest "$prefix/$n" no)" || continue
   if ! printf '%s' "$issue" | jq -e --argjson n "$n" '
     type=="object" and .number==$n and (.id|type=="number") and
     (.node_id|type=="string") and (.html_url|type=="string") and
@@ -100,27 +85,25 @@ for n in $(printf '%s' "$issues" | jq -r '.[] | select(.pull_request==null) | .n
   fi
   body="$(printf '%s' "$issue" | jq -r '.body')"
   # Keep lib/markdown's fence/span/quote semantics; also exclude indented code.
-  live="$(live_text "$body" | awk '/^(    |\t)/ {print ""; next} {print}')" || { uncheck "$prefix/$n live body"; live=''; }
-  comments="$(rest "$prefix/$n/comments?per_page=100" yes)"
+  live="$(live_text "$body" | awk '/^(    |\t)/ {print ""; next} {print}')" || { uncheck "$prefix/$n live body"; continue; }
+  comments="$(rest "$prefix/$n/comments?per_page=100" yes)" || continue
   printf '[]' > "$box/notes"
   if printf '%s' "$comments" | jq -e 'type=="array" and all(.[]; (.body|type=="string") and (.html_url|type=="string"))' >/dev/null; then
     printf '%s' "$comments" | jq -c '.[]' > "$box/comments"
     while IFS= read -r comment; do
       cbody="$(printf '%s' "$comment" | jq -r '.body')"
-      clive="$(live_text "$cbody" | awk '/^(    |\t)/ {print ""; next} {print}')" || { uncheck "$prefix/$n live comment"; clive=''; }
+      clive="$(live_text "$cbody" | awk '/^(    |\t)/ {print ""; next} {print}')" || { uncheck "$prefix/$n live comment"; continue; }
       jq --arg text "$clive" '. + [$text]' "$box/notes" > "$box/next" && mv "$box/next" "$box/notes" || exit 1
     done < "$box/comments"
-  else uncheck "$prefix/$n comments"; fi
-  # rest() normalizes supported empty 204s; null remains compatible with
-  # historical snapshots. An ambiguous 404/unsupported read is never absence.
-  parent="$(rest "$prefix/$n/parent" no)"
-  if ! printf '%s' "$parent" | jq -e '.==null or (type=="object" and (.number|type=="number"))' >/dev/null; then
-    uncheck "$prefix/$n parent object"; parent='{"_unchecked":true}'
+  else uncheck "$prefix/$n comments"; continue; fi
+  parent="$(rest "$prefix/$n/parent" no)" || continue
+  if ! printf '%s' "$parent" | jq -e '.==null or (type=="object" and (.number|type=="number") and (.id|type=="number") and (.node_id|type=="string"))' >/dev/null; then
+    uncheck "$prefix/$n parent object"; continue
   fi
   for relation in sub_issues dependencies/blocked_by dependencies/blocking; do
-    value="$(rest "$prefix/$n/$relation?per_page=100" yes)"
-    if ! printf '%s' "$value" | jq -e 'type=="array" and all(.[]; type=="object" and (.number|type=="number"))' >/dev/null; then
-      uncheck "$prefix/$n/$relation objects"; value=null
+    value="$(rest "$prefix/$n/$relation?per_page=100" yes)" || continue 2
+    if ! printf '%s' "$value" | jq -e 'type=="array" and all(.[]; type=="object" and (.number|type=="number") and (.id|type=="number") and (.node_id|type=="string"))' >/dev/null; then
+      uncheck "$prefix/$n/$relation objects"; continue 2
     fi
     case "$relation" in sub_issues) children="$value";; dependencies/blocked_by) blocked_by="$value";; dependencies/blocking) blocking="$value";; esac
   done
@@ -131,7 +114,7 @@ for n in $(printf '%s' "$issues" | jq -r '.[] | select(.pull_request==null) | .n
 done
 # GraphQL connection traversal validates every terminal page and each cursor.
 graphql() {
-  gh api graphql -f "query=$1" > "$box/graphql" 2>/dev/null || { uncheck "gh project $project_owner/$project $2"; printf 'null'; return; }
+  gh api graphql -f "query=$1" > "$box/graphql" 2>/dev/null || { uncheck "gh project $project_owner/$project $2"; return 1; }
   if ! jq -e 'type=="object" and (.errors==null or .errors==[]) and (.data|type=="object")' "$box/graphql" >/dev/null 2>&1; then
     uncheck "project $project_owner/$project $2 GraphQL response/errors"; printf 'null'; return
   fi
@@ -168,7 +151,7 @@ connection_page() {
     fi
     if ! printf '%s' "$page" | jq -e 'all(.nodes[]; type=="object")' >/dev/null 2>&1; then
       connection_complete=false
-      uncheck "project $project_owner/$project $connection malformed nodes"
+      uncheck "project $project_owner/$project $connection malformed nodes"; break
     fi
     jq --argjson p "$page" '. + [$p.nodes[]|select(type=="object")]' "$box/connection" > "$box/next" && mv "$box/next" "$box/connection" || exit 1
     has_next="$(printf '%s' "$page" | jq -r '.pageInfo.hasNextPage')"
@@ -179,29 +162,40 @@ connection_page() {
     seen="$seen$next|"; cursor="$next"
   done
 }
-inventory_complete=false
-if [ -n "$project" ]; then
-  connection_page fields
-  cp "$box/connection" "$box/fields"
+board_complete=true
+connection_page fields
+[ "$connection_complete" = true ] || board_complete=false
+cp "$box/connection" "$box/fields"
+if ! jq -en --slurpfile fields "$box/fields" '
+  all(["Backlog rank","Horizon","Status"][]; . as $name |
+    [$fields[0][] | select(.name==$name)] |
+    length==1 and (.[0].id|type=="string") and
+    (if $name=="Backlog rank" then .[0].dataType=="NUMBER"
+     else .[0].dataType=="SINGLE_SELECT" and (.[0].options|type=="array") end))
+' >/dev/null 2>&1; then
+  board_complete=false; uncheck 'project required fields Backlog rank/Horizon/Status types/options'
+fi
+if [ "$board_complete" = true ]; then
   connection_page items
-  inventory_complete="$connection_complete"
+  [ "$connection_complete" = true ] || board_complete=false
   cp "$box/connection" "$box/item-pages"
-  jq -c '.[]' "$box/item-pages" > "$box/item-lines"
-  while IFS= read -r item; do
-    if ! printf '%s' "$item" | jq -e '(.id|type=="string") and (.content==null or (.content|type=="object" and (.__typename|type=="string")))' >/dev/null; then
-      inventory_complete=false
-      uncheck 'project items identity/content'; continue
-    fi
-    # Pull requests and other-repository items are outside this report's scope.
-    if ! printf '%s' "$item" | jq -e --arg r "$repo" '.content.__typename=="Issue" and (.content.repository.nameWithOwner|ascii_downcase)==($r|ascii_downcase)' >/dev/null; then continue; fi
-    if ! printf '%s' "$item" | jq -e '(.content.number|type=="number") and (.content.url|type=="string") and (.content.state=="OPEN" or .content.state=="CLOSED")' >/dev/null; then
-      inventory_complete=false
-      uncheck 'project issue content fields'; continue
-    fi
-    item_id="$(printf '%s' "$item" | jq -r '.id')"
-    connection_page fieldValues "$item_id"
-    jq --argjson item "$item" --slurpfile values "$box/connection" '. + [$item | .fieldValues=$values[0]]' "$box/items" > "$box/next" && mv "$box/next" "$box/items" || exit 1
-  done < "$box/item-lines"
+  if [ "$board_complete" = true ]; then
+    jq -c '.[]' "$box/item-pages" > "$box/item-lines"
+    while IFS= read -r item; do
+      if ! printf '%s' "$item" | jq -e '(.id|type=="string") and (.content==null or (.content|type=="object" and (.__typename|type=="string")))' >/dev/null; then
+        board_complete=false; uncheck 'project items identity/content'; break
+      fi
+      # Non-issue items are outside this report's scope.
+      if ! printf '%s' "$item" | jq -e --arg r "$repo" '.content.__typename=="Issue" and .content.repository.nameWithOwner==$r' >/dev/null; then continue; fi
+      if ! printf '%s' "$item" | jq -e '(.content.number|type=="number") and (.content.url|type=="string") and (.content.state=="OPEN" or .content.state=="CLOSED")' >/dev/null; then
+        board_complete=false; uncheck 'project issue content fields'; break
+      fi
+      item_id="$(printf '%s' "$item" | jq -r '.id')"
+      connection_page fieldValues "$item_id"
+      [ "$connection_complete" = true ] || { board_complete=false; break; }
+      jq --argjson item "$item" --slurpfile values "$box/connection" '. + [$item | .fieldValues=$values[0]]' "$box/items" > "$box/next" && mv "$box/next" "$box/items" || exit 1
+    done < "$box/item-lines"
+  fi
 fi
 cat > "$box/compare.jq" <<'JQ'
 def incomplete($s): {kind:"incomplete", text:("unchecked: "+$s)};
@@ -234,19 +228,9 @@ def bodies:
 def coverage:
   [.live|split("\n")[]|select(startswith("**Covers:**"))] as $lines |
   ($lines|length)==1 and ($lines[0]|test("^\\*\\*Covers:\\*\\*\\s*[A-Z]{1,2}[0-9]+[a-z]?(\\s*,\\s*[A-Z]{1,2}[0-9]+[a-z]?)*\\s*$"));
-# Bare body #N references resolve to fetched objects in the selected repo.
-# Keep both numeric/node IDs and repository identity; numbers alone collide.
-def identity:
-  . as $o |
-  ((try (.html_url|capture("^https://github.com/(?<repo>[^/]+/[^/]+)/issues/(?<n>[1-9][0-9]*)$")) catch null) // null) as $url |
-  if ($o.id|type)=="number" and ($o.node_id|type)=="string" and
-     $url!=null and ($url.n|tonumber)==$o.number
-  then {repository:($url.repo|ascii_downcase), number:$o.number,
-        id:$o.id, node_id:$o.node_id, url:$o.html_url} else null end;
-def native($x): if $x==null then null else
-  [$x[]|identity] | if any(.[]; .==null) then null
-  else unique | sort_by(.repository,.number,.id,.node_id) end end;
-def edgekeys: map(del(.url));
+# Body references are local issue numbers; retain distinct native operation IDs.
+def native($x):
+  [$x[] | {number, id, node_id}] | unique | sort_by(.number,.id,.node_id);
 def notes($field): [.notes[]|split("\n")[]|select(startswith("|"))|split("|")|.[1:-1]|map(gsub("^\\s+|\\s+$";""))|
   select(length==5 and .[0]==$field and .[1]!="" and .[2]!="" and (.[3]=="awaiting-maintainer" or .[3]=="parked") and (.[4]|test("^https://")))] | unique;
 def fieldvalue($item;$name): [$item.fieldValues[] | select(.field.name==$name)] | if length==1 then .[0].number // .[0].name else null end;
@@ -259,17 +243,6 @@ def lifecycle:
   else null end;
 ($records[0]|map(bodies)) as $rs | ($items[0]) as $is | ($fields[0]) as $fs |
 [
-  (if $label_mapping|not then incomplete($repo+" label/lifecycle vocabulary mapping unavailable") else empty end),
-  (if $board and ($status_mapping|not) then incomplete("project Status lifecycle mapping unavailable") else empty end),
-  (if $board then
-    ["Backlog rank","Horizon","Status"][] as $name |
-    ([$fs[]|select(.name==$name)]) as $matched |
-    if ($matched|length)!=1 then incomplete("project required field "+$name)
-    elif ($matched[0].id|type)!="string" or
-      ($name=="Backlog rank" and $matched[0].dataType!="NUMBER") or
-      ($name!="Backlog rank" and ($matched[0].dataType!="SINGLE_SELECT" or ($matched[0].options|type)!="array"))
-    then incomplete("project field type/options "+$name) else empty end
-  else empty end),
   (if $board then $is[] as $item |
     if ([$rs[].issue.number]|index($item.content.number))==null then
       incomplete($item.content.url+" project item has no verified repository issue object") else empty end
@@ -278,14 +251,14 @@ def lifecycle:
     (if ($r|coverage|not) then incomplete($url+" Covers missing/duplicate/malformed") else empty end),
     (["parent","blocked_by","blocking","children"][] as $edge |
       $r.decl[$edge] as $d |
-      (if $edge=="parent" then (if $r.parent._unchecked==true then null elif $r.parent==null then [] else native([$r.parent]) end)
+      (if $edge=="parent" then (if $r.parent==null then [] else native([$r.parent]) end)
        else native($r[$edge]) end) as $actual |
       ([$d.values[] as $target | $rs[] | select(.issue.number==$target) | .issue]) as $targets |
       native($targets) as $expected |
       if ($d.ok|not) or ($edge=="parent" and (($d.values|length)>1 or (($d.values|length)==0 and ($r.issue.labels|map(.name)|index("epic"))==null))) then incomplete($url+" body "+({parent:"Epic",blocked_by:"Blocked by",blocking:"Blocks",children:"Work items"}[$edge])+" missing/duplicate/malformed")
-      elif $actual==null then incomplete($url+" native "+$edge+" identity/read unchecked")
-      elif ($targets|length)!=($d.values|length) or $expected==null then incomplete($url+" native "+$edge+" expected object unread")
-      elif ($actual|edgekeys)!=($expected|edgekeys) then finding($url;("native "+$edge);$actual;$expected) else empty end),
+      elif (($actual|map(.number)|sort)!=$d.values) then finding($url;("native "+$edge);($actual|map(.number)|sort);$d.values)
+      elif ($targets|length)!=($d.values|length) then incomplete($url+" native "+$edge+" expected object unread")
+      elif $actual!=$expected then finding($url;("native "+$edge);$actual;$expected) else empty end),
     ($r.decl as $d |
       if $d.parent.ok then $d.parent.values[] as $p |
         ([$rs[]|select(.issue.number==$p)][0]) as $parent |
@@ -297,7 +270,7 @@ def lifecycle:
         if $other==null then incomplete($url+" referenced "+$pair.from+" #"+($target|tostring)+" unread")
         elif $other.decl[$pair.to].ok and ($other.decl[$pair.to].values|index($n))==null then finding($url;("body reciprocal "+$pair.from+" #"+($target|tostring));$other.decl[$pair.to].values;[$n]) else empty end else empty end),
     ($r.issue.labels|map(.name)) as $labels |
-    (if $label_mapping then
+    (
     (if (["bug","documentation","enhancement","process"]|map(. as $t|$labels|index($t))|map(select(.!=null))|length)!=1 then finding($url;"type labels";$labels;"one existing type") else empty end),
     (if $r.issue.state=="closed" and any($labels[];test("^(status:|role:)")) then finding($url;"closed status/role labels";$labels;"no active status/role labels") else empty end),
     (if $r.issue.state=="open" and ([$labels[]|select(startswith("status:"))]|length)!=1 then finding($url;"status labels";$labels;"one existing lifecycle status") else empty end),
@@ -305,12 +278,11 @@ def lifecycle:
     (if $r.issue.state=="open" and any($labels[]; startswith("status:") and (test("^status:(backlog|in-progress|blocked)$")|not)) then
       finding($url;"invalid status labels";$labels;"status:backlog, status:in-progress or status:blocked"),
       incomplete($url+" status lifecycle unchecked: invalid status label") else empty end)
-    else empty end),
+    ),
     (if $board then
       ([$is[]|select(.content.number==$n)]) as $matches |
       if ($matches|length)==0 then
-        if $inventory_complete then finding($url;"membership";"missing";"project item")
-        else incomplete($url+" membership unchecked: project inventory incomplete") end
+        finding($url;"membership";"missing";"project item")
       elif ($matches|length)>1 then incomplete($url+" duplicate project membership")
       else $matches[0] as $item |
         ($item.fieldValues[] as $v |
@@ -320,10 +292,10 @@ def lifecycle:
           else empty end),
         (["Backlog rank","Horizon","Status"][] as $name |
           if ([$item.fieldValues[]|select(.field.name==$name)]|length)>1 then incomplete($url+" duplicate project fieldValues "+$name) else empty end),
-        (if $status_mapping and ($r|lifecycle)==null then incomplete($url+" status lifecycle mapping indeterminate") else empty end),
-        (if $status_mapping and ($r|lifecycle)!=null and
+        (if ($r|lifecycle)==null then incomplete($url+" status lifecycle mapping indeterminate") else empty end),
+        (if ($r|lifecycle)!=null and
           ([$fs[]|select(.name=="Status")|.options[]?.name]|index($r|lifecycle))==null then incomplete($url+" project Status mapping/option unavailable") else empty end),
-        (if $status_mapping and ($r|lifecycle)!=null and fieldvalue($item;"Status")!=($r|lifecycle) then finding($url;"Status";fieldvalue($item;"Status");($r|lifecycle)) else empty end),
+        (if ($r|lifecycle)!=null and fieldvalue($item;"Status")!=($r|lifecycle) then finding($url;"Status";fieldvalue($item;"Status");($r|lifecycle)) else empty end),
         (["Backlog rank","Horizon"][] as $name | if fieldvalue($item;$name)==null then
           ($r|notes($name)) as $notes |
           if ($notes|length)==1 then {kind:"exception",text:($url+" "+$name+" exception "+($notes[0]|join(" | ")))}
@@ -335,11 +307,7 @@ def lifecycle:
 ] | sort_by(.text) | .[] | [.kind,.text] | @tsv
 JQ
 jq -r --slurpfile records "$box/records" --slurpfile items "$box/items" --slurpfile fields "$box/fields" \
-  --arg repo "$repo" \
-  --argjson label_mapping "$(printf '%s' "$repo" | jq -R '.|ascii_downcase=="tiesl/spec-driven-guardrails"')" \
-  --argjson status_mapping "$(jq -n --arg r "$repo" --arg o "$project_owner" --arg p "$project" '($r|ascii_downcase)=="tiesl/spec-driven-guardrails" and ($o|ascii_downcase)=="tiesl" and $p=="1"')" \
-  --argjson inventory_complete "$inventory_complete" \
-  --argjson board "$([ -n "$project" ] && echo true || echo false)" -n -f "$box/compare.jq" > "$box/findings" || exit 1
+  --argjson board "$board_complete" -n -f "$box/compare.jq" > "$box/findings" || exit 1
 cat "$box/unchecked"
 cut -f2- "$box/findings"
 printf 'Counts: issues=%s project-items=%s\n' "$(jq length "$box/records")" "$(jq length "$box/items")"

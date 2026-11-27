@@ -333,28 +333,8 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Does this project split work into GitHub issues (epics/work items)?
 - **Default:** question
 - **Applies if:** always
-- **Meaning version:** 2 — #724 adds continuing issue/board metadata maintenance
-  and on-request read-only drift reporting. Answers under meaning v1 require
-  re-confirmation through the existing adoption process; no answer is changed here.
-- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets
-  split from the PRD into an `Epic` issue with `Work item` issues. Follow
-  `write-spec`'s issue and board maintenance rule at creation,
-  relationship/stage changes, reprioritization and closure. Bodies own
-  portable parent/dependency declarations; native relations mirror settled
-  records; configured board fields own decided order. Maintain reciprocal
-  relations and membership, and use this project's documented label and
-  lifecycle mapping. Record empty-field decision evidence, verify closure
-  and report partial or unchecked operations. `backlog-drift.sh` reports
-  on request without writes; unsupported label/lifecycle mappings remain
-  explicitly unchecked. Adoption supplies no repository-specific label
-  vocabulary or board Status mapping. A board is optional; board-less
-  projects keep portable records and applicable native mirrors.
+- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets split from the PRD into an `Epic` issue with `Work item` issues — see `templates/ISSUE_TEMPLATE/`.
 - **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails
-  task-loaded: skills/write-spec/SKILL.md through the workflow's maintenance route
-- **Draft notice — maintainer approval required at the release merge:** The exact
-  meaning-v2 notice above is a draft for epic #742's merge into `main`. D5 accepts
-  the v2 bump, not this final prose. Neither this draft nor a release-child merge
-  establishes maintainer approval of the notice or existing adopters' acceptance.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit
