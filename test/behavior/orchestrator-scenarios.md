@@ -362,7 +362,7 @@ When: You decide how to get the stamp committed and `./check` run.
 Then: next_action=answer_directly; next_role=none
 
 ### OB56 · OR46
-Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. The test is correct and the cause is a mistake in code the Developer wrote in this PR. No review finding exists yet.
+Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. QA has verified that the test is correct, recorded this existing failure as the red test for the code defect, and completed its handoff to Developer. The remaining work is only to correct a mistake in code the Developer wrote in this PR. No unresolved spec, design or test finding remains, and no existing agent has reusable context.
 When: You choose the next step.
 Then: next_action=dispatch; next_role=Developer
 
@@ -560,9 +560,9 @@ When: You choose who authors the reconciled issue-body records before any mirror
 Then: next_action=dispatch; next_role=Product
 
 ### OB95 · OR46
-Given: While copying decided metadata, the parent add succeeded and was read back, but a blocker removal returned a permission failure and the board field write was not attempted. The desired owner records remain unchanged. No repair is authorized; no body reconciliation or code fix is needed. The immediate next step is only to report the completed, failed and unchecked operations and request no blind retries.
-When: You record the partial outcome without claiming synchronization or inventing a repair.
-Then: next_action=answer_directly; next_role=none
+Given: While copying decided metadata, the parent add succeeded and was read back, but a blocker removal returned a permission failure and the board field write was not attempted. The desired owner records remain unchanged. No repair is authorized; no body reconciliation or code fix is needed. The immediate next step is only to report the completed, failed and unchecked operations and request no blind retries. No Pipeline log record exists for these operations yet; the immediate deliverable is that required log entry, before any further operation.
+When: You write the required Pipeline log entry listing completed, failed and unchecked operations without claiming synchronization or inventing a repair.
+Then: next_action=record_decision; next_role=none
 
 ### OB96 · OR46
 Given: An adopted project explicitly has no configured Projects board. Owner-produced portable bodies and labels are complete; native parent and blocker endpoints are accessible. Their already-decided mirror changes require no authored work. Board rank, Horizon, membership and Status do not apply.

@@ -156,7 +156,7 @@ if GROUP == 731:
     scenarios, intended, schema_errors = parser['parse_scenarios']((ROOT / 'test/behavior/orchestrator-scenarios.md').read_text())
     assert not schema_errors, schema_errors  # QA-owned fixture control, not a model run
     by_id = {s['id']: s for s in scenarios}
-    for n, action, role in [(92, 'answer_directly', 'none'), (93, 'dispatch', 'Product'), (94, 'dispatch', 'Product'), (95, 'answer_directly', 'none'), (96, 'answer_directly', 'none'), (97, 'answer_directly', 'none')]:
+    for n, action, role in [(92, 'answer_directly', 'none'), (93, 'dispatch', 'Product'), (94, 'dispatch', 'Product'), (95, 'record_decision', 'none'), (96, 'answer_directly', 'none'), (97, 'answer_directly', 'none')]:
         ident = 'OB' + str(n)
         assert ident in intended and ident in by_id, 'missing intended behavior ' + ident
         assert by_id[ident]['then_fields']['next_action'] == action and by_id[ident]['then_fields']['next_role'] == role, 'QA behavior oracle changed: ' + ident
