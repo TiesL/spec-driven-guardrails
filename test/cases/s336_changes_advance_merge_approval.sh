@@ -35,6 +35,8 @@ grep -q '^- \*\*PR:\*\* https://' <<<"$entry" || fail "S336 — no PR link"
 # The advance-approval slice leaves meanings unchanged. The separately approved
 # #663 exceptions were process-multi-agent-roles v2 -> v3 and release-branch-workflow v2.
 # #679 separately approves process-multi-agent-roles v3 -> v4; retain all other pins.
+# #724 D5 (2026-11-27) approves process-issue-tracking v1 -> v2.
+# https://github.com/TiesL/spec-driven-guardrails/issues/724#issuecomment-7205368304
 base_ref="$(git -C "$R" merge-base HEAD origin/main 2>/dev/null)"
 if [ -n "$base_ref" ]; then
   python3 - "$R" "$base_ref" <<'PY_CHECK' || fail "S336 — unapproved Meaning version change"
@@ -55,6 +57,11 @@ key = 'release-branch-workflow'
 previous, current = old.pop(key, []), new.pop(key, [])
 assert len(current) == 1 and re.match(r'- \*\*Meaning version:\*\* 2 — .+', current[0])
 # AC8 supersedes the implicit-v1 pin: only this approved extra bump is allowed.
+assert previous == current or not previous or (len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* 1(?: |$)', previous[0]))
+key = 'process-issue-tracking'
+previous, current = old.pop(key, []), new.pop(key)
+assert len(current) == 1 and re.match(r'- \*\*Meaning version:\*\* 2 — #724 .+', current[0])
+# #724 D5 approves only implicit or explicit v1 -> v2.
 assert previous == current or not previous or (len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* 1(?: |$)', previous[0]))
 assert old == new, (old, new)
 PY_CHECK
