@@ -13166,3 +13166,117 @@ a failed/truncated read yields clean or absence; a reported mutation lacks
 read-back; release merge alone proves child closure; board-less becomes
 permission to drop portable metadata; an automatic writer is added to the
 reporter; or reserved content/pins/core budgets are weakened silently.
+
+#### A65 addendum 1 — Keep repository vocabulary out of adopter obligations (Review round 1, #747)
+
+Planning loop-back, 2026-11-27, reviewed head
+`083071584be5112908e7c951e8da1932060515d4`.
+`repo-specific-vocabulary-shipped-to-adopters` is **design, medium**:
+A65 names other projects' mappings but does not delimit the reporter's
+embedded mapping or the adoption promise. This addendum supersedes the
+generic lifecycle wording above; it does not offer this repository's
+three label axes through adoption.
+
+**Exact replacement text and placement.** In
+`skills/write-spec/SKILL.md`, under “Maintaining issue and board metadata”,
+replace the paragraph beginning “Maintain type/status” and ending
+“authority to configure.” with:
+
+> Maintain applicable labels and board lifecycle Status according to the
+> project's documented vocabulary and mapping. Preserve the canonical role
+> names and stage order when the role pipeline applies. Inactive items
+> need no invented active role. Follow the project's closure and blocked-work
+> conventions; do not infer an unblocked state from a board option. This
+> rule does not adopt spec-driven-guardrails' type/status/role label axes
+> or Project 1 option names for another project. Missing mapping or options
+> are unchecked, never authority to create labels or configure a project.
+
+In `CHANGES.md`, `process-issue-tracking`, replace the entire “Yes means”
+bullet with this exact text (retain meaning v2 and D5's draft/approval notice):
+
+> - **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets
+>   split from the PRD into an `Epic` issue with `Work item` issues. Follow
+>   `write-spec`'s issue and board maintenance rule at creation,
+>   relationship/stage changes, reprioritization and closure. Bodies own
+>   portable parent/dependency declarations; native relations mirror settled
+>   records; configured board fields own decided order. Maintain reciprocal
+>   relations and membership, and use this project's documented label and
+>   lifecycle mapping. Record empty-field decision evidence, verify closure
+>   and report partial or unchecked operations. `backlog-drift.sh` reports
+>   on request without writes; unsupported label/lifecycle mappings remain
+>   explicitly unchecked. Adoption supplies no repository-specific label
+>   vocabulary or board Status mapping. A board is optional; board-less
+>   projects keep portable records and applicable native mirrors.
+
+**Reporter Interface and scope.** Keep the existing invocation, one report
+Module and gh-on-PATH Seam; no new configuration file or adoption parser.
+The embedded type/status/role vocabulary and cardinality/closure rules
+apply only when the resolved repository identity is
+`TiesL/spec-driven-guardrails`. Its embedded board Status mapping, including
+closed-to-Done, additionally requires the explicitly selected project
+owner `TiesL` and number `1`. Compare canonical identities, allowing GitHub's
+case-insensitive owner/repository spelling. Neither the script's installation
+path, an adopter's adoption answer, matching option names nor project number
+alone selects this mapping. Keep the repository's existing label policy as
+its authority; do not relocate that vocabulary into adopter instructions.
+
+For another repository, name label/lifecycle vocabulary as unchecked;
+for another configured board, name board lifecycle mapping as unchecked.
+Continue independent relation, membership and ordering checks and preserve
+known drift. Never emit SDG-derived type/status/role or Status drift for
+these scopes, and never call a missing mapping verified or clean. Board
+omission still makes board checks N/A, but cannot resolve unknown label
+mapping. Other projects maintain their documented mappings manually; this
+version does not load arbitrary mappings automatically. Supporting them
+later needs an explicit Interface decision, not inferred configuration.
+This is the existing missing-mapping/incomplete rule made explicit, not
+an expansion of adoption or an automatic configuration feature. It retains
+Depth, Leverage and Locality inside the existing Module; the real and fake
+gh adapters remain the two adapters at the existing Seam.
+
+**Code-class medium findings: owner route unchanged.** None requires an
+incorrect A65 contract to be replaced:
+
+- `no-parent-absence-unreachable-live` remains **code**. A65 already requires
+  established supported absence semantics and a reachable clean top-level
+  case. Normalize the actual supported response; JSON `null` is not a
+  requirement. Do not turn an ambiguous 404 into absence. QA must reproduce
+  actual empty-body/status/exit behavior; this offline decision supplies no
+  new live endpoint evidence.
+- `ordinary-project-fields-always-incomplete` /
+  `ordinary-project-values-force-incomplete` remain **code**. A65 requires
+  required-field validation, not rejection of valid unrelated text/date/
+  iteration values. Collection must distinguish unrelated values from
+  malformed required rank/Horizon/Status data; ignoring unknown values
+  must not hide a required-field failure.
+- `cross-repository-edge-collisions-hidden` remains **code**. A65 explicitly
+  requires repository identity and fetched numeric/node IDs. Bare body
+  `#N` references resolve in the selected repository; a distinct foreign
+  native edge must remain visible with its URL even when numbers collide.
+- `unknown-status-label-reports-clean` /
+  `unknown-status-label-can-pass-clean` remain **code**, within the applicable
+  repository vocabulary. Counting a prefix cannot validate a canonical
+  label or silently waive lifecycle comparison. Invalid labels must be
+  reported; an indeterminate lifecycle is unchecked. Neither yields clean.
+  This addendum prevents exporting that validation to unrelated vocabularies.
+- `incomplete-inventory-reports-missing-membership` remains **code**. A65
+  already requires complete inventory before asserting absence. Denial or
+  page failure yields unchecked membership for unobserved items, preserving
+  independently established findings, not invented missing-item drift.
+
+**QA handoff.** Follow OR17: QA supplies discriminating regressions before
+Developer repair, then a fresh Reviewer. Include the foreign-repository
+`["feature"]` board-less case (no SDG-derived drift; named unchecked mapping),
+another owner's Project 1, and another project under TiesL (no inherited
+Status mapping); retain a complete, consistent SDG/Project 1 clean control.
+Exercise every code medium above independently, including real-shaped
+empty-body absence, ordinary field types, colliding foreign IDs, unknown
+canonical status, and denied/page-two inventory without false absences.
+Developer owns reporter/text implementation and managed snapshot updates;
+this entry changes no implementation or scenario oracle. D5 still reserves
+final adoption-notice approval. No AC1–AC6 is contradicted or narrowed:
+missing mapping was already unchecked under A65. ORCHESTRATOR.md needs no
+further change; preserve its bytes and existing behavior evidence. All low
+findings remain deferred under OR40. Estimated additional design work is
+complete here; implementation is a bounded mapping-selection/diagnostic
+change with regression fixtures, not a new mapping framework.
