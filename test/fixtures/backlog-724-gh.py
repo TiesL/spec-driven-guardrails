@@ -80,6 +80,10 @@ if mode == 'network':
 def emit(value, status=200):
     if '--include' in args or '-i' in args:
         print('HTTP/2 ' + str(status) + '\n')
+    # Real gh emits no JSON body for 204. JSON null is available only as an
+    # explicitly labelled historical comparator-isolation input.
+    if (status == 204 and config.get('parent_response') != 'json-null') or (value is None and config.get('parent_response') == 'empty-200'):
+        return
     jq = option('--jq', '-q')
     if jq:
         done = subprocess.run(['jq', '-r', jq], input=json.dumps(value), text=True,
@@ -133,15 +137,32 @@ if graphql:
                 second = 'values-' + item['id'] in supplied
                 node['fieldValues'].update(nodes=pages[1 if second else 0], pageInfo={
                     'hasNextPage': not second, 'endCursor': None if second else 'values-' + item['id']})
-    emit({'data': {'organization': {'projectV2': project}, 'user': {'projectV2': project}, 'node': node}})
+    def selected_values(obj):
+        if isinstance(obj, dict):
+            typename = obj.get('__typename', '')
+            if typename in ('ProjectV2ItemFieldTextValue', 'ProjectV2ItemFieldDateValue', 'ProjectV2ItemFieldIterationValue'):
+                # Return the current query's actual typename-only shape when
+                # its type fragment is absent, not invented field identities.
+                if not re.search(r'\bon\s+' + typename + r'\s*\{', query):
+                    return {'__typename': typename}
+            return {k: selected_values(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [selected_values(v) for v in obj]
+        return obj
+    emit(selected_values({'data': {'organization': {'projectV2': project}, 'user': {'projectV2': project}, 'node': node}}))
     sys.exit(0)
 
 if endpoint is None:
     refuse('missing-endpoint')
-endpoint = endpoint.replace('{owner}/{repo}', 'fixture/backlog')
+repo = config['repo']
+endpoint = endpoint.replace('{owner}/{repo}', repo)
+# GitHub repository names are case insensitive; returned identities remain
+# canonical, independently of the spelling in the requested endpoint.
+endpoint = re.sub(r'^repos/' + re.escape(repo) + r'(?=/|\?|$)',
+                  lambda _: 'repos/' + repo, endpoint, flags=re.I)
 endpoint, _, parameters = endpoint.partition('?')
-if endpoint == 'repos/fixture/backlog':
-    emit({'full_name': 'fixture/backlog', 'owner': {'login': 'fixture', 'type': 'Organization'}, 'name': 'backlog'})
+if endpoint == 'repos/' + repo:
+    emit({'full_name': repo, 'owner': {'login': repo.split('/')[0], 'type': 'Organization'}, 'name': repo.split('/')[1]})
     sys.exit(0)
 if endpoint not in config['rest']:
     refuse('unexpected-endpoint')
@@ -154,10 +175,10 @@ if mode == 'unsupported-parent' and endpoint.endswith('/parent'):
 if mode == 'comments-denied' and endpoint.endswith('/comments'):
     sys.exit(1)
 value = config['rest'][endpoint]
-if mode == 'malformed-json' and endpoint == 'repos/fixture/backlog/issues':
+if mode == 'malformed-json' and endpoint == 'repos/' + repo + '/issues':
     print('{bad')
     sys.exit(0)
-if mode == 'missing-issue-fields' and endpoint == 'repos/fixture/backlog/issues/20':
+if mode == 'missing-issue-fields' and endpoint == 'repos/' + repo + '/issues/20':
     emit({'number': 20, 'body': None})
     sys.exit(0)
 if isinstance(value, dict) and '_pages' in value:
@@ -170,9 +191,9 @@ if isinstance(value, dict) and '_pages' in value:
         emit(selected)
         sys.exit(0)
     for index, page in enumerate(selected, start):
-        if mode == 'page-two-failure' and endpoint == 'repos/fixture/backlog/issues' and index == 1:
+        if mode == 'page-two-failure' and endpoint == 'repos/' + repo + '/issues' and index == 1:
             print('fixture page two unavailable', file=sys.stderr)
             sys.exit(1)
         emit(page)
 else:
-    emit(value, 204 if value is None else 200)
+    emit(value, 204 if value is None and config.get('parent_response') != 'empty-200' else 200)

@@ -56,7 +56,7 @@ ROWS = {
 ('read-before-after', r'read.{0,70}(current|before).{0,150}(read.back|re.read|verify)', 'Read current data before applying settled changes, then read back and verify.'),
 ('membership-first', r'(confirm|verify|check).{0,80}(auto.add|automatic membership).{0,100}(before|then).{0,70}add', 'Confirm automatic membership before attempting an add.'),
 ('no-id-confusion', r'(numeric|REST).{0,60}(ID|identifier).{0,100}(number|node|project.item)', 'Use REST numeric IDs, distinct from issue numbers, node IDs and project-item IDs.'),
-('canonical-labels', r'(type|status).{0,80}(active.role|role label)', 'Maintain type/status and the active-role label.'),
+('project-mapping', r'(label|Status).{0,100}project.{0,40}documented.{0,40}(vocabulary|mapping)', "Maintain applicable labels and board lifecycle Status according to the project's documented vocabulary and mapping."),
 ('inactive-no-role', r'inactive.{0,80}(no|not|never).{0,40}(invent|active role)', 'Inactive items need no invented active role.'),
 ],
 727: [
@@ -97,6 +97,44 @@ for label, pattern, witness in ROWS[GROUP]:
     obligation(label, maintenance, pattern, witness)
 
 if GROUP == 731:
+    # A65 addendum 1 fixes these delivery bytes explicitly. The independent
+    # witnesses are literal approved text, never copied from candidate output.
+    lifecycle = """Maintain applicable labels and board lifecycle Status according to the
+project's documented vocabulary and mapping. Preserve the canonical role
+names and stage order when the role pipeline applies. Inactive items
+need no invented active role. Follow the project's closure and blocked-work
+conventions; do not infer an unblocked state from a board option. This
+rule does not adopt spec-driven-guardrails' type/status/role label axes
+or Project 1 option names for another project. Missing mapping or options
+are unchecked, never authority to create labels or configure a project."""
+    offer = """- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets
+  split from the PRD into an `Epic` issue with `Work item` issues. Follow
+  `write-spec`'s issue and board maintenance rule at creation,
+  relationship/stage changes, reprioritization and closure. Bodies own
+  portable parent/dependency declarations; native relations mirror settled
+  records; configured board fields own decided order. Maintain reciprocal
+  relations and membership, and use this project's documented label and
+  lifecycle mapping. Record empty-field decision evidence, verify closure
+  and report partial or unchecked operations. `backlog-drift.sh` reports
+  on request without writes; unsupported label/lifecycle mappings remain
+  explicitly unchecked. Adoption supplies no repository-specific label
+  vocabulary or board Status mapping. A board is optional; board-less
+  projects keep portable records and applicable native mirrors."""
+    check('r1-lifecycle-exact-replacement', lifecycle in maintenance,
+          'A65 addendum 1 lifecycle paragraph is not delivered verbatim')
+    changes_text = (ROOT / 'CHANGES.md').read_text()
+    issue_entry = re.search(r'^## process-issue-tracking\n(.*?)(?=^## |\Z)', changes_text, re.M | re.S)[1]
+    bullet = re.search(r'^- \*\*Yes means:\*\*.*?(?=\n- |\Z)', issue_entry, re.M | re.S)
+    check('r1-Yes-means-exact-replacement', bullet is not None and bullet[0].rstrip() == offer,
+          'A65 addendum 1 entire Yes means bullet is not delivered verbatim')
+    # Valid/deletion controls for both replacement oracles, independent of the
+    # implementation. Removing the scope reservation must be discriminating.
+    for label, witness, sentence in [
+        ('lifecycle', lifecycle, "rule does not adopt spec-driven-guardrails' type/status/role label axes\nor Project 1 option names for another project."),
+        ('offer', offer, 'Adoption supplies no repository-specific label\n  vocabulary or board Status mapping.')]:
+        assert sentence in witness and witness not in witness.replace(sentence, ''), label + ' deletion control survived'
+    check('r1-old-lifecycle-replaced', 'Maintain type/status and the active-role label' not in maintenance,
+          'old universal vocabulary paragraph remains alongside replacement')
     statements = {
         'work-item': [
             'Issue-body Epic, Blocked by and Blocks fields are the portable authority; native parent/blocker relations mirror settled body declarations and do not require Projects. Follow write-spec\'s issue and board maintenance rule.',
