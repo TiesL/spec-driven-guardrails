@@ -13280,3 +13280,168 @@ further change; preserve its bytes and existing behavior evidence. All low
 findings remain deferred under OR40. Estimated additional design work is
 complete here; implementation is a bounded mapping-selection/diagnostic
 change with regression fixtures, not a new mapping framework.
+
+#### A65 addendum 2 — Preserve observation certainty before comparison (OR20 redesign, #747)
+
+Planning, 2026-11-27; reviewed head
+`dab2b428da2b3ebbe678909902dfcb7006bcdce0`. Both consecutive Review rounds
+count under OR20, including the carried parent finding despite disagreement
+among lenses. Reconsidered the whole A65 design and addendum 1, not just
+the latest slugs. The repeated failure is guessed transport shapes plus
+completeness recorded separately from the values used by comparisons.
+**Decision: strengthen the internal observation contract and fixture
+provenance; retain the public Interface and maintenance authority.**
+
+Body authority, reciprocal native mirrors, board-owned decided order,
+field-specific durable exceptions, non-atomic maintenance with read-back,
+existing automation before manual closure/membership, release-child closure
+and adopter-neutral mappings remain sound. The reporter remains advisory,
+read-only and on request, covering open and closed issues. No new writer,
+configuration, adoption duty, stage permission or ORCHESTRATOR.md edit.
+Cost/noise, comment-exception authority, behavior discrimination and draft
+notice lows remain deferred under OR40; this redesign does not resolve them.
+
+**One internal normalization layer.** Within the existing report Module,
+normalize transport and schema evidence before any comparison. Each scoped
+observation carries `state=present|verified-absent|unchecked`, its validated
+value/identities when present, completeness, operation/object scope and a
+safe reason/provenance. Applicability remains separate: omitted board is
+N/A, whereas an inaccessible configured board is unchecked. Do not use
+JSON null, an empty array, a global warning or a resettable shared flag as
+a substitute for that state. Raw response parsing belongs here, not in
+individual comparison branches.
+
+- `present` means validated positive data. A partial collection may retain
+  known members, but cannot prove a missing member, uniqueness or equality
+  of the complete set. Preserve full repository/REST/node identities.
+- `verified-absent` requires a complete validated relevant collection, or
+  supported explicit absence semantics for a verified existing object.
+  Empty body, nonzero gh exit, 404, omitted JSON property, malformed value
+  and partial pagination alone never establish absence.
+- `unchecked` contributes neither a drift finding nor a passed check.
+  A finding requires sufficient independent evidence for that particular
+  comparison; independent findings survive another unchecked scope.
+  Any required unchecked scope still makes the aggregate incomplete;
+  clean requires every applicable comparison verified and no drift.
+
+Carry this information through issue inventories, comments, parent/native
+relations, project field declarations, membership and each item's nested
+fieldValues. Missing ordering evidence cannot be asserted from unread
+comments. Missing membership needs complete item inventory. Missing project
+field declarations are unchecked. A field value is verified absent only
+after its declaration/type, item identity and complete fieldValues stream
+are verified. Malformed/duplicate required values are unchecked, never
+null/empty. Valid unrelated field variants must remain distinguishable from
+required-field failures; unknown/unidentifiable variants cannot silently
+prove required-field absence. Preserve selected typename/field identity.
+
+For this implementation, an incomplete per-item fieldValues connection
+makes that item's rank/Horizon/Status comparisons unchecked: emit no
+missing/null finding or awaiting/parking exception for them. Other complete
+items, membership, body/native checks and independently proved drift still
+report. Keep field-connection completeness with its item instead of losing
+it when the next traversal starts. Do not require a speculative optimization
+that proves individual values complete before their connection finishes.
+
+**Parent absence and live evidence.** `no-parent-absence-unreachable-live`
+remains code, with a changed repair strategy: stop treating synthetic 204
+or historical JSON-null fixtures as proof of live reachability. Keep
+validated REST present-parent observations; when REST absence is ambiguous,
+use a read-only GraphQL issue query selecting the issue identity and its
+`parent { ... }`. Select `id` and `databaseId` explicitly and normalize
+GraphQL node versus REST numeric identity without interchanging them.
+An error-free, supported response with the verified
+issue present and the explicitly selected `parent: null` can establish
+absence; missing issue/property, errors or denial cannot. Confirm that
+nullable-parent contract and response shape before implementing that path.
+If the live schema cannot supply it and REST remains ambiguous, return to
+Architect with the evidence; do not whitelist all 404s or waive the clean
+top-level control. Native relations still require no Projects board.
+
+The orchestrator captures a bounded fixture set once using its existing gh
+access: current gh version/time, exact read-only argv/query, process exit,
+HTTP status where applicable and sanitized selected bodies. Include #742
+as the candidate parentless control, #724 as the candidate parented control,
+their actual issue/parent identities, project field declarations, populated
+ordinary value variants, items and nested pagination envelopes. Verify the
+controls' current relationships rather than assuming them from issue names.
+The stage report supplies commands. Retain only necessary response fields;
+never commit headers, credentials or arbitrary stderr. Redactions must
+preserve null versus omitted, typename, field identity, list/page and exit
+shapes, with a provenance manifest. Captures are evidence of those reads,
+not of all live failure modes or a clean historical repository.
+
+QA replays captured shapes through the real CLI Seam, replacing guessed
+successful defaults. Keep synthetic denied/error/truncated/page-two/cycle
+cases, explicitly labelled as fault injection; do not deliberately cause
+live failures or mutate the board to obtain them. If no live instance of
+a variant/page is available, record that coverage limit and use labelled
+schema-derived fixtures, never call them captured. Query fragments and
+fixture selection must agree; adding fields in a fake that the query did
+not select is invalid evidence. Missing live samples leave the live-parent
+finding unresolved, even when offline tests pass.
+
+**Repository-local Status authority.** Resolve
+`project1-status-mapping-undocumented` by adding a subsection headed
+“This repository's Project 1 lifecycle” under README.md's “How this repo
+builds itself”. It is the operational source for
+`TiesL/spec-driven-guardrails` on `TiesL` Project `1`, linked to the existing
+Issue labels policy. It is not template/adoption text. Document:
+
+| Decided lifecycle | Project 1 Status |
+| --- | --- |
+| Backlog | Backlog |
+| Active Discovery, Planning, Test or Implementation | In progress |
+| Review | In review |
+| Verified issue closure | Done |
+| Explicit maintainer decision that work is ready | Ready |
+
+Blocked work retains its applicable stage Status and visible blocked
+label/body reason; Project 1 has no Blocked option. Ready requires an
+explicit durable maintainer decision, never inferred priority, dependency
+readiness or a cleared blocker. Indeterminate/conflicting lifecycle or
+missing options are unchecked, never configuration authority. The reporter
+does not gain a ready-decision parser here: for otherwise inactive open
+work, an observed Ready that cannot be verified from its supported inputs
+is Status-unchecked, not an invented Backlog mismatch or a verified ready
+decision. This never suppresses a verified closed-to-Done or active-stage
+mismatch. Independent checks continue.
+Other lifecycle observations use the documented table and existing closed
+label rules. Preserve addendum 1's exact neutral write-spec/CHANGES wording
+and canonical identity selection; do not copy this table into shared
+policy, skills, templates, adapters or adoption payloads. README's local
+placement restores operational authority without exporting vocabulary.
+
+**QA/Developer route and limits.** Architect design work is complete;
+orchestrator obtains the read-only samples, then QA owns discriminating
+red regressions before Developer changes and fresh Review. The new
+`incomplete-field-values-report-missing-ordering` remains code: A65 already
+forbids truncated reads proving emptiness; the stronger observation contract
+generalizes its fix beyond an aggregate incomplete flag. Independently fail
+fieldValues pages one and two, including a second-page rank and earlier
+Status; assert unchecked scopes, no invented absence/exception and retained
+independent drift. Complete genuine empty-value controls must still drift
+or print valid field-specific exceptions. Exercise failed comments, field
+definitions, inventory and relation pagination under the same principle.
+Parent controls must include captured present and explicit absent shapes,
+ambiguous REST 404, GraphQL null issue, omitted parent, errors and denial.
+Keep a supported, fully consistent clean fixture with ordinary value types.
+Delete each mapping obligation separately to falsify documentation coverage;
+retain foreign-repository/board negative controls and add Ready/blocked
+indeterminacy checks. No code finding is marked resolved by this entry.
+
+Developer scope additionally includes the README subsection, internal
+normalization and parent verification, with QA-owned fixtures/scenarios;
+no shared graph framework or new public switches. The gh-on-PATH Seam
+still has real gh and recording fake adapters. Depth, Leverage and Locality
+improve by concentrating certainty rules: deleting the Module would spread
+collection/normalization/comparison complexity across callers, not erase it.
+Local condition-only patches were rejected because they repeat the source
+of successive findings; a general transport framework was rejected because
+two existing adapters need no new public Seam. Estimated implementation is
+moderate: all collection-to-comparison paths need auditing, with a bounded
+capture pass rather than an unbounded live integration suite. No AC1–AC6 is
+contradicted or narrowed. D5's approval reservation and D6 remain intact;
+unchanged core/scenario bytes do not require a new behavior run solely for
+this redesign. Revisit if a captured shape cannot satisfy verified absence
+or the same certainty rule cannot be enforced locally within this Module.
