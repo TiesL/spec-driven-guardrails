@@ -12457,7 +12457,7 @@ answers run through the real grading path; each must be caught. Controls never
 count as observations, trials, human reads or votes. A missing read, an unread
 existing FAIL or an uncaught control blocks PASS.
 
-#### 8. Finite offline gate (QA owns; 36 checks)
+#### 8. Finite offline gate (QA owns; 51 checks)
 
 All run in `./check` on both CI legs with the offline Adapter, temporary
 directories and a local bare remote. No model calls, no network. A stub
@@ -12467,22 +12467,22 @@ Gitleaks' own concern.
 | ID | Check | Count |
 | --- | --- | ---: |
 | E1 | Valid result accepted, including a Codex `UNRUN` entry | 1 |
-| E2 | Rejected: unknown key, missing key, duplicate key, free-text string, wrong commit length, path segment not a plan ID, bool-as-int or negative count, trailing data | 8 |
+| E2 | Rejected separately: unknown key, missing key, duplicate key, free-text string, wrong commit length, path segment not a plan ID, bool-as-int, negative count, trailing data, ordinary wrong type, invalid registry value, invalid enum, invalid date pattern, invalid run-id pattern | 14 |
 | E3 | MD edited away from its rendering fails `./check` | 1 |
 | E4 | Runner as a real subprocess; a needle (including R11's literal and escaped witnesses) in fake stdout, stderr, a raised exception and an argv error before the Module starts; needle absent from both fds and from every file in the temp public checkout | 1 |
 | E5 | Private root inside the public checkout, or a symlink into it: refused before any call | 2 |
-| E6 | Home, cwd, private root and email in fake output become placeholders with counts; other bytes exact | 1 |
-| E7 | Environment token and raw argv absent from every private file | 1 |
+| E6 | Home, cwd, private root and email in fake output become placeholders with counts; each file's header has the run-id and counts; other bytes exact | 1 |
+| E7 | Environment token, raw argv, authentication headers and credential-file contents absent from every private file | 1 |
 | E8 | Push refused, not runnable: Gitleaks absent; hook not SDG's symlink; guard-off variable set | 3 |
-| E9 | Stub Gitleaks exits 2: push blocked, run stops, no public result | 1 |
-| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded | 1 |
-| E11 | One prohibited FAIL among three passes gives FAIL | 1 |
+| E9 | Separately, stub Gitleaks exits 1 (secret hit) or 2: push blocked, run stops, no public result; secret bytes unchanged and local unpushed commit retained | 2 |
+| E10 | Stub exits 0: `runs/<run-id>` at the remote with exact files; commit recorded; captured push arguments use plain `git push`, without `--no-verify` | 1 |
+| E11 | One prohibited FAIL plus two passes (k=3) gives FAIL through prohibition aggregation, not invalid-cardinality handling | 1 |
 | E12 | Judgment 2/3 gives PASS; 1/3 gives FAIL | 2 |
-| E13 | Gate FAIL gives FAIL; missing trial or judge disagreement gives `NOT_RUNNABLE` | 2 |
+| E13 | Separately: gate FAIL gives FAIL; missing trial gives `NOT_RUNNABLE`; judge disagreement gives `NOT_RUNNABLE` | 3 |
 | E14 | All-PASS with PASS read, zero-FAIL inventory and caught controls is PASS-eligible; missing PASS read, unread existing FAIL, uncaught control and control counted as observation each block PASS | 5 |
 | E15 | Claude finalized with Codex `UNRUN`; adding Codex leaves Claude's entry byte-identical | 1 |
-| E16 | `verify`: match; changed file, missing path, wrong commit each mismatch | 4 |
-| E17 | SDG `ci.yml` calls `secret-scan.yml` and holds no second Gitleaks step | 1 |
+| E16 | `verify`: match; changed file, missing path, wrong commit each mismatch; forged grading and matching forged public JSON contradicting private trials also mismatch (grading must be recomputed) | 5 |
+| E17 | SDG `ci.yml` calls `secret-scan.yml` and holds no second Gitleaks step; separately reject offline mutations removing `workflow_call`, altering the scanner pin, checksum or full-history setting, or omitting `./check` from either CI leg | 7 |
 
 Each check is red before the Developer change and green after. Manual only:
 containment per installed runtime, the private repository's adoption, CI and
