@@ -13735,6 +13735,85 @@ S627, S731, S309 and S733 red-first. The Developer applies the exact pair to
 OR46 only. The orchestrator then reruns the whole-file behavior runner and
 commits the runner-generated stamp before clean exact-head D6. The
 maintainer accepts the shared contract-text change at the release merge.
+
+#### A65 addendum 7 — Read the parent where absence is a success (no-parent-absence-unreachable-live, #747)
+
+Planning, 2026-11-28, input head `a63b9de`. Supersedes addendum 3's REST
+`/parent` read and the reporter's `--include`/204 branch. Everything else
+in addendum 3, including D6's report-and-skip rule, stands.
+
+**Problem.** Live capture 09 shows REST `issues/{n}/parent` answers a
+top-level issue with HTTP 404 and exit 1. Under D6 that is report-and-skip,
+so every top-level epic and every unlinked issue goes unchecked and `clean`
+is unreachable live. The 204 branch was never observed. Reclassifying this
+404 as absence would be the ambiguity classification D6 rejects.
+
+**Decision.** Ask the question through a call whose success response
+represents absence. Per issue, replace the REST parent read with one
+GraphQL query: `repository(owner:"TiesL",name:"spec-driven-guardrails")
+{ issue(number:N) { number parent { id databaseId number url repository
+{ nameWithOwner } } } }`. Capture 11 shows both live shapes: `parent:null`
+for #742 and an object for #724. The REST issue object has no parent field
+(captures 03/08), so no cheaper source exists.
+
+- Success means: exit 0, no `errors`, `data.repository.issue` is an object
+  with `number==N`, and `parent` is `null` or an object with string `id`,
+  number `databaseId`, number `number` and `nameWithOwner` equal to SDG.
+- `parent:null` on success is no parent. Map an object to the comparator's
+  native shape `{number, id: databaseId, node_id: id}`.
+- Anything else (non-zero exit, `errors`, missing issue, other shape,
+  foreign repository) is report-and-skip for that issue, as addendum 3 says.
+  The existing `graphql()` helper prints `null` and returns 0 on `errors`;
+  the parent read must not reuse that branch, or errors would read as
+  absence. Give the parent call its own operation description naming the
+  issue URL.
+- Delete the `*/parent` branch of `rest()`; no REST `/parent` call remains.
+  Call count is unchanged (one call replaced by one call).
+
+No 404 is interpreted, no absence probe is added, and no maintainer
+decision is needed.
+
+**Comment failure (code low, trivial).** A comment whose live text fails
+makes the whole issue report-and-skip (`continue 2`), as D6 requires.
+
+**Deferred (OR40: design or spec lows are never fixed in the PR).**
+
+| Finding | Status |
+|---|---|
+| comment-exceptions-unauthenticated (OWNER/MEMBER/COLLABORATOR filter) | Deferred; no design decision here |
+| ob56-scenario-rewrite-no-durable-design-trace | Deferred; no rationale recorded here |
+| a65-base-text-stale-without-pointer ("Superseded in part" pointer) | Deferred; A65 header unchanged |
+
+**Falsifying check.** In S728's clean snapshot, make the fake answer the
+top-level epic's parent query with capture 11's `parent:null` shape and
+refuse any REST `/parent` call. Expect `result=clean`. Then remove the
+epic's `epic` label: a label drift line for the epic must appear.
+Both fail at `a63b9de`, where the epic is skipped and the result is
+`incomplete`.
+
+**QA handoff (red first).**
+- Fake: delete the synthetic 204 and the REST parent fixtures. Serve the
+  GraphQL issue-parent query from capture 11's shapes; refuse REST
+  `/parent` as an unexpected endpoint. In `TEST-SCENARIOS.md` (S726
+  case line), replace the "Empty-204 success is synthetic" note with the
+  capture 11 provenance.
+- S728: the check above, plus a child whose parent object round-trips.
+- S729: replace `parent-404` with GraphQL `errors` at exit 0, exit 1, and a
+  foreign-repository parent. Each skips only that issue, adds no
+  `referenced parent unread` invention for unaffected issues, and is never
+  clean. Mutant: errors read as `null` must go red.
+- S727: a failing comment's live text skips the issue with no
+  `observed=null` line.
+- Also open round-3 test findings: fail `values-ITEM_20` on page 1 and
+  page 2 (mutant: guard line to `:` goes red); compare S731's restored
+  files with pinned `c3ef74e` via `git show`, not the release ref; replace
+  the three tautological controls with checker runs on real mutants or
+  delete them.
+
+**Developer scope.** `backlog-drift.sh` only: the parent query, the
+`rest()` deletion and the comment-failure `continue 2`. No
+core, README-rule or scenario change, so no new behavior run or stamp is
+required for this addendum.
 ### A56 addendum 9 (Architect, Planning, 2026-11-27, redesigned under D6): two repositories, one secret scan, a closed public result (#731; resumes #680 only after reconciliation)
 
 **Authority and scope.** #731 D1-D6. D6 (maintainer, 2026-11-27) asks for a
