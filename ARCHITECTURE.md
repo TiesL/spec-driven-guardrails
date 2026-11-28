@@ -13616,3 +13616,48 @@ inventory or runner change is needed. The change alters hashed core bytes,
 so the orchestrator reruns the whole-file behavior runner and commits the
 runner-generated stamp before clean exact-head D6. This is a shared
 contract-text change: the maintainer accepts it at the release merge.
+
+#### A65 addendum 5 — No OR46 wording fits; addendum 4's pair is withdrawn (design conflict, OR19, #747)
+
+Planning, 2026-11-28, input head `f556b7e`. The Developer applied the
+addendum 4 pair exactly. Three checks failed: S725 (`duty cut not unique:
+moved-head-stop moved head`), S627 (slot1=8529, headroom 471) and S318
+(slot1=8532, headroom 468). The floor is 500 and the budget is 9000.
+
+**Budget math (measured, not estimated).** On `f556b7e`, S318 measures
+slot1=8498 and slot2=8449. S627 measures slot1=8495 in its own sandbox.
+The binding check is S318's one-character control: slot 1 plus one
+character must still leave headroom >= 500. So 8498 + d + 1 <= 8500,
+and OR46 may grow by at most **d = +1 byte**. The +5 figure from S627
+alone is not the limit.
+
+**Wording search.** Any text that names the action and its scope needs
+at least about 20 bytes, for example ` (Review start: stop)` or `; head moved
+at Review start: stop`. It must also avoid a second `moved head `, which
+the `wip-promotion-706.py` moved-head-stop cut pins to one occurrence.
+`Failed promotion/moved head blocks Review.` cannot shrink. Its regexes
+and its `Failed promotion/` and `moved head ` cuts pin all of it. A short
+unscoped `: stop` flips OB91, which is a failed promotion that dispatches
+the Developer. The rest of OR46 is pinned by the #706 duty table,
+`oracle-contract-pins.py` and S317. Only about 12 bytes are not pinned:
+`by `, three pairs of backticks, and ` and` -> `,`. Removing them damages
+the markup and still does not pay for the clause. **No exact OR46 pair
+satisfies all of S725, S627, S318 and OB91.** Addendum 4's pair is
+withdrawn, and OR46 returns to its base bytes.
+
+**Options (maintainer choice; the Architect does not pick a budget).**
+1. *Recommended:* leave OR46 and OB87 unchanged in #724. Record OB87 as
+   a pre-existing OR46 (A64) ambiguity in a follow-up issue. That issue
+   designs the clause together with reclaimed part-1 headroom. This only
+   works if the stamp gate accepts a known pre-existing unstable arm.
+   If it does not, use option 2 or 3.
+2. Reclaim at least 25 bytes of part 1 outside OR46. Either shorten
+   another part-1 rule (each rule needs its own exact allowance and
+   duty-fixture review), or move one part-1 sentence to part 2. Slot 2
+   has 551 bytes of headroom. Both are wider shared-contract changes, and
+   the moved-head clause must still avoid a second `moved head `.
+3. Raise `CONTEXT_BUDGET_CHARS` or lower the floor. This changes A41/A57
+   human decisions, so it is maintainer-only.
+
+Rewording the OB87 Given until it stabilizes is rejected. That fits the
+scenario to the model and leaves the rule gap open.
