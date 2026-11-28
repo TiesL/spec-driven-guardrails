@@ -1,5 +1,6 @@
 {
-  "base": "626c753e7a725c9057748164c6ffa38da6560290",
+  "base": "c3ef74ed2dde48fc05dc39a5a7cd9d8e9cebf032",
+  "base_provenance": "Head of release/742-process-hygiene that PR #747 is based on; the squash merge keeps it as first parent, so every fresh clone resolves it. Replaces the #724 WIP commit 626c753e7a725c9057748164c6ffa38da6560290, which the squash leaves unreachable. 626c753 and c3ef74e are byte-identical on all three paths below.",
   "changes": {
     "skills/role-contracts/ORCHESTRATOR.md": [
       [
@@ -8,7 +9,7 @@
       ],
       [
         "Failed promotion/moved head blocks Review.",
-        "Failed promotion/moved head blocks Review; moved head at Review start: stop."
+        "Failed promotion/moved head blocks Review; head moved at Review start: stop."
       ]
     ],
     "skills/role-contracts/orchestrator-rules.tsv": [

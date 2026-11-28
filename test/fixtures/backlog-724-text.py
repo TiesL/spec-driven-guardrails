@@ -131,24 +131,36 @@ if GROUP == 731:
 
     a = runpy.run_path(str(ROOT / 'test/fixtures/wip-706-substitutions.py'))
     path = 'skills/role-contracts/ORCHESTRATOR.md'
-    before = subprocess.check_output(['git', '-C', str(ROOT), 'show', '626c753e7a725c9057748164c6ffa38da6560290:' + path])
+    amendments = json.loads((ROOT / 'test/fixtures/backlog-724-substitutions.json').read_text())
+    assert amendments['base'] == 'c3ef74ed2dde48fc05dc39a5a7cd9d8e9cebf032'
+    # The #724 base must survive the squash of PR #747 into the release branch
+    # (the #706/97a3a61 defect fixed in #750): an ancestor of both HEAD and the
+    # release branch, never a WIP-only commit such as 626c753.
+    for ref in ('HEAD', base):
+        reachable = subprocess.run(['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', amendments['base'], ref],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        check('D4-base-reachable/' + ref, reachable, amendments['base'] + ' is not an ancestor of ' + ref + ' (unreachable after squash)')
+    before = subprocess.check_output(['git', '-C', str(ROOT), 'show', amendments['base'] + ':' + path])
     old = b'(d) set label, edit Pipeline log;'
     new = b'(d) labels/log; mirror decided metadata;'
     old2 = b'Failed promotion/moved head blocks Review.'
-    new2 = b'Failed promotion/moved head blocks Review; moved head at Review start: stop.'
+    new2 = b'Failed promotion/moved head blocks Review; head moved at Review start: stop.'
     assert before.count(old) == 1 and before.count(old2) == 1
     expected = before.replace(old, new, 1).replace(old2, new2, 1)
     actual = (ROOT / path).read_bytes()
     check('D4-exact-pair', actual == expected, 'only the sanctioned OR46(d) and OR46 moved-head pairs may change the base core')
-    amendments = json.loads((ROOT / 'test/fixtures/backlog-724-substitutions.json').read_text())
-    assert amendments['base'] == '626c753e7a725c9057748164c6ffa38da6560290'
     assert amendments['changes'][path] == [[old.decode(), new.decode()], [old2.decode(), new2.decode()]], 'D4 literal allowance widened'
     assert set(amendments['changes']) == {path, 'skills/role-contracts/orchestrator-rules.tsv', 'test/behavior/orchestrator-scenarios.md'}
-    preserved_706 = subprocess.check_output(['git', '-C', str(ROOT), 'show', amendments['base'] + ':test/fixtures/wip-706-substitutions.json'])
-    assert preserved_706 == (ROOT / 'test/fixtures/wip-706-substitutions.json').read_bytes(), '#706 source pairs changed'
+    # #706's source pairs stay as at the #724 base; its base pin and provenance
+    # may be repinned (#750 moved 97a3a61 to 255040e).
+    preserved_706 = json.loads(subprocess.check_output(['git', '-C', str(ROOT), 'show', amendments['base'] + ':test/fixtures/wip-706-substitutions.json']))['changes']
+    current_706 = json.loads((ROOT / 'test/fixtures/wip-706-substitutions.json').read_text())['changes']
+    widened = json.loads(json.dumps(preserved_706)); widened[path][0][1] += ' '
+    assert widened != preserved_706 and {k: v for k, v in preserved_706.items() if k != path} != preserved_706, '#706 pair control'
+    assert current_706 == preserved_706, '#706 source pairs changed'
     for label, mutant in [('omitted', before), ('extra-byte', expected+b'\n'), ('undecided', expected.replace(b'mirror decided metadata', b'mirror any metadata')),
                           ('repair', expected.replace(b'never repair', b'repair')), ('old-line', before.replace(old, new, 1)),
-                          ('variant', expected.replace(b'start: stop.', b'start: stop')), ('unscoped', expected.replace(b'; moved head at Review start: stop', b'; moved head: stop'))]:
+                          ('variant', expected.replace(b'start: stop.', b'start: stop')), ('unscoped', expected.replace(b'; head moved at Review start: stop', b'; head moved: stop'))]:
         assert mutant != expected, 'D4 control survived: ' + label
     old_table = json.loads((ROOT / 'test/fixtures/wip-706-substitutions.json').read_text())
     historical = subprocess.check_output(['git', '-C', str(ROOT), 'show', old_table['base'] + ':' + path])
