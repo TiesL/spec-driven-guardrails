@@ -50,7 +50,7 @@ yes_p="$(fresh_project yes)"
 write_adoption "$yes_p/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
 core750_adopt "$wf" "$yes_p" || fail "S732/yes — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
 msg="$(link_ok "$yes_p")" || fail "S732/yes — $msg"
-block="$(awk '/^# spec-driven-guardrails: begin$/{f=1;next} /^# spec-driven-guardrails: end$/{f=0} f' "$yes_p/.gitignore" 2>/dev/null)"
+block="$(awk '/^# claude-workflow: begin/{f=1;next} /^# claude-workflow: end$/{f=0} f' "$yes_p/.gitignore" 2>/dev/null)"
 grep -qxE "/?\\.claude/rules/sdg-orchestrator-core\\.md" <<<"$block" \
   || fail "S732/yes — the managed .gitignore block does not list $CORE750_LINK"
 git -C "$yes_p" check-ignore -q "$CORE750_LINK" || fail "S732/yes — git does not ignore $CORE750_LINK"
