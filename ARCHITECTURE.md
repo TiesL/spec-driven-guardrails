@@ -13084,3 +13084,99 @@ the affected runtime; observations are kept and FAILs routed by #680 AC5.
 evidence commit OID plus the private path; Product may adopt that wording.
 #731 Q5's unconditional pass-and-fail pair still needs Product reconciliation to
 D5. No other AC is contradicted or narrowed.
+
+### A66 — The orchestrator core moves from the capped `SessionStart` hook to an opt-in always-loaded rules file; checks and hooks stay the binding layer (#750; amends A41, A16/A17)
+
+- **Why.** A41 fits `ORCHESTRATOR.md` into two `SessionStart` outputs of at
+  most `CONTEXT_BUDGET_CHARS=9000` each, because Claude Code caps one hook's
+  output at 10,000 characters. Rule text was cut to fit, and #724 (one OR46
+  clause) is parked on the 500-character floor. Maintainer decisions D1-D3 on
+  #750: same coverage in both runtimes, with the always-loaded file holding
+  only what both CLAUDE.md and AGENTS.md honour and checks/hooks holding the
+  rest (D1); overlap only between that file and checks/hooks, the hook copy is
+  replaced (D2); installed on opt-in only, never user-level (D3).
+- **Verified platform facts** (Architect report on #750, quoted with URLs):
+  Claude Code loads each CLAUDE.md "whole ... as long as the file is 4 MiB or
+  smaller" and loads rules "without paths frontmatter ... at launch with the
+  same priority as .claude/CLAUDE.md"; `.claude/rules/` "supports symlinks",
+  a target outside the working directory needs the external-import approval.
+  Over the recommended length (200 lines) it warns; it does not truncate.
+  Codex concatenates AGENTS.md root to cwd and "stops adding files once the
+  combined size reaches the limit defined by `project_doc_max_bytes`" (32 KiB
+  default). Not verified: whether project `.codex/config.toml` may set that
+  key, whether path-less rules are re-injected after `/compact`, and whether
+  Codex subagents load AGENTS.md.
+- **D1. One file, both runtimes.** The always-loaded core is
+  `skills/role-contracts/ORCHESTRATOR.md`, byte for byte: plain Markdown, no
+  `@` imports, no `paths:` frontmatter, no runtime-specific syntax. Its rule
+  text does not change in this item.
+  - **Claude Code:** `adopt.sh` creates the symlink
+    `.claude/rules/sdg-orchestrator-core.md` -> the clone's `ORCHESTRATOR.md`,
+    gitignored with the other managed paths, like the `CLAUDE.md` and skill
+    links. A release reaches the next session without re-adoption. The link
+    target lies outside the working directory, so Claude Code may ask once
+    for the external-import approval; the maintainer accepts that risk (D7).
+  - **Codex:** `lib/codex-adoption.py` writes a second managed block
+    (`<!-- spec-driven-guardrails: orchestrator-core begin -->` / `end`)
+    into the project's `AGENTS.md`, after the workflow block, holding the same
+    bytes. It also writes the managed key `project_doc_max_bytes = 65536` in
+    the project `.codex/config.toml` (D4). `status` reports
+    the block stale when its bytes differ from the clone, and reports
+    `instructions-over-limit` when the project's AGENTS.md chain exceeds the
+    effective limit it can read.
+- **D3. Opt-in boundary.** Both installers act only when `answered_yes
+  <project> process-multi-agent-roles` (the shared reader); otherwise they
+  remove their own symlink or block and touch nothing else. Never
+  `~/.claude/CLAUDE.md`, `~/.claude/rules/` or `~/.codex/`. A project that
+  changes from `yes` to `no` without an `adopt.sh` re-run keeps loading the
+  core, with the D2 warning, until the re-run; enforcement stops at once,
+  because the hooks read the answer at run time (D5).
+- **D2. No hook copy.** `session-context.sh` prints no declared file any
+  more, in either runtime. In its place, one warning line without rule text
+  (Product's suggestion on #750, adopted): opted in and the core link is
+  missing or does not resolve to this clone's `ORCHESTRATOR.md`; or not opted
+  in and the link is present. Codex reuses its existing status warning.
+  `--slot`, the marker split in `session-context.sh` and the second
+  `SessionStart` command are removed; one `session-context` command remains.
+- **`Reaches session` vocabulary.** The closed list in `CHANGES.md` replaces
+  `session-context: <path>` with `opt-in-loaded: <path>`: installed by
+  `adopt.sh` into the always-loaded instructions of a project that answered
+  `yes`. `process-multi-agent-roles` declares it for `ORCHESTRATOR.md`; both
+  installers and the warning read the declaration, not a literal path. The
+  *Yes means* sentence about the `SessionStart` hook is rewritten to match
+  (no meaning-version bump, D6; the obligations are unchanged, OR43).
+- **Checks and hooks (binding layer).** Unchanged in this item: the `Agent`
+  dispatch hook (OR7, OR8, OR14, OR30, OR31) still quotes the rule line read
+  from `ORCHESTRATOR.md` at run time, and the merge guard and
+  `model-record-gate.sh` still enforce OR10 and the single-session refusal.
+  New checks or hooks for further rules are named follow-ups, each built once
+  and wired into both runtimes (D1).
+- **AC5 drift.** The repo holds one copy of each rule's text; installed
+  copies are a symlink (Claude) or status-checked bytes (Codex). A new
+  `./check` assertion keeps that true: no hook, gate script or adapter file
+  contains a non-retired `OR<n>` rule line's text; an enforcing script
+  quotes by ID from `ORCHESTRATOR.md`.
+- **Budget.** `CONTEXT_BUDGET_CHARS` stays, for what hooks still print
+  (warnings, `pending-changes.sh`). It no longer measures rule text. S318 is
+  retired. S627 drops its slot-headroom part and keeps its pointer and
+  projection checks. S309 checks A41 5-7 become: the one `session-context`
+  output, worst case, fits the budget and contains no rule line. S708 and S713
+  measure the single output. The only size limit left on the core is Codex's
+  `project_doc_max_bytes`, guarded by the adoption `status` check, not by
+  cutting text.
+- **Behavior runner and stamp.** The runner keeps `ORCHESTRATOR.md` as its
+  system prompt, with hooks disabled; that models always-loaded delivery. The
+  file's bytes and the scenarios do not change, so the stamp hash stays valid
+  and no scenario is listed as intentionally changed (AC7). The two-part
+  headers and the marker line stay for now; folding them into one part is a
+  follow-up that needs a fresh differential run.
+- **#724.** Unblocked: OR46 may grow without a character budget.
+- **D4-D7 (maintainer, 2026-11-28, #750).** D4: the managed
+  `project_doc_max_bytes = 65536` goes in the project `.codex/config.toml`,
+  plus a one-time live observation by the maintainer ("List active
+  instruction sources"). D5: the opt-out lag above is acceptable. D6: no
+  meaning-version bump. D7: symlink, not copy.
+- **Base check (#706, #728, #731).** `adapters/codex/AGENTS.md` (24,416 bytes)
+  plus `ORCHESTRATOR.md` (16,468 bytes) is 40,884 bytes: over Codex's 32 KiB
+  default, under 64 KiB, so D4's key is needed and sufficient. S318, S627,
+  S309, S708 and S713 exist under `test/cases/` and are changed as above.
