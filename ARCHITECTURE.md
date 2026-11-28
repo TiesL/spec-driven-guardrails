@@ -13122,8 +13122,13 @@ D5. No other AC is contradicted or narrowed.
     bytes. It also writes the managed key `project_doc_max_bytes = 65536` in
     the project `.codex/config.toml` (D4). `status` reports
     the block stale when its bytes differ from the clone, and reports
-    `instructions-over-limit` when the project's AGENTS.md chain exceeds the
-    effective limit it can read.
+    `instructions-over-limit` when the project-root `AGENTS.md` exceeds the
+    limit the project config sets (32768 when unset or unreadable). That is
+    a root-file approximation: the global and nested AGENTS.md files count
+    towards Codex's combined limit too, and the D4 live observation covers
+    the real chain. The check runs only when the core block is installed
+    (review round 1 on #751): a project that did not answer yes gets no
+    over-limit line and no exit change from its own AGENTS.md size (D3).
 - **D3. Opt-in boundary.** Both installers act only when `answered_yes
   <project> process-multi-agent-roles` (the shared reader); otherwise they
   remove their own symlink or block and touch nothing else. Never
@@ -13136,6 +13141,11 @@ D5. No other AC is contradicted or narrowed.
   (Product's suggestion on #750, adopted): opted in and the core link is
   missing or does not resolve to this clone's `ORCHESTRATOR.md`; or not opted
   in and the link is present. Codex reuses its existing status warning.
+  A yes answered after the last Codex adoption (no core block yet) keeps
+  `status` at exit 0 with its `pending:` line, and `session-context.sh
+  --runtime codex` passes that `pending:` line through to the session. It
+  holds no rule text, and it names `adopt.sh --runtime codex`. This gives
+  parity with the Claude `yes`-and-link-missing warning (review round 1).
   `--slot`, the marker split in `session-context.sh` and the second
   `SessionStart` command are removed; one `session-context` command remains.
 - **`Reaches session` vocabulary.** The closed list in `CHANGES.md` replaces
@@ -13155,7 +13165,12 @@ D5. No other AC is contradicted or narrowed.
   copies are a symlink (Claude) or status-checked bytes (Codex). A new
   `./check` assertion keeps that true: no hook, gate script or adapter file
   contains a non-retired `OR<n>` rule line's text; an enforcing script
-  quotes by ID from `ORCHESTRATOR.md`.
+  quotes by ID from `ORCHESTRATOR.md`. AC5 is met by construction, not by
+  comparing copies. An exact copy fails `./check` in the commit that adds
+  it, so a green branch never holds a second copy that a later one-place
+  edit could leave stale. A paraphrased copy is out of reach of any exact
+  check, and fuzzy matching is not proportional to that risk. S735 needs
+  no changed-in-one-place case (review round 1, Architect reading of AC5).
 - **Budget.** `CONTEXT_BUDGET_CHARS` stays, for what hooks still print
   (warnings, `pending-changes.sh`). It no longer measures rule text. S318 is
   retired. S627 drops its slot-headroom part and keeps its pointer and
@@ -13192,13 +13207,32 @@ D5. No other AC is contradicted or narrowed.
     `hooks.state` and trust stay unwritten. The project `config.toml`
     holds only the managed key line. Any other config written fails.
   - The `lib/codex-adoption.py` inventory line changes to: config, only
-    the managed `project_doc_max_bytes` for a yes project;
-    trust/permissions/unrelated-hooks/plugins not installed or changed.
+    the managed `project_doc_max_bytes` for a yes project, in effect only
+    for a trusted project; trust/permissions/unrelated-hooks/plugins not
+    installed or changed.
 - **D4 key ownership.** The key is written on yes only and removed on any
   other answer. Removal restores the project-owned bytes and deletes a file
-  that adoption created. A key the project set itself is not owned: it is
-  left alone and `status` reads it as the effective limit.
+  that adoption created. An empty `config.toml` that existed before a yes
+  adoption counts as adoption-created and is deleted on opt-out; this edge
+  is accepted (no bytes are lost). A key the project set itself is not
+  owned, whatever its TOML form (underscores, hex, quoted key, after a
+  table or multi-line array). Any line outside the managed line that names
+  `project_doc_max_bytes` counts as project-owned. Adoption then writes no
+  managed key, so the file never holds a duplicate key. `status` reads a
+  plain-integer project key as the limit and falls back to 32768
+  otherwise, which fails closed.
   `instructions-over-limit` and a stale block make `status` exit non-zero.
+- **Trust precondition (review round 1).** Codex "loads project `.codex/`
+  layers only when you trust the project"
+  (https://learn.chatgpt.com/docs/config-file/config-basic, redirected
+  from developers.openai.com/codex). The managed key is therefore in effect
+  only in a trusted project; so are the project `.codex/hooks.json` guard
+  hooks, which already presume trust (see the Codex hooks entry above).
+  `status` does not read trust: the docs do not say where trust is stored,
+  and reading `CODEX_HOME` would couple to an undocumented format. Instead
+  the inventory line says the key takes effect only for a trusted project.
+  The D4 live observation adds one untrusted case, expected to show
+  `AGENTS.md` truncated.
 - **AC5 seam.** `check-core-rule-copies.sh [dir]`, run from `check`, as S735
   proposes. `ORCHESTRATOR.md` and test fixtures are out of its scope.
 - **Behavior runner and stamp.** The runner keeps `ORCHESTRATOR.md` as its
