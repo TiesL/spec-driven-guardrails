@@ -40,7 +40,7 @@ cc() {
   done
   row() { awk -F'\t' -v i="$1" '$1==i{print $2" "$3" "$4" "$5}' "$t"; }
   [[ "$(row OR46)" == "no-agent-steps judgment 1 "*OB* ]] || echo "row-or46: expected 'no-agent-steps judgment 1' with covered_by OBs, got '$(row OR46)'"
-  for ob in OB92 OB93 OB94 OB95 OB96 OB97; do
+  for ob in OB92 OB93 OB94 OB95 OB97; do
     has "$(awk -F'\t' '$1=="OR46"{print ","$5","}' "$t")" ",$ob," || echo "row-or46-mirror: missing $ob decided-metadata behavior"
   done
   [[ "$(row OR47)" == "fresh-brief-size judgment 2 "*OB* ]] || echo "row-or47: expected 'fresh-brief-size judgment 2' with covered_by OBs, got '$(row OR47)'"
@@ -65,6 +65,7 @@ cc() {
   has "$line" "read-only" || echo "or46-readonly: OR46 (c) is read-only git or gh"
   has "$line" "(d) labels/log;" || echo "or46-label-log: OR46 (d) retains labels/log"
   has "$line" "mirror decided metadata;" || echo "or46-decided-mirror: OR46 (d) permits only decided metadata mirrors"
+  has "$line" "Failed promotion/moved head blocks Review; moved head at Review start: stop. All else:" || echo "or46-moved-head-stop: OR46 must name stop for a moved head at Review start"
   line="$(item OR33 "$o")"
   has "$line" "OR46" || echo "or33-or46: OR33 must say an OR46 step never replaces a stage's dispatch or counts as stage done"
   line="$(item OR13 "$o")"
@@ -153,6 +154,11 @@ sed '/^- OR46 /s/labels\/log;/metadata;/' "$ORCH" > "$d/o-no-label-log.md"
 negc label-log or46-label-log "$d/o-no-label-log.md" "$TSV"
 sed '/^- OR46 /s/mirror decided metadata;/mirror any metadata;/' "$ORCH" > "$d/o-any-metadata.md"
 negc decided-mirror or46-decided-mirror "$d/o-any-metadata.md" "$TSV"
+
+sed '/^- OR46 /s/; moved head at Review start: stop\././' "$ORCH" > "$d/o-no-moved-head.md"
+negc moved-head-unnamed or46-moved-head-stop "$d/o-no-moved-head.md" "$TSV"
+sed '/^- OR46 /s/moved head at Review start: stop/moved head: stop/' "$ORCH" > "$d/o-moved-head-unscoped.md"
+negc moved-head-unscoped or46-moved-head-stop "$d/o-moved-head-unscoped.md" "$TSV"
 
 awk -F'\t' -v OFS='\t' '$1=="OR46"{$5=""} {print}' "$TSV" > "$d/t-nocov.tsv"
 negh or46-uncovered judgment-no-ob "$ORCH" "$d/t-nocov.tsv"

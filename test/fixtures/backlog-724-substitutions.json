@@ -5,6 +5,10 @@
       [
         "(d) set label, edit Pipeline log;",
         "(d) labels/log; mirror decided metadata;"
+      ],
+      [
+        "Failed promotion/moved head blocks Review.",
+        "Failed promotion/moved head blocks Review; moved head at Review start: stop."
       ]
     ],
     "skills/role-contracts/orchestrator-rules.tsv": [

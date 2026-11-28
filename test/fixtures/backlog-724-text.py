@@ -134,18 +134,21 @@ if GROUP == 731:
     before = subprocess.check_output(['git', '-C', str(ROOT), 'show', '626c753e7a725c9057748164c6ffa38da6560290:' + path])
     old = b'(d) set label, edit Pipeline log;'
     new = b'(d) labels/log; mirror decided metadata;'
-    assert before.count(old) == 1
-    expected = before.replace(old, new, 1)
+    old2 = b'Failed promotion/moved head blocks Review.'
+    new2 = b'Failed promotion/moved head blocks Review; moved head at Review start: stop.'
+    assert before.count(old) == 1 and before.count(old2) == 1
+    expected = before.replace(old, new, 1).replace(old2, new2, 1)
     actual = (ROOT / path).read_bytes()
-    check('D4-exact-pair', actual == expected, 'only the sanctioned OR46(d) pair may change the base core')
+    check('D4-exact-pair', actual == expected, 'only the sanctioned OR46(d) and OR46 moved-head pairs may change the base core')
     amendments = json.loads((ROOT / 'test/fixtures/backlog-724-substitutions.json').read_text())
     assert amendments['base'] == '626c753e7a725c9057748164c6ffa38da6560290'
-    assert amendments['changes'][path] == [[old.decode(), new.decode()]], 'D4 literal allowance widened'
+    assert amendments['changes'][path] == [[old.decode(), new.decode()], [old2.decode(), new2.decode()]], 'D4 literal allowance widened'
     assert set(amendments['changes']) == {path, 'skills/role-contracts/orchestrator-rules.tsv', 'test/behavior/orchestrator-scenarios.md'}
     preserved_706 = subprocess.check_output(['git', '-C', str(ROOT), 'show', amendments['base'] + ':test/fixtures/wip-706-substitutions.json'])
     assert preserved_706 == (ROOT / 'test/fixtures/wip-706-substitutions.json').read_bytes(), '#706 source pairs changed'
     for label, mutant in [('omitted', before), ('extra-byte', expected+b'\n'), ('undecided', expected.replace(b'mirror decided metadata', b'mirror any metadata')),
-                          ('repair', expected.replace(b'never repair', b'repair'))]:
+                          ('repair', expected.replace(b'never repair', b'repair')), ('old-line', before.replace(old, new, 1)),
+                          ('variant', expected.replace(b'start: stop.', b'start: stop')), ('unscoped', expected.replace(b'; moved head at Review start: stop', b'; moved head: stop'))]:
         assert mutant != expected, 'D4 control survived: ' + label
     old_table = json.loads((ROOT / 'test/fixtures/wip-706-substitutions.json').read_text())
     historical = subprocess.check_output(['git', '-C', str(ROOT), 'show', old_table['base'] + ':' + path])
