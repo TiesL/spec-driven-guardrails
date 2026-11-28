@@ -109,6 +109,12 @@ core_link_warning() {
       case "$target" in /*) ;; *) target="$(dirname "$link")/$target" ;; esac
       [ "$(physical "$target")" = "$(physical "$workflow_dir/$core_rel")" ] && return 0
     fi
+    # A66 ownership addendum: a regular file or directory there is the
+    # project's; adopt.sh never replaces it, so "restore" would not work.
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+      echo "Warning: this project answered process-multi-agent-roles yes, but $CORE_LINK is a project-owned file, so this session doesn't load the orchestrator core. adopt.sh will not link the core while that file is there; move it to load the core."
+      return 0
+    fi
     echo "Warning: this project answered process-multi-agent-roles yes, but $CORE_LINK is missing or not a link to $workflow_dir/$core_rel, so this session doesn't load the orchestrator core. Run adopt.sh again from the guardrails clone to restore it."
   elif [ -L "$link" ]; then
     echo "Warning: $CORE_LINK still loads the orchestrator core, but this project has not answered process-multi-agent-roles yes. Run adopt.sh again from the guardrails clone to remove it."

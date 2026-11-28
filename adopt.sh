@@ -523,18 +523,19 @@ install_user_skill() {
 # reported. Never user level: --user installs no core.
 CORE_RULE_LINK=".claude/rules/sdg-orchestrator-core.md"
 
-# Ownership by target, not by name: only a symlink whose target ends in the
-# declared core path (any clone location) is ours. A project-owned regular
-# file or a foreign symlink at the path is never replaced, removed or
-# untracked.
+# A66 ownership addendum: the sdg- name and the managed .gitignore block
+# reserve the path, as for CLAUDE.md and .claude/settings.json. Any symlink
+# there is ours, whatever its target (old declared path, moved clone,
+# dangling, foreign): replaced on yes, removed otherwise, never a byte lost.
+# A regular file or directory there is the project's: never replaced,
+# removed, untracked or git-ignored.
 core_rule_ours() {
-  local link="$1/$CORE_RULE_LINK" core
-  core="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
-  [ -n "$core" ] && [ -L "$link" ] || return 1
-  case "$(readlink "$link")" in
-    */"$core") return 0 ;;
-  esac
-  return 1
+  [ -L "$1/$CORE_RULE_LINK" ]
+}
+
+# core_rule_project_owned <project>: a non-symlink sits at the reserved path.
+core_rule_project_owned() {
+  [ -e "$1/$CORE_RULE_LINK" ] && [ ! -L "$1/$CORE_RULE_LINK" ]
 }
 
 install_core_rule() {
@@ -542,8 +543,8 @@ install_core_rule() {
   link="$project_dir/$CORE_RULE_LINK"
   core="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
   if [ -n "$core" ] && answered_yes "$project_dir" process-multi-agent-roles; then
-    if { [ -e "$link" ] || [ -L "$link" ]; } && ! core_rule_ours "$project_dir"; then
-      echo "Not linking the orchestrator core: $link is a project-owned file or foreign link, left untouched." >&2
+    if core_rule_project_owned "$project_dir"; then
+      echo "Not linking the orchestrator core: $link is a project-owned file, left untouched." >&2
       return 0
     fi
     mkdir -p "$(dirname "$link")"
@@ -591,10 +592,13 @@ adopt_project() {
   # other checkout, and without this line, the first re-adoption after W9
   # would leave a pile of untracked files in all four projects.
   untrack_managed_paths "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
-  if core_rule_ours "$project_dir" || { [ ! -e "$project_dir/$CORE_RULE_LINK" ] && [ ! -L "$project_dir/$CORE_RULE_LINK" ]; }; then
+  # The reserved core path is managed unless a project file sits there.
+  local core_managed=()
+  if ! core_rule_project_owned "$project_dir"; then
+    core_managed=("$CORE_RULE_LINK")
     untrack_managed_paths "$project_dir" "$CORE_RULE_LINK"
   fi
-  write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/" "$CORE_RULE_LINK"
+  write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/" ${core_managed[@]+"${core_managed[@]}"}
   install_skills "$project_dir"
   install_git_hooks "$project_dir"
 

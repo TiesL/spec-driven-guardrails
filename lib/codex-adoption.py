@@ -77,13 +77,25 @@ def core_agents(data, core):
     stop = data.index(END) + len(END)
     return data[:stop] + b'\n' + CORE_BEGIN + b'\n' + core + CORE_END + data[stop:]
 
+UNREADABLE = object()
+
 def top_level_limit(data):
-    """A top-level project_doc_max_bytes integer (before the first table), or None."""
+    """The top-level project_doc_max_bytes (before the first table): an int in
+    any TOML integer form, bare or quoted key; UNREADABLE when defined with a
+    value that is not one; None when not defined there."""
     for line in data.decode('utf-8', 'replace').splitlines():
         if line.lstrip().startswith('['): return None
-        m = re.match(r'\s*' + LIMIT_KEY + r'\s*=\s*(\d+)\s*(#.*)?$', line)
-        if m: return int(m.group(1))
+        m = re.match(r'\s*("?)' + LIMIT_KEY + r'\1\s*=\s*([^#]*?)\s*(#.*)?$', line)
+        if m:
+            try: return int(m.group(2).replace('_', ''), 0)
+            except ValueError: return UNREADABLE
     return None
+
+def names_key(data):
+    """Whether a non-comment line names the key (any TOML form: quoted,
+    100_000, hex, after a multi-line array). A comment is no definition."""
+    return any(LIMIT_KEY in line and not line.lstrip().startswith('#')
+               for line in data.decode('utf-8', 'replace').splitlines())
 
 def config_plan(project, install):
     """Return (wanted bytes or None to delete, changed). A project-owned key is
@@ -99,9 +111,9 @@ def config_plan(project, install):
     data = regular(path, CONFIG)
     if data.count(MANAGED_KEY) > 1: raise Conflict(CONFIG + ': duplicated managed key')
     own = data.replace(MANAGED_KEY, b'')
-    # A66 D4: any other line naming the key (any TOML form: quoted, 100_000,
-    # hex, after a multi-line array) makes it the project's; never add ours.
-    wanted = MANAGED_KEY + own if install and LIMIT_KEY.encode() not in own else own
+    # A66 D4: any other non-comment line naming the key makes it the
+    # project's; never add ours.
+    wanted = MANAGED_KEY + own if install and not names_key(own) else own
     if not wanted and data: return None, True
     return wanted, wanted != data or not present
 
@@ -724,10 +736,16 @@ def main():
         size = agents.stat().st_size if installed and agents.is_file() else 0
         config = project / CONFIG
         limit = top_level_limit(config.read_bytes()) if config.is_file() and not config.is_symlink() else None
+        # Fail closed: a defined key whose value status cannot read counts as
+        # the default, and the advice says how to make it readable.
+        advice = '; run adopt.sh --runtime codex again or raise the project key'
+        if limit is UNREADABLE:
+            advice = '; ' + LIMIT_KEY + ' is defined but unreadable: write it as a plain top-level integer'
+            limit = None
         limit = DEFAULT_LIMIT if limit is None else limit
         if size > limit:
             print('instructions-over-limit: AGENTS.md is ' + str(size) + ' bytes, over ' + LIMIT_KEY + ' ' + str(limit)
-                  + '; Codex drops the rest; run adopt.sh --runtime codex again or raise the project key')
+                  + '; Codex drops the rest' + advice)
             stale = True
         for name in ('pre-commit', 'commit-msg', 'pre-push'):
             p = project / '.git/hooks' / name
