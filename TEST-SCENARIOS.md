@@ -6003,33 +6003,45 @@ before making it green; QA assesses that evidence and does not execute
 tests. The `OB<n>` scenarios are not `S` rows: they are nondeterministic
 acceptance evidence (AC12), traced through the inventory's `covered_by`.
 
-### S309 — both parts are within budget in the worst case, the slots split exactly, and the wiring matches K (#499 AC4, AC6)
+### S309 — the one session-context output is within budget in the worst case, carries no rule text, and is wired as one SessionStart command without --slot (#499 AC4, AC6; amended by #750 A66 D2)
 **Covers:** F38
+- Amended by #750 (A66 D2, "S309 checks A41 5-7 become"): the core no longer
+  reaches the session through this output, so the slot split, the K match
+  and the join/unsplit checks are retired with `--slot`; the budget, the
+  `context_chars` method and the docs check stay.
 - Given: a fixture project where every `CHANGES.md` entry that declares
-  `session-context:` is answered yes, the `CLAUDE.md` link is broken so the
-  warning prints, and the clone and project paths are each at least 100
+  `opt-in-loaded:` is answered yes (at least one must exist) and
+  `process-multi-agent-roles` is yes, the `CLAUDE.md` link is broken and the
+  core link `.claude/rules/sdg-orchestrator-core.md` is missing so both
+  warnings print, and the clone and project paths are each at least 100
   characters; `settings/session-hooks.json`; `CONTEXT_BUDGET_CHARS` sourced
   from `lib/context-budget.sh`, never a literal in the test
-- When: `session-context.sh --slot <n>` runs for n = 1..K, the unsplit
-  output is produced, and the settings are read
-- Then: for each n, `context_chars` of the output is at most the budget, and
-  a failure names the measured size, the slot and the budget; slot 1 is the
-  warning plus part 1 (starts with the warning, then the part 1 heading),
-  slot 2 is part 2 (starts with the part 2 heading); no output contains the
-  marker line `<!-- session-context: slot -->`; slots 1..K joined equal the
-  output without `--slot`, and that output is the file with the marker line
-  dropped (the Codex runtime's output likewise); `--slot 0`, `--slot -1`,
-  `--slot x` and `--slot` with no value exit 2 and read nothing (a
-  missing-file fixture shows no read happened); `--slot 3` prints nothing
-  and exits 0; the chunk count equals K, equals the number of commands in the
-  matcher-less `SessionStart` group that carry `--slot`, and those are
-  exactly `--slot 1` .. `--slot K`; the CHANGES.md **Reaches session**
+- When: `session-context.sh <project>` and `session-context.sh --runtime
+  codex <project>` run once each, and the settings are read
+- Then: `context_chars` of each output is at most the budget, and a failure
+  names the measured size and the budget; neither output contains the text
+  of any `- OR<n>` line of `ORCHESTRATOR.md` (whitespace normalized), a
+  `# Multi-agent pipeline run rules` heading or the marker line; the Claude
+  output starts with the CLAUDE.md warning and has at least two `Warning:`
+  lines; exactly one `SessionStart` command runs `session-context.sh` and
+  the settings carry no `--slot`; `--slot 1`, `--slot` and `--runtime codex
+  --slot 1` exit 2 and print nothing; the CHANGES.md **Reaches session**
   field rules and PRD F38 state the number equal to the constant
-- Red on `main` b43ee55: one chunk of about 14,300 characters over 9,000;
-  `--slot` is an unknown option; no `lib/context-budget.sh`; one
-  session-context command. Negative controls: a fixture part padded to
-  budget + 1 fails naming slot and size; a third `--slot 3` command in the
-  settings fails the K match; a doc number different from the constant fails
+- Falsifier: rule text, a part heading or the marker in either output; a
+  second session-context command or a `--slot` left in the settings; a
+  removed option silently accepted; the output over budget passing; a doc
+  number different from the constant passing
+- Test seam: the script output and the settings as data. Negative controls:
+  a planted second session-context command and a planted `--slot` argument
+  are each caught; a text of budget + 1 characters fails naming size and
+  budget; a text carrying the OR10 line is caught; a doc number of 8,500
+  fails
+- Case file: `test/cases/s309_session_context_slots_within_budget.sh`
+  (QA-owned; name kept for history)
+- Red-before-green at `06cf591`: no entry declares `opt-in-loaded:`; two
+  session-context commands with `--slot`; `--slot 1` exits 0 and prints part
+  1; each output is about 16,700-17,000 characters and prints every rule
+  line; no core-link warning
 
 ### S310 — worst-case pending-changes output is within the same budget (#499 AC5)
 **Covers:** F38
@@ -6424,40 +6436,6 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   with a fifth step kind added; OR46 row `covered_by` empty; OR13 row still
   named `continuing-other-roles-undecided`; OR48 without the doc-only
   clause; a thresholds change (100k to 200k) in OR13 only
-
-### S318 — both injected slots stay inside the context budget with the new rules (#532 AC8, C5; A42 budget)
-**Covers:** F38
-- Seam: `session-context.sh --runtime claude --slot n <project>` output
-  length against `CONTEXT_BUDGET_CHARS` (sourced, never a literal); this is
-  S309's per-slot assertion on the real tree, plus the extra gates below
-- Given: the real tree and an opted-in fixture project, after the rewrite
-- When: S309's budget test runs on slots 1 and 2
-- Then: slot 1 and slot 2 are each at most `CONTEXT_BUDGET_CHARS` (9000),
-  K stays 2 (no third `--slot` command); slot 2 headroom is expected to be
-  tight, about 700-870 characters, so the test also records both sizes in
-  its failure message and fails below a floor of 500 characters of
-  slot-2 headroom (A41's revisit line), naming the slot and size; if slot 2
-  measures above 8,500 the fallback moves OR47 and OR48 to part 1 as a
-  visible `part` change in the inventory and in S317's part lists, and the
-  test passes only when inventory, core headers and S317 agree (no half
-  move); slot 1 after the move stays under 9,000
-- Red on `e8e8fe5` (before the rule text lands): the test is green on the
-  old text, so the red proof is the negative controls: part 2 padded to
-  budget + 1 fails naming slot 2 and size; a rule block duplicated into
-  both parts fails the budget; a third `--slot` fails the K match. The
-  Developer shows the measured slot sizes before and after in the PR
-- Amended by #646 (AC9, A58 D2): slot 1 headroom after the OR11/OR43/OR6 pointer edits (+63 characters) must stay at least 500 characters; the test records the size and names the slot on failure (S627).
-
-- Amended by #652 (A57, AC1-AC3): the headroom floor of 500 is asserted for
-  EACH slot, not slot 2 only (slot 1 carries the CLAUDE.md-link warning on
-  top of part 1 and is the larger on macOS). Red on the tree at `0672da0`:
-  slot 1 measures 8,668 (headroom 332). Negative control: part 1 grown to
-  headroom FLOOR-1 is refused by the slot-1 floor rule. AC2 control: one
-  non-whitespace character appended to the part of the larger slot leaves
-  both slots at or above the floor (it measures in the control's own short
-  sandbox path, so the absolute size is lower than the real fixture).
-  Falsifier: slot 1 over the floor-minus-one boundary passing silently, or a
-  one-character core edit tipping a slot below the floor.
 
 ### S319 — `pipeline-log-fields.sh` reports dispatch lines missing a field and agents over the flag limit without a reason (#532 AC7, C4; A42)
 **Covers:** F38
@@ -8257,7 +8235,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: OR31, the instructing model-choice and pre-merge-review commands, S203/S238/S311 pins, and the unchanged marker grammar owners.
 - When: the docs and independently mutated copies are checked.
-- Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
+- Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S309 remains the context-budget guard (#750 A66 retired S318).
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ## Codex guard bundle continued (issue #594)
@@ -10648,6 +10626,7 @@ C6.COMPLETE: deferred to #701, not asserted red. The completeness proof is not c
 
 ### S627 — Branch core snapshot, pointers, budget and projection evidence (#646; A60 + addendum 1)
 **Covers:** F74
+- Amended by #750 (A66 Budget): the slot-headroom part is retired. The core no longer reaches the session through a capped hook output, so the S318 slot-1 remeasure, the 500-character floor, the relative OR11 growth, the boundary control and the short/long path agreement are no longer asserted. The pointer checks, the `#511` and hand-edited-projection mutations, the `#646` meaning check and the protected A exact allowances stay as written below.
 - Amended by A60: continuing requirement; supersedes this scenario's A58 mechanism-specific assertions.
 - Given: recorded A60 input A (5117885), its four protected core/scenario/pin/stamp artifacts and branch-added OR6/OR11/OR43/WORKFLOW accepted-delegation pointers; final #646 bytes. These are B branch-state checks, not an assertion that the added pointers or these complete artifact bytes existed on M or R.
 - When: compare protected bytes against that input and remeasure S318 slot 1 with configured CONTEXT_BUDGET_CHARS; check existing textual pins/generated projections.
@@ -12597,13 +12576,13 @@ Shared seams for S701-S708 and S710-S711 (decided by QA, agreed before the tests
 
 ### S708 — Session start warns once when the main session looks routed (#707; AC9)
 **Covers:** F75
-- Given: `session-context.sh --runtime claude` against a fixture project, in a fixture `HOME` and `CLAUDE_CONFIG_DIR`, with a baseline run (nothing set); and runs where (a) the inherited `ANTHROPIC_BASE_URL` is non-first-party; (b) the user settings file, read directly, sets `env.ANTHROPIC_BASE_URL` non-first-party; (c) the project `.claude/settings.json` does; (d) both (a) and (b); (e) the variable is `https://api.anthropic.com`; (f) a settings file is unparsable or unreadable; (g) the settings file only mentions the name inside a hook command; (h) the inherited value is set but empty, `https://api.anthropic.com/` and `https://api.anthropic.com.evil.example` (same first-party predicate as S705); (i) the project `.claude/settings.local.json` sets it; (j) a managed-settings fixture (the path in `SDG_ROUTE_MANAGED_SETTINGS`) holds the URL and nothing else does; (k) odd settings: zero-byte, whitespace-only, top-level `[]`, `"env":"x"`, binary bytes and mode 000. Each of (a)-(d) also runs once with a URL value carrying a distinctive token and a fixture path (to check the line carries neither). Plus the worst case for the budget: every other slot filled as far as `CONTEXT_BUDGET_CHARS` allows (as S309 builds it), with condition (d).
+- Given: `session-context.sh --runtime claude` against a fixture project, in a fixture `HOME` and `CLAUDE_CONFIG_DIR`, with a baseline run (nothing set); and runs where (a) the inherited `ANTHROPIC_BASE_URL` is non-first-party; (b) the user settings file, read directly, sets `env.ANTHROPIC_BASE_URL` non-first-party; (c) the project `.claude/settings.json` does; (d) both (a) and (b); (e) the variable is `https://api.anthropic.com`; (f) a settings file is unparsable or unreadable; (g) the settings file only mentions the name inside a hook command; (h) the inherited value is set but empty, `https://api.anthropic.com/` and `https://api.anthropic.com.evil.example` (same first-party predicate as S705); (i) the project `.claude/settings.local.json` sets it; (j) a managed-settings fixture (the path in `SDG_ROUTE_MANAGED_SETTINGS`) holds the URL and nothing else does; (k) odd settings: zero-byte, whitespace-only, top-level `[]`, `"env":"x"`, binary bytes and mode 000. Each of (a)-(d) also runs once with a URL value carrying a distinctive token and a fixture path (to check the line carries neither). Plus the worst case for the budget: S309's worst-case fixture (every `opt-in-loaded:` entry yes, both warnings printed, 100-character paths; amended by #750 A66: one output, no slots), with condition (d).
 - When: the script runs for each case with `--runtime claude`, and again with `--runtime codex` for the baseline and for (a)-(d), and its output is compared with the baseline.
-- Then: (a), (b), (c), (d), (h) and (i) add exactly one line (the output with the baseline removed is one fixed line of at most 160 characters containing `ANTHROPIC_BASE_URL`, with no path and no URL value, and identical in every case); (d) is still one line, not two, whatever the number of sources. (e), (g), (j) and the baseline add nothing, byte for byte (a managed-settings file with the URL adds no line). (f) and (k) add nothing, the script still exits 0, prints no error and prints the rest (fail open). `--runtime codex` output is byte-identical with and without the condition, for (a)-(d). The total output, in the worst case, is at most `CONTEXT_BUDGET_CHARS`, checked with the same method as S309. The warning does not depend on whether `process-model-routing` was answered. S309 and S318 output is unchanged with a routed `ANTHROPIC_BASE_URL` exported in the calling shell once `sandbox_create` unsets it (test hygiene above).
+- Then: (a), (b), (c), (d), (h) and (i) add exactly one line (the output with the baseline removed is one fixed line of at most 160 characters containing `ANTHROPIC_BASE_URL`, with no path and no URL value, and identical in every case); (d) is still one line, not two, whatever the number of sources. (e), (g), (j) and the baseline add nothing, byte for byte (a managed-settings file with the URL adds no line). (f) and (k) add nothing, the script still exits 0, prints no error and prints the rest (fail open). `--runtime codex` output is byte-identical with and without the condition, for (a)-(d). The total output, in the worst case, is at most `CONTEXT_BUDGET_CHARS`, checked with the same method as S309, and carries the warning line exactly once (#750: the one output, no slot). The warning does not depend on whether `process-model-routing` was answered. S309 output is unchanged (S318 retired by #750) with a routed `ANTHROPIC_BASE_URL` exported in the calling shell once `sandbox_create` unsets it (test hygiene above).
 - Falsifier: no line, two lines, a line for a first-party value, a line for the managed file, a line that carries the path or the value, a line longer than 160 characters or differing per source, a line for the Codex runtime, a warning that misses set-but-empty or the trailing-slash value, a line when only the name appears in unrelated text, a crash or non-zero exit on an unparsable file, the output exceeding the budget, or the warning printed only when the environment variable (not the file) is set (or the reverse).
 - Test seam: the script's output under fixture environments. Kill individually: environment-only, file-only, one-line-per-source, grep instead of key lookup, crash on bad file, budget overflow, reads the managed file, codex line, line with path or value, over-long line, local-settings-file ignored.
 - Case file: `test/cases/s708_session_context_routed_warning.sh` (Developer-owned).
-- Red-before-green: (a)-(d) fail first with no warning; the budget case is checked against S309's own bookkeeping so the new line is counted in a slot, not appended outside it.
+- Red-before-green: (a)-(d) fail first with no warning; the budget case is checked against S309's own bookkeeping so the new line is counted in a slot, not appended outside it. Amended by #750 (A66): the budget case measures the one output; at `06cf591` it is red because no entry declares `opt-in-loaded:` and the output (core still printed) is about 17,100 characters.
 
 ### S709 — The docs say what routing does and does not do, in the right place only (#707; AC10 and the ARCHITECTURE.md decision)
 **Covers:** F75
@@ -12648,13 +12627,13 @@ Shared seams for S701-S708 and S710-S711 (decided by QA, agreed before the tests
 
 ### S713 — The opt-in row exists, asks only projects that run the multi-agent roles, says what `no` leaves compressed, and injects no session text (#707; Scope: opt-in, AC4, AC10 second half)
 **Covers:** F75
-- Given: `CHANGES.md` after the change, `lib/changes.sh`, and fixture projects: (a) one that answered `process-multi-agent-roles` yes; (b) one that answered it no; (c) one with no answer file; (d) four projects with `process-model-routing` answered yes, no, pending and with the row absent; and a CHANGES.md fixture entry with a misspelled predicate. For the session text: the S318 worst-case fixture (both slots filled as far as the budget allows) in addition to a plain project. For the row text: the not-yes wording checker of the shared seams.
+- Given: `CHANGES.md` after the change, `lib/changes.sh`, and fixture projects: (a) one that answered `process-multi-agent-roles` yes; (b) one that answered it no; (c) one with no answer file; (d) four projects with `process-model-routing` answered yes, no, pending and with the row absent; and a CHANGES.md fixture entry with a misspelled predicate. For the session text: the S309 worst-case fixture (amended by #750 A66: every `opt-in-loaded:` entry and `process-multi-agent-roles` yes, one output) in addition to a plain project. For the row text: the not-yes wording checker of the shared seams.
 - When: `predicate_true` is evaluated for the new row's predicate on each project, `pending-changes.sh` and `adopt.sh` run on (a)-(c), `session-context.sh --runtime claude` (and `--runtime codex`) runs on the four projects of (d), plain and worst case, and the text of the `## process-model-routing` entry (all its fields) is read.
-- Then: `CHANGES.md` has a `## process-model-routing` entry with `Default: question`, `Applies if: uses-multi-agent-roles` (the predicate exists in `lib/changes.sh` as a `predicate_true` arm named exactly `uses-multi-agent-roles`, true when `process-multi-agent-roles` is answered yes through `answered_yes`, and true only for (a)), `Reaches session: none` (no `session-context:` path and no file for the row), and the field set required of every entry (the existing CHANGES.md format checks pass). The row's "Yes means" says `route-child.sh` reads this answer and routes the children started through it, and promises no session text. The row text passes the not-yes wording checker: (n1), (n2), and (n3) (it states that on `no` a Codex child that the user's own config routes through the proxy still runs there compressed). Where the row names the loopback variable, it names both `NO_PROXY` and `no_proxy`. `pending-changes.sh` lists the row for (a) and not for (b) or (c); `adopt.sh` does not seed the row (a `question` default) and its fresh adoption row count is unchanged except by this row's absence from seeding. The output of `session-context.sh --runtime claude` (every slot, whole output) is byte-identical for `process-model-routing` yes, no, pending and absent, in the plain and in the worst-case fixture; the same holds for `--runtime codex`; the worst-case total stays at most `CONTEXT_BUDGET_CHARS` (S318's headroom floor is unchanged). The misspelled predicate evaluates false (the existing typo rule), never true.
+- Then: `CHANGES.md` has a `## process-model-routing` entry with `Default: question`, `Applies if: uses-multi-agent-roles` (the predicate exists in `lib/changes.sh` as a `predicate_true` arm named exactly `uses-multi-agent-roles`, true when `process-multi-agent-roles` is answered yes through `answered_yes`, and true only for (a)), `Reaches session: none` (no `session-context:` or `opt-in-loaded:` path and no file for the row), and the field set required of every entry (the existing CHANGES.md format checks pass). The row's "Yes means" says `route-child.sh` reads this answer and routes the children started through it, and promises no session text. The row text passes the not-yes wording checker: (n1), (n2), and (n3) (it states that on `no` a Codex child that the user's own config routes through the proxy still runs there compressed). Where the row names the loopback variable, it names both `NO_PROXY` and `no_proxy`. `pending-changes.sh` lists the row for (a) and not for (b) or (c); `adopt.sh` does not seed the row (a `question` default) and its fresh adoption row count is unchanged except by this row's absence from seeding. The output of `session-context.sh --runtime claude` (the one output) is byte-identical for `process-model-routing` yes, no, pending and absent, in the plain and in the worst-case fixture; the same holds for `--runtime codex`; the worst-case total stays at most `CONTEXT_BUDGET_CHARS` (#750 retired S318's headroom floor). The misspelled predicate evaluates false (the existing typo rule), never true.
 - Falsifier: any mutant or planted row text of the kill list below passes; in particular the row is offered to (b) or (c), seeds `yes`, changes session output, or fails the not-yes wording checker.
-- Test seam: `predicate_true`, `pending-changes.sh`, `adopt.sh` and `session-context.sh` on fixture projects, comparing whole outputs byte for byte; the shared not-yes wording checker on the row text. Kill individually, each as a planted mutant or planted row text that must turn the case red: always-true predicate, always-false predicate, wrong predicate name, seeds-yes, row injects text (for yes only, for everyone, or with the URL), slot-2 overflow, the `d51ba0d` row text ("On `no` the wrapper runs the command unchanged." with no compression sentence), a planted "Answer process-model-routing no to run children direct.", the row naming `NO_PROXY` only.
+- Test seam: `predicate_true`, `pending-changes.sh`, `adopt.sh` and `session-context.sh` on fixture projects, comparing whole outputs byte for byte; the shared not-yes wording checker on the row text. Kill individually, each as a planted mutant or planted row text that must turn the case red: always-true predicate, always-false predicate, wrong predicate name, seeds-yes, row injects text (for yes only, for everyone, or with the URL), worst-case overflow, the `d51ba0d` row text ("On `no` the wrapper runs the command unchanged." with no compression sentence), a planted "Answer process-model-routing no to run children direct.", the row naming `NO_PROXY` only.
 - Case file: `test/cases/s713_route_adoption_row.sh` (Developer-owned).
-- Red-before-green: fails first with no row; the existing adoption seeding and count cases (R1, S9 and the row-count cases) and S309/S318 stay green and are rerun by the Developer. At `d51ba0d` the row-text assertions are red: the row has no compression sentence for Codex under `no` (n3) and names "the loopback `NO_PROXY`" without `no_proxy`.
+- Red-before-green: fails first with no row; the existing adoption seeding and count cases (R1, S9 and the row-count cases) and S309/S318 stay green and are rerun by the Developer (#750: S309 only; S318 is retired). At `d51ba0d` the row-text assertions are red: the row has no compression sentence for Codex under `no` (n3) and names "the loopback `NO_PROXY`" without `no_proxy`.
 
 ## #734 — holistic review corrections on release PR #733
 
@@ -12764,3 +12743,162 @@ non-OPEN blocks; the accepted risk permits mistyped or invented numbers with a w
 - Then: apply only the declared pairs, once each, above the existing historical allowances. OR46 uses the exact A64 addendum 2 whole-line replacement; OR48 retains addendum 1's exact pair. A64 addendum 3 retains the regex pair and uses complete historical `REASON_COMMIT_ON_MAIN` and `REASON_BRANCH_NO_ISSUE` assignments as old sides for the exact new WIP-first messages; the overlapping branch-prefix pair is removed. Count-1 application and reverse restoration remain mandatory, with independent omitted/wrong-pair and actual extra-byte rejection in S593/S725. Independently falsify generated-only/unedited/WIP, every affected check/brief/exit 0, valid record/OR34 and each of the three exemption objects, with separate record and exemption witnesses. Reject each omitted pair, wrong or extra bytes, and each independent duty deletion within the whole-line replacements; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions. S627 retains A and the unchanged pins, permits only the shared core/scenario pairs and S548's genuine final stamp digest, and rejects omitted amendments, arbitrary stamps and extra bytes. No new digest authority or baseline replacement is permitted.
 - Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment or deleted duty, or hand-writing a stamp. DEV706-1 is falsified by unchanged `./test/run.sh s309` and `./test/run.sh s318`: K=2, budget 9,000, headroom floor 500 in each slot, fallback 8,500 and every padding/one-character control remain. Both are red for the budget reason at 579d3c72c52cf78eaa227cdb4a988bb7d9f08884; the exact shorter replacements must make them green. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
 - Case file: `test/cases/s725_exact_freeze_allowances.sh`; amended freeze consumers remain strict. Exact substitution values are a concrete Developer implementation target; any owning-role change needs QA reconciliation of these oracles, not loosening them to candidate bytes.
+
+## #750 — orchestrator core through the opt-in always-loaded file (epic #742; A66; F38)
+
+The public seams are `adopt.sh` (both runtimes, including `--status --runtime
+codex`), `session-context.sh`, `settings/session-hooks.json`, the files a fixture
+project ends up with, and a new `./check` script. No model or network call.
+Shared fixture helpers: `test/fixtures/core-delivery-750.sh`. Numbers start at
+S732 because S726-S731 are taken on the parked #724 branch.
+
+Changed by A66: S309 (one output, no rule text, no `--slot`), S627 (slot-headroom
+part retired), S708 and S713 (one output, S309's worst case). Retired: S318 (the
+per-slot budget, floor and OR47/OR48 fallback). Its inventory-core part
+agreement stays covered by S311; the budget of what hooks still print stays in
+S309 and S310. Behavior scenarios (OB) and the stamp are unchanged (AC7): the
+runner already loads `ORCHESTRATOR.md` as its system prompt.
+
+### S732 — Claude: opt-in yes links the always-loaded core; no or unanswered installs nothing; only the own link is removed; never user-level (#750 AC1, AC3; A66 D1, D3, D7)
+**Covers:** F38
+- Given: a sandbox clone used as `SPEC_DRIVEN_GUARDRAILS_DIR`; a fixture HOME
+  with user-owned `~/.claude/CLAUDE.md`, `~/.claude/rules/mine.md` and
+  `~/.codex/config.toml`; fresh projects that answered
+  `process-multi-agent-roles` yes, no, pending, not at all (row absent) and
+  with no answer file; a project with a project-owned regular file at
+  `.claude/rules/sdg-orchestrator-core.md`; a second clone whose
+  `opt-in-loaded:` declaration names another file
+- When: `adopt.sh <project>` runs (twice for yes; again after yes changes to
+  no), and `adopt.sh --user` runs once
+- Then: `CHANGES.md` declares `opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md`
+  for `process-multi-agent-roles` and no `session-context:` value; for yes,
+  `.claude/rules/sdg-orchestrator-core.md` is a symlink that resolves to the
+  clone's `ORCHESTRATOR.md` with identical bytes, the managed `.gitignore`
+  block lists it, git ignores it and `git status` does not show it; a
+  re-run keeps the same link; a change to the clone's `ORCHESTRATOR.md`
+  shows through the link without re-adoption; `ORCHESTRATOR.md` has no
+  frontmatter and no `@` import; for no, pending, row absent and no answer
+  file nothing is linked and no project file carries core rule text; after
+  yes changes to no a re-run removes the link, keeps a project-owned
+  `.claude/rules/own.md` and the clone's file; a project-owned regular file
+  at the link path is left byte for byte; the second clone's link resolves
+  to its declared file; project adoptions write nothing under HOME,
+  `--user` writes only its trigger, no user-level file carries core rule
+  text and `~/.claude/rules/sdg-orchestrator-core.md` does not exist
+- Falsifier: a literal path instead of the declaration; a copy instead of a
+  link; the link tracked or shown by git; a link for no or unanswered; a
+  no re-run that leaves the link or removes a project-owned file; anything
+  written to `~/.claude` or `~/.codex` by a project adoption
+- Test seam: filesystem after `adopt.sh`; rule text found by
+  `core750_rule_hits` (live `- OR<n>` line text, whitespace normalized)
+- Case file: `test/cases/s732_core_claude_opt_in_link.sh` (QA-owned)
+- Red-before-green at `06cf591`: no `opt-in-loaded:` declaration, no link,
+  no `.gitignore` entry; the release and declaration cases fail on the
+  missing link. The no, unanswered, foreign-file and user-level controls are
+  green and must stay green
+
+### S733 — Codex: opt-in yes installs the byte-identical core block and the managed project_doc_max_bytes key; status reports a stale block and instructions-over-limit; no or unanswered installs nothing; never ~/.codex (#750 AC1, AC3, AC4; A66 D1, D3, D4)
+**Covers:** F38
+- Given: a sandbox clone; a fixture HOME with a user-owned
+  `~/.codex/config.toml`; an opted-in project with project-owned text at the
+  top of `AGENTS.md` and a project-owned `.codex/config.toml` holding a
+  top-level key and a `[profiles.fixture]` table; fresh projects that
+  answered no, pending or not at all
+- When: `adopt.sh --runtime codex <project>` and `adopt.sh --status
+  --runtime codex <project>` run, with `session-context.sh --runtime codex`,
+  on: a fresh install; one byte of the core block edited; a later clone
+  `ORCHESTRATOR.md`; the managed key removed; the AGENTS.md chain padded past
+  65,536 bytes; then a no re-run
+- Then: for yes, `AGENTS.md` holds the workflow block and, after it, exactly
+  one block framed by `<!-- spec-driven-guardrails: orchestrator-core begin -->`
+  and `... end -->` whose bytes between the begin line and the end marker
+  equal `ORCHESTRATOR.md`; project-owned text stays first; the config has
+  `project_doc_max_bytes = 65536` exactly once as a top-level key (before
+  the first table header) and keeps every project-owned line; status exits
+  0 without `instructions-over-limit` and `session-context.sh --runtime
+  codex` prints no warning and no core rule text; an edited block makes
+  status exit non-zero naming `AGENTS.md` as stale, and the session-context
+  Codex warning prints; re-adoption restores the installed bytes; a clone
+  release makes status exit non-zero and re-adoption installs the new bytes;
+  without the key (32 KiB default) and with the chain above 65,536 bytes,
+  status reports `instructions-over-limit` (non-zero without the key); for
+  no, pending and row absent the workflow block is installed, no core block,
+  no core rule text and no `.codex/config.toml` is written; after yes
+  changes to no a re-run removes the core block and both markers, leaves the
+  workflow block and project-owned text unchanged and returns the config to
+  the project-owned bytes; nothing under HOME changes
+- Falsifier: a block whose bytes differ from the core; the key written in a
+  table, twice, or into `~/.codex`; status silent on a stale block or an
+  over-limit chain; a block or key for no or unanswered; an opt-out that
+  leaves the block or key or changes project-owned bytes
+- Test seam: `lib/codex-adoption.py` through `adopt.sh`; the top-level TOML
+  key read by `core750_toml_top`; the block read by `core750_block`
+- Case file: `test/cases/s733_core_codex_opt_in_block.sh` (QA-owned)
+- Red-before-green at `06cf591`: no core block, no key; status is silent on
+  a clone release and has no `instructions-over-limit`; session-context
+  Codex output prints the core. The clean-status, no/unanswered and HOME
+  controls are green and must stay green
+
+### S734 — Session start prints one warning line, without rule text, when an opted-in project's core link is missing or wrong or a not-opted-in project still has it; enforcement follows the answer at once (#750 AC3, AC6; A66 D2, D3, D5)
+**Covers:** F38
+- Given: a sandbox clone, a second clone, and projects whose `CLAUDE.md`
+  links to the first clone's `WORKFLOW.md`, answering yes, no, pending or
+  with no answer file, with the core link correct, missing, broken,
+  pointing at the second clone's `ORCHESTRATOR.md`, or replaced by a
+  regular-file copy; a third clone whose `opt-in-loaded:` declaration names
+  another file
+- When: `session-context.sh --runtime claude <project>` runs; and
+  `hooks/agent-dispatch` runs with `CLAUDE_PROJECT_DIR` on a role dispatch
+  without the `ROLE SESSION:` prefix, for yes and for no with the link
+  still present
+- Then: yes with the correct link, and no or no answer file without a link,
+  print nothing at all; yes with the link missing, broken, to another
+  clone or a copy, and no, pending or no answer file with the link present
+  (the D5 lag), each print exactly one line that starts with `Warning:`,
+  names `sdg-orchestrator-core.md` and `adopt.sh`, and carries no core rule
+  text, no part heading and no `OR<n>` ID; exit 0 in every case; with the
+  third clone, a link to the declared file prints nothing and a link to
+  `ORCHESTRATOR.md` warns; the dispatch hook denies (exit 2) for yes and
+  allows (exit 0) for no although the link is present
+- Falsifier: the core printed; two lines; a warning for a correct link or
+  for a not-opted-in project without a link; no warning in the lag state;
+  a literal path instead of the declaration; enforcement that follows the
+  link instead of the answer
+- Test seam: whole stdout of the script compared with the empty baseline;
+  the dispatch adapter's exit status (fixture prompt from
+  `agent-dispatch-helpers.sh`)
+- Case file: `test/cases/s734_core_link_warning_line.sh` (QA-owned)
+- Red-before-green at `06cf591`: opted-in projects print the core (63
+  lines) and no link warning; the lag cases print nothing. The silent
+  not-opted-in cases and both enforcement controls are green and must stay
+  green
+
+### S735 — `./check` fails when a hook, gate script or adapter file carries a live core rule line's text; quoting by OR ID passes (#750 AC5; A66 AC5 drift)
+**Covers:** F38
+- Given: sandbox copies of the tree: the shipped tree; copies with one rule
+  line's text planted in `hooks/agent-dispatch.py` (OR10),
+  `hooks/git-guardrails` (OR11), `adapters/codex/INSTRUCTIONS.md` (OR30,
+  re-wrapped at 30 columns), `adapters/claude/INSTRUCTIONS.md` (OR8),
+  `skills/pre-merge-review/model-record-gate.sh` (OR10, re-wrapped) and
+  `session-context.sh` (OR1); a copy whose hook comment names OR7, OR8,
+  OR14, OR30 and OR31 by ID only
+- When: `check-core-rule-copies.sh <dir>` runs on each copy; `check` is read
+- Then: the script exists, is executable and `check` runs it; the shipped
+  tree exits 0; every planted copy exits non-zero with a line naming the
+  file and the OR ID; whitespace differences (re-wrapping) do not hide a
+  copy; the ID-only comment exits 0. Scope: every file under `hooks/` and
+  `adapters/`, every `hook:` and `gate:` path declared in `CHANGES.md`, and
+  `session-context.sh`; a rule line is `- OR<n> <text>` in
+  `skills/role-contracts/ORCHESTRATOR.md`, a copy is that whole text,
+  whitespace normalized
+- Falsifier: a planted copy passing; a failure that does not name file and
+  ID; a re-wrapped copy passing; an ID reference failing; the script not
+  wired into `check`
+- Test seam: QA proposal, because A66 names only "a new `./check`
+  assertion": a standalone `check-core-rule-copies.sh [dir]` like the other
+  `check-*.sh` scripts. A different name or entry point needs QA to update
+  this case, not a looser oracle
+- Case file: `test/cases/s735_core_rule_text_single_copy.sh` (QA-owned)
+- Red-before-green at `06cf591`: the script does not exist. A probe of the
+  current tree with the same matcher finds no copy, so the clean case is
+  expected green once the script lands
