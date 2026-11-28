@@ -37,8 +37,10 @@ Per entry:
     project file, a script that runs on its own). Stands alone.
   - `always-loaded: <path>` — text every session loads (`WORKFLOW.md`, the
     `CLAUDE.md` link target, including its routing table).
-  - `session-context: <path>` — printed at session start by
-    `session-context.sh`, only in a project that answered this entry `yes`.
+  - `opt-in-loaded: <path>` — installed by `adopt.sh` into the
+    always-loaded instructions of a project that answered this entry `yes`
+    (#750, A66): the Claude rules link `.claude/rules/sdg-orchestrator-core.md`
+    and the Codex `AGENTS.md` orchestrator-core block. Never user-level.
   - `hook: <path>` — a Claude Code or git hook that enforces it.
   - `gate: <path>` — a pre-merge gate script that detects it.
 
@@ -48,18 +50,17 @@ Per entry:
   for a given *Yes means* is the reviewer's judgment, not checked. Adding or
   changing this field is not a meaning change: no **Meaning version** bump.
 
-  Budget (#499, A41): Claude Code keeps at most 10,000 characters of one
-  hook's output in context. Every session-start hook output must stay within
-  `CONTEXT_BUDGET_CHARS` (9,000 characters, defined once in
-  `lib/context-budget.sh`) in its worst case: each `session-context.sh
-  --slot <n>` output (every `session-context:` entry answered yes, the
-  `CLAUDE.md` warning printed, 100-character paths) and `pending-changes.sh`
-  (nothing answered). `./check` enforces it (S309, S310). A file split into
-  slots by `<!-- session-context: slot -->` lines needs one `--slot`
-  command per chunk in `settings/session-hooks.json`. To make room when an
-  addition or extension does not fit: tighten the core text, or move a rule
-  into a hook or gate. Never move it into a file a session must choose to
-  read.
+  Budget (#499, A41, A66): Claude Code keeps at most 10,000 characters of
+  one hook's output in context. Every session-start hook output must stay
+  within `CONTEXT_BUDGET_CHARS` (9,000 characters, defined once in
+  `lib/context-budget.sh`) in its worst case: the one `session-context.sh`
+  output (every `opt-in-loaded:` entry answered yes, the `CLAUDE.md` and
+  core-link warnings printed, 100-character paths) and `pending-changes.sh`
+  (nothing answered). `./check` enforces it (S309, S310). Hooks print no
+  rule text: an `opt-in-loaded:` file is loaded as instructions, not
+  printed, and its only size limit is Codex's `project_doc_max_bytes`,
+  checked by `adopt.sh --status --runtime codex`. Never move a rule into a
+  file a session must choose to read.
 - **PR** — the linkback (W21, F15): the PR that establishes this. That's the
   PR that actually delivers the underlying capability, not necessarily the
   PR that last touched this row. On a later rewrite, rename, or split (like
@@ -542,11 +543,13 @@ the shared parser warns if it has no `Applies if`.
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, using `ROLE SESSION: Developer` for Implementation, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
-  start, the `SessionStart` hook prints the skill's `ORCHESTRATOR.md` (the run
+  start, every session of this project loads the skill's `ORCHESTRATOR.md` (the run
   rules: what is a work item, stage order, fresh dispatch, human override,
-  stop-and-ask, resume) into every session of this project, so the first
-  work-item request starts the pipeline without being asked; a `no` or
-  unanswered row prints nothing. A run where one session played every role,
+  stop-and-ask, resume) as always-loaded instructions, installed by `adopt.sh`
+  (the `.claude/rules/sdg-orchestrator-core.md` link, or the Codex
+  `AGENTS.md` orchestrator-core block), so the first work-item request starts
+  the pipeline without being asked; a `no` or unanswered row installs
+  nothing, and the `SessionStart` hook warns while a stale link remains. A run where one session played every role,
   without a recorded human override (`pipeline-override`), is flagged by
   `model-record-gate.sh` and refused by the merge guard (`gh pr merge`).
   The guard refuses inline-only stage records and overrides with `<` or `>`
@@ -590,7 +593,7 @@ the shared parser warns if it has no `Applies if`.
   and Standing human class decisions under Running the pipeline. Read them before
   selecting stages or posting a waiver; policy and README reference that source.
   Existing opt-in applies; no gate/core change or new adoption question.
-- **Reaches session:** always-loaded: WORKFLOW.md, session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
+- **Reaches session:** always-loaded: WORKFLOW.md, opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
 ## release-branch-workflow

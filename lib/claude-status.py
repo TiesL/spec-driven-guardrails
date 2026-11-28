@@ -10,7 +10,8 @@ def managed_snapshot(source, project):
     names = {'CLAUDE.md', '.claude/settings.json', '.gitignore', 'PRD.md',
              'TEST-SCENARIOS.md', 'ARCHITECTURE.md', 'CONTEXT.md',
              'WORKFLOW-ADOPTION.md', 'check-traceability.sh', 'wait-for-ci.sh',
-             'check-pr-issue-link.sh', 'check-main-via-pr.sh', '.github/workflows/ci.yml'}
+             'check-pr-issue-link.sh', 'check-main-via-pr.sh', '.github/workflows/ci.yml',
+             '.claude/rules/sdg-orchestrator-core.md'}
     names.update('.git/hooks/' + n for n in ('pre-commit', 'commit-msg', 'pre-push'))
     for directory in (source / 'skills', project / '.claude/skills'):
         if directory.is_dir(): names.update('.claude/skills/' + p.name for p in directory.iterdir())

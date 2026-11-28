@@ -54,8 +54,8 @@ Claude-only frontmatter such as context/allowed-tools is runtime metadata,
 not evidence of Codex dispatch or enforcement. If supported-version skill
 metadata/discovery fails, stop and return to Architect; never duplicate bodies.
 
-When process-multi-agent-roles is yes, read and follow canonical
-`.agents/skills/role-contracts/ORCHESTRATOR.md` from session-context output.
+When process-multi-agent-roles is yes, follow the orchestrator-core block that
+adoption installs in AGENTS.md (canonical `.agents/skills/role-contracts/ORCHESTRATOR.md`).
 Once authorized, continue ordinary stage handoffs and finding routes with
 available fresh role dispatch without requesting confirmation for each handoff.
 Follow that owner's scopes, records, route tables, human override and merge

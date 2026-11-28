@@ -3,62 +3,44 @@
 # that nothing else loads.
 #
 # Usage:
-#   ./session-context.sh [--runtime claude|codex] [--slot <n>] [/path/to/project]
+#   ./session-context.sh [--runtime claude|codex] [/path/to/project]
 #   # defaults: Claude/current directory; Codex explicitly reads the output
 #
-# --slot <n> (#499, A41): the output is split at each marker line
-# `<!-- session-context: slot -->` (a declared file may hold one), the
-# marker lines are dropped and only chunk n (1-based) is printed. Each
-# SessionStart command prints one chunk, so each hook output stays within
-# CONTEXT_BUDGET_CHARS (lib/context-budget.sh, checked by S309): slot 1 is
-# the CLAUDE.md warning plus part 1 of ORCHESTRATOR.md, slot 2 is part 2. A
-# slot past the last chunk prints nothing. Without --slot every chunk is
-# printed in order with the marker lines dropped (what Codex reads).
+# Called by the one session-context SessionStart command
+# (settings/session-hooks.json), after pending-changes.sh, with the clone
+# resolved through the project's .claude/settings.json symlink. Whatever it
+# prints becomes session context, so it prints no rule text (#750, A66 D2):
+# an `opt-in-loaded:` file (today skills/role-contracts/ORCHESTRATOR.md,
+# process-multi-agent-roles) reaches the session as always-loaded
+# instructions that adopt.sh installs, not through this hook. Jobs:
 #
-# Called by the SessionStart hook (settings/session-hooks.json), after
-# pending-changes.sh, with the clone resolved through the project's
-# .claude/settings.json symlink. Whatever it prints becomes session
-# context. Three jobs:
-#
-# 1. For every CHANGES.md entry this project answered yes (answered_yes,
-#    lib/changes.sh) whose **Reaches session:** field declares
-#    `session-context: <path>`, print that file verbatim (minus marker lines,
-#    see --slot). A `no`,
-#    unanswered or not-applicable row prints nothing: that is AC3 by
-#    construction, not a rule a session has to remember. Today the one such
-#    file is skills/role-contracts/ORCHESTRATOR.md
-#    (process-multi-agent-roles).
-# 2. Warn when the project's CLAUDE.md is not a symlink to this clone's
-#    WORKFLOW.md (#371 F1): then the session doesn't load the shared
-#    workflow at all, and nothing else says so.
+# 1. Claude runtime: warn when the project's CLAUDE.md is not a symlink to
+#    this clone's WORKFLOW.md (#371 F1): then the session doesn't load the
+#    shared workflow at all, and nothing else says so.
+# 2. Claude runtime: one warning line, without rule text, when the core
+#    link .claude/rules/sdg-orchestrator-core.md disagrees with the answer:
+#    opted in and the link is missing or doesn't resolve to the file
+#    process-multi-agent-roles declares `opt-in-loaded:` in this clone; or
+#    not opted in and the link is still there (A66 D2, D5).
 # 3. Claude runtime only: warn in one fixed line when the main session looks
 #    routed through a proxy (#707, see main_session_routed below).
+# 4. Codex runtime: the adoption status warning (stale or missing install,
+#    including the core block and instructions-over-limit) and its hook and
+#    bundle lines.
 #
-# The file is read from this clone on every run, so a later release reaches
-# the project's next session without re-running adopt.sh (AC11).
-#
-# Default Claude hook invocation exits 0: a hook must never block a session.
-# Invalid runtime/options exit 2 before context reads. A declared file that
-# is missing warns on stderr and prints nothing for it.
+# Exits 0: a hook must never block a session. Invalid runtime/options
+# (including the retired --slot) exit 2 before context reads.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
 runtime=claude
-slot=""
 if [ "${1:-}" = --runtime ]; then
   [ "$#" -ge 2 ] || { echo "session-context: missing runtime" >&2; exit 2; }
   runtime="$2"; shift 2
 fi
 case "$runtime" in claude|codex) ;; *) echo "session-context: unknown runtime" >&2; exit 2 ;; esac
-if [ "${1:-}" = --slot ]; then
-  [ "$#" -ge 2 ] || { echo "session-context: missing slot" >&2; exit 2; }
-  slot="$2"; shift 2
-  case "$slot" in
-    ''|*[!0-9]*|0*) echo "session-context: slot must be a positive integer" >&2; exit 2 ;;
-  esac
-fi
 [ "$#" -le 1 ] || { echo "session-context: invalid arguments" >&2; exit 2; }
 case "${1:-}" in -*) echo "session-context: invalid option" >&2; exit 2 ;; esac
 
@@ -108,9 +90,34 @@ sys.exit(1)
     "$project_dir/.claude/settings.json" "$project_dir/.claude/settings.local.json" 2>/dev/null
 }
 
+# The core file process-multi-agent-roles declares `opt-in-loaded:`, and
+# whether this project answered it yes (the shared reader, A66 D3).
+core_rel="$(opt_in_loaded_path "$changes" process-multi-agent-roles)"
+opt_in_core=""
+if [ -n "$core_rel" ] && answered_yes "$project_dir" process-multi-agent-roles; then
+  opt_in_core="$core_rel"
+fi
+
+# core_link_warning: A66 D2's one line. No rule text, no rule ID.
+CORE_LINK=".claude/rules/sdg-orchestrator-core.md"
+core_link_warning() {
+  [ -n "$core_rel" ] || return 0
+  local link="$project_dir/$CORE_LINK" target
+  if [ -n "$opt_in_core" ]; then
+    if [ -L "$link" ] && [ -e "$link" ]; then
+      target="$(readlink "$link")"
+      case "$target" in /*) ;; *) target="$(dirname "$link")/$target" ;; esac
+      [ "$(physical "$target")" = "$(physical "$workflow_dir/$core_rel")" ] && return 0
+    fi
+    echo "Warning: this project answered process-multi-agent-roles yes, but $CORE_LINK is missing or not a link to $workflow_dir/$core_rel, so this session doesn't load the orchestrator core. Run adopt.sh again from the guardrails clone to restore it."
+  elif [ -L "$link" ]; then
+    echo "Warning: $CORE_LINK still loads the orchestrator core, but this project has not answered process-multi-agent-roles yes. Run adopt.sh again from the guardrails clone to remove it."
+  fi
+}
+
 emit() {
 if [ "$runtime" = codex ]; then
-  codex_inventory="$(PYTHONDONTWRITEBYTECODE=1 python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status 2>&1)"
+  codex_inventory="$(SDG_OPT_IN_CORE="$opt_in_core" PYTHONDONTWRITEBYTECODE=1 python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status 2>&1)"
   if [ "$?" -ne 0 ]; then
     echo "Warning: Codex installation is missing, stale, conflicting or recovery pending; run adopt.sh --runtime codex again and verify actual instruction loading."
   fi
@@ -133,39 +140,9 @@ fi
 if main_session_routed; then
   echo "$ROUTED_WARNING"
 fi
-
+core_link_warning
 fi
-
-[ -f "$changes" ] || return 0
-
-printed=""
-while IFS='|' read -r id value _; do
-  case "$value" in
-    session-context:*) ;;
-    *) continue ;;
-  esac
-  file="${value#session-context:}"
-  file="$(printf '%s' "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-  [ -n "$file" ] || continue
-  answered_yes "$project_dir" "$id" || continue
-  if [ ! -f "$workflow_dir/$file" ]; then
-    echo "warning: session-context.sh: $id declares $file, which doesn't exist in $workflow_dir" >&2
-    continue
-  fi
-  case "$printed" in
-    *"|$file|"*) continue ;;
-  esac
-  printed="$printed|$file|"
-  echo
-  cat "$workflow_dir/$file"
-done < <(reaches_session_values "$changes")
-
 }
 
-# The marker line splits chunks; it is never printed.
-marker='<!-- session-context: slot -->'
-emit | awk -v m="$marker" -v n="${slot:-0}" '
-  $0 == m { chunk++; next }
-  n == 0 || chunk == n - 1 { print }
-'
+emit
 exit 0

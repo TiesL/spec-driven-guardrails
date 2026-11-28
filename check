@@ -152,6 +152,15 @@ if [ -x "$target/check-workflow-adapters.sh" ]; then
   fi
 fi
 
+# A66 AC5 (#750): one copy of each orchestrator rule's text.
+if [ -x "$target/check-core-rule-copies.sh" ]; then
+  echo "check: orchestrator rule text has one copy"
+  if ! core_copy_output="$("$target/check-core-rule-copies.sh" "$target" 2>&1)"; then
+    report_error "check-core-rule-copies.sh reported a problem:"
+    printf '%s\n' "$core_copy_output" | sed 's/^/    /' >&2
+  fi
+fi
+
 if [ -f "$target/test/fixtures/old-role-name-allow.tsv" ]; then
   echo "check: old role name"
   if ! role_output="$(python3 -I "$target/test/fixtures/old-role-name-guard.py" "$target" 2>&1)"; then
