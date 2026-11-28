@@ -13164,6 +13164,43 @@ D5. No other AC is contradicted or narrowed.
   measure the single output. The only size limit left on the core is Codex's
   `project_doc_max_bytes`, guarded by the adoption `status` check, not by
   cutting text.
+- **Further tests broken by D2 and D4 (QA finding on #750).** Each moves to
+  the new delivery; none keeps a hook copy.
+  - S177 changes: `session-context.sh` prints no declared file for any
+    answer, still exits 0 in every case, and keeps the `CLAUDE.md` warning.
+  - S178 changes: the one `SessionStart` command carries no
+    `ORCHESTRATOR.md` rule text for yes, no or never. It keeps the
+    pending-changes report, the `CLAUDE.md` warning and the `readlink`
+    clone lookup. "A release arrives without re-adoption" moves to S732.
+  - S179 changes: the row stays a reasoned yes. On this repo the S732
+    installer links the core to its own `ORCHESTRATOR.md`, with no special
+    case. The `session-context.sh` run prints none of the core.
+  - S181 changes: `opt-in-loaded: <existing file>` passes;
+    `session-context:` now fails as outside the vocabulary.
+  - S182 changes: the row declares
+    `opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md` and the gate.
+    The closed list stays at five keywords.
+  - S294 changes: `session-context.sh --runtime codex` prints no part of
+    the core for yes or no. The marker-count assertion stays. The core's
+    path into Codex is S733's block.
+  - S378 changes: the `slot1` pin and its mutation arm are retired.
+    `pin_or34` already pins the same text in the delivered file.
+  - S295 and S366 are kept: their fixtures do not answer yes, so a
+    byte-identical `config.toml` stays correct. S733 owns the yes case.
+    The D4 live observation is a maintainer note, not a new scenario.
+  - S405 changes (its fixture answers yes): HOME, CODEX_HOME,
+    `hooks.state` and trust stay unwritten. The project `config.toml`
+    holds only the managed key line. Any other config written fails.
+  - The `lib/codex-adoption.py` inventory line changes to: config, only
+    the managed `project_doc_max_bytes` for a yes project;
+    trust/permissions/unrelated-hooks/plugins not installed or changed.
+- **D4 key ownership.** The key is written on yes only and removed on any
+  other answer. Removal restores the project-owned bytes and deletes a file
+  that adoption created. A key the project set itself is not owned: it is
+  left alone and `status` reads it as the effective limit.
+  `instructions-over-limit` and a stale block make `status` exit non-zero.
+- **AC5 seam.** `check-core-rule-copies.sh [dir]`, run from `check`, as S735
+  proposes. `ORCHESTRATOR.md` and test fixtures are out of its scope.
 - **Behavior runner and stamp.** The runner keeps `ORCHESTRATOR.md` as its
   system prompt, with hooks disabled; that models always-loaded delivery. The
   file's bytes and the scenarios do not change, so the stamp hash stays valid
