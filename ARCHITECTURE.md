@@ -13690,6 +13690,51 @@ withdrawn, and OR46 returns to its base bytes.
 
 Rewording the OB87 Given until it stabilizes is rejected. That fits the
 scenario to the model and leaves the rule gap open.
+
+#### A65 addendum 6 — Final OR46 pair after #750 removed the character budget (D8, #747)
+
+Planning, 2026-11-28, input head `25ac490`. This supersedes addendum 5's
+withdrawal and its options. D8 chose to make room and name the action. A66
+(#750) then removed the per-part character budget: S318 is retired and S627
+no longer checks slot headroom. So addendum 5's +1-byte limit is gone, and
+no part-1 text has to move.
+
+**Decision.** Use one exact OR46 pair:
+
+- old: `Failed promotion/moved head blocks Review.`
+- new: `Failed promotion/moved head blocks Review; head moved at Review start: stop.`
+
+The new clause uses the noun phrase "head moved", not "moved head". This
+keeps the `wip-promotion-706.py` cuts unique on the OR46 line: `moved head `
+(moved-head-stop) and `Failed promotion/` (failed-promotion-stop) each occur
+once. Both duty patterns and the #722 `moved-blocks` pattern still match,
+and each deletion control still kills its duty. The #706 duty fixture does
+not change. The scope "at Review start" keeps OB91 unchanged: a head that
+moves before Review and shows up as a rejected promotion still follows
+"All else: dispatch owner". The OB87 Then (`stop`) stays unchanged.
+
+**Size rules after #750 (checked).** The pair adds 34 bytes.
+- Codex: `adapters/codex/AGENTS.md` (24,560) plus `ORCHESTRATOR.md` (16,475)
+  is 41,035 bytes. With the pair it is 41,069, well under the 65,536 that
+  S733 pins in `project_doc_max_bytes`.
+- S627 keeps only its pointer and projection checks, so it has no size term.
+- S309 measures the `session-context` output, which holds no rule line, so
+  OR46 bytes do not affect it.
+- S318 is retired. No other size rule applies to core bytes.
+
+**Exact-allowance consumers.** `backlog-724-substitutions.json` (second
+ORCHESTRATOR.md pair, which folds into the #706 pair through
+`wip-706-substitutions.py` for S725 and S627), the S731 `backlog-724-text.py`
+D4 pair and mutants, and the S317 `or46-moved-head-stop` check and its two
+`sed` controls all carry the addendum 4 bytes now. They change to the new
+bytes and do not change shape.
+
+**Handoff.** QA updates those consumers to `head moved at Review start: stop`.
+The unscoped mutant becomes `; head moved: stop`. QA then reruns S725, S317,
+S627, S731, S309 and S733 red-first. The Developer applies the exact pair to
+OR46 only. The orchestrator then reruns the whole-file behavior runner and
+commits the runner-generated stamp before clean exact-head D6. The
+maintainer accepts the shared contract-text change at the release merge.
 ### A56 addendum 9 (Architect, Planning, 2026-11-27, redesigned under D6): two repositories, one secret scan, a closed public result (#731; resumes #680 only after reconciliation)
 
 **Authority and scope.** #731 D1-D6. D6 (maintainer, 2026-11-27) asks for a
