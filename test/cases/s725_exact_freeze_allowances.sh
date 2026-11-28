@@ -11,6 +11,12 @@ root=Path(sys.argv[1]); a=runpy.run_path(str(root/'test/fixtures/wip-706-substit
 table=json.loads((root/'test/fixtures/wip-706-substitutions.json').read_text())
 duties=runpy.run_path(str(root/'test/fixtures/wip-promotion-706.py'))
 duties['core_duty_controls']([new for old,new in table['changes']['skills/role-contracts/ORCHESTRATOR.md']])
+# The historical base must be an ancestor of HEAD, so every full clone can
+# resolve it (#750 QA: the #706 WIP pin 97a3a61 was squashed away).
+if subprocess.run(['git','-C',str(root),'merge-base','--is-ancestor',table['base'],'HEAD'],
+                  stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode != 0:
+    print('FAIL: S725/base '+table['base']+' is not an ancestor of HEAD (unreachable in a fresh clone)')
+    sys.exit(1)
 errors=a['protected_a_checks'](root)
 for path in table['changes']:
     before=subprocess.check_output(['git','-C',str(root),'show',table['base']+':'+path])

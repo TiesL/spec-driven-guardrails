@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# S309 — both parts are within budget in the worst case, the slots split
-# exactly, and the wiring matches K (#499 AC4, AC6)
+# S309 — the one session-context output is within budget in the worst case, carries no rule text, and is wired as one SessionStart command without --slot (#499 AC4, AC6; amended by #750 A66 D2)
 # Covers: F38
 #
-# Seam (A41): `session-context.sh [--runtime R] --slot <n> <project>` output,
-# measured by `context_chars` of lib/context-budget.sh against
+# Seam (A41 as amended by A66): `session-context.sh [--runtime R] <project>`
+# output, measured by `context_chars` of lib/context-budget.sh against
 # CONTEXT_BUDGET_CHARS (sourced, never a literal here), and
 # settings/session-hooks.json read as data. Worst case: every CHANGES.md
-# entry that declares `session-context:` answered yes, the CLAUDE.md link
-# broken so the warning prints, clone and project paths of 100+ characters.
+# entry that declares `opt-in-loaded:` answered yes, the CLAUDE.md link
+# broken and the core link missing so both warnings print, clone and project
+# paths of 100+ characters. File name kept for history (slots are gone).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -16,6 +16,8 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 # shellcheck source=../fixtures/pipeline-371-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../fixtures/pipeline-371-helpers.sh"
+# shellcheck source=../fixtures/core-delivery-750.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/core-delivery-750.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -39,150 +41,108 @@ long="$(printf 'p%.0s' $(seq 1 100))"
 wf="$SANDBOX/clone-$long"
 mkdir -p "$wf"
 (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./prep' --exclude='./CLAUDE.md' \
-  --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) | (cd "$wf" && tar -xf -)
+  --exclude='./.claude/settings.json' --exclude='./.claude/skills' --exclude='./.claude/rules' -cf - .) | (cd "$wf" && tar -xf -)
+ORCH="$wf/$CORE750_ORCH_REL"
 proj="$SANDBOX/project-$long"
 mkdir -p "$proj"
 git -C "$proj" init -q -b main
 ids=()
 while IFS='|' read -r id value _; do
-  case "$value" in session-context:*) ids+=("$id" yes) ;; esac
+  case "$value" in opt-in-loaded:*) ids+=("$id" yes) ;; esac
 done < <(. "$wf/lib/changes.sh"; reaches_session_values "$wf/CHANGES.md")
-[ "${#ids[@]}" -ge 2 ] || fail "S309 — no CHANGES.md entry declares session-context:"
-write_adoption "$proj/WORKFLOW-ADOPTION.md" "${ids[@]}"
+[ "${#ids[@]}" -ge 2 ] || fail "S309 — no CHANGES.md entry declares opt-in-loaded:"
+write_adoption "$proj/WORKFLOW-ADOPTION.md" ${ids[@]+"${ids[@]}"} process-multi-agent-roles yes
 ln -s "$SANDBOX/nowhere/WORKFLOW.md" "$proj/CLAUDE.md"
 
-# K and the wiring: the matcher-less SessionStart group's --slot commands.
-slots_in_settings() { # settings.json -> one slot number per line, in order
+# --- wiring: one session-context command, no --slot -----------------------
+sc_commands() { # settings.json -> one line per SessionStart command running session-context.sh
   python3 -I - "$1" <<'PY'
-import json, re, sys
+import json, sys
 d = json.load(open(sys.argv[1]))
 for g in d.get("hooks", {}).get("SessionStart", []):
-    if "matcher" in g:
-        continue
     for h in g.get("hooks", []):
-        m = re.search(r"--slot\s+(\S+)", h.get("command", ""))
-        if m:
-            print(m.group(1))
+        c = h.get("command", "")
+        if "session-context.sh" in c:
+            print(c.replace("\n", " "))
 PY
 }
-wiring_ok() { # settings.json K -> 0 when the --slot commands are exactly 1..K
-  local got want
-  got="$(slots_in_settings "$1" | tr '\n' ' ')"
-  want="$(seq 1 "$2" | tr '\n' ' ')"
-  [ "$got" = "$want" ]
+wiring_problems() { # settings.json -> one line per problem
+  local n
+  n="$(sc_commands "$1" | grep -c .)"
+  [ "$n" = 1 ] || echo "SessionStart runs session-context.sh $n times, expected once"
+  grep -qF -- '--slot' "$1" && echo "settings still pass --slot"
+  return 0
 }
-markers="$(grep -cxF "$MARKER" "$wf/skills/role-contracts/ORCHESTRATOR.md")"
-K=$((markers + 1))
-[ "$K" = 2 ] || fail "S309 — expected K=2 chunks (one marker line), got $K"
-wiring_ok "$wf/settings/session-hooks.json" "$K" \
-  || fail "S309/wiring — settings --slot commands ($(slots_in_settings "$wf/settings/session-hooks.json" | tr '\n' ' ')) are not exactly --slot 1..$K"
-# Negative control: a third --slot command fails the K match.
-cp "$wf/settings/session-hooks.json" "$SANDBOX/three.json"
-python3 -I - "$SANDBOX/three.json" <<'PY'
+p="$(wiring_problems "$wf/settings/session-hooks.json")"
+[ -z "$p" ] || fail "S309/wiring — $(tr '\n' ';' <<<"$p")"
+# Negative controls: a second command, and a --slot argument, are each caught.
+python3 -I - "$wf/settings/session-hooks.json" "$SANDBOX/two.json" "$SANDBOX/slot.json" <<'PY'
 import json, sys
-p = sys.argv[1]; d = json.load(open(p))
-for g in d["hooks"]["SessionStart"]:
-    if "matcher" not in g:
-        g["hooks"].append({"type": "command", "command": "x --slot 3"})
-json.dump(d, open(p, "w"))
+src, two, slot = sys.argv[1:4]
+for out, extra in ((two, "x/session-context.sh p"), (slot, "x/other.sh --slot 1")):
+    d = json.load(open(src))
+    for g in d["hooks"]["SessionStart"]:
+        if "matcher" not in g:
+            g["hooks"].append({"type": "command", "command": extra})
+    json.dump(d, open(out, "w"))
 PY
-if wiring_ok "$SANDBOX/three.json" "$K"; then
-  fail "S309/neg-wiring — a third --slot command was not caught"
-fi
+grep -q 'times, expected once' <<<"$(wiring_problems "$SANDBOX/two.json")" \
+  || fail "S309/neg-wiring — a second session-context command was not caught"
+grep -q 'still pass --slot' <<<"$(wiring_problems "$SANDBOX/slot.json")" \
+  || fail "S309/neg-wiring — a --slot argument was not caught"
 
-# --- budget per slot -----------------------------------------------------
-budget_ok() { # clone project n -> 0 within budget; prints the failure
-  local out size
-  out="$("$1/session-context.sh" --slot "$3" "$2" 2>/dev/null; printf x)"
-  out="${out%x}"
-  size="$(printf '%s' "$out" | context_chars)"
-  if [ "$size" -gt "$CONTEXT_BUDGET_CHARS" ]; then
-    echo "slot $3 is $size characters, over the budget of $CONTEXT_BUDGET_CHARS"
-    return 1
-  fi
-}
-for n in $(seq 1 "$K"); do
-  msg="$(budget_ok "$wf" "$proj" "$n")" || fail "S309/budget — $msg"
+# --slot is gone: rejected as an invalid option, exit 2, nothing on stdout.
+for args in "--slot 1" "--slot" "--runtime codex --slot 1"; do
+  # shellcheck disable=SC2086 # word splitting of the fixed argument list is intended
+  out="$("$wf/session-context.sh" $args "$proj" 2>/dev/null)"; st=$?
+  [ "$st" = 2 ] || fail "S309/no-slot — 'session-context.sh $args' exited $st, expected 2"
+  [ -z "$out" ] || fail "S309/no-slot — 'session-context.sh $args' printed output"
 done
-# Negative control: part 2 padded to budget + 1 fails, naming slot and size.
-pad="$SANDBOX/pad-$long"
-mkdir -p "$pad"
-(cd "$wf" && tar -cf - .) | (cd "$pad" && tar -xf -)
-python3 -I - "$pad/skills/role-contracts/ORCHESTRATOR.md" "$CONTEXT_BUDGET_CHARS" <<'PY'
-import sys
-p, b = sys.argv[1], int(sys.argv[2])
-t = open(p, encoding="utf-8").read()
-head, sep, tail = t.partition("<!-- session-context: slot -->\n")
-tail = tail + "x" * (b + 1 - len(tail)) + "\n"
-open(p, "w", encoding="utf-8").write(head + sep + tail)
-PY
-msg="$(budget_ok "$pad" "$proj" 2)" && fail "S309/neg-budget — a part over budget passed"
-case "$msg" in
-  *"slot 2"*"$((CONTEXT_BUDGET_CHARS + 2))"*"$CONTEXT_BUDGET_CHARS"*) ;;
-  *) fail "S309/neg-budget — the failure must name slot, size and budget: '$msg'" ;;
-esac
 
-# --- split, join, unsplit -----------------------------------------------
+# --- budget and content of the one output ------------------------------------
+budget_problem() { # text -> prints the failure when over budget
+  local size
+  size="$(printf '%s' "$1" | context_chars)"
+  [ "$size" -le "$CONTEXT_BUDGET_CHARS" ] || echo "the output is $size characters, over the budget of $CONTEXT_BUDGET_CHARS"
+}
+content_problems() { # text -> one line per rule-text problem
+  printf '%s' "$1" > "$SANDBOX/content.txt"
+  core750_rule_hits "$ORCH" "$SANDBOX/content.txt" | sed 's/^\(OR[0-9]*\) .*/rule line \1 printed/'
+  grep -q '^# Multi-agent pipeline run rules' "$SANDBOX/content.txt" && echo "a core part heading printed"
+  grep -qxF "$MARKER" "$SANDBOX/content.txt" && echo "the marker line printed"
+  return 0
+}
 capture() { # var args... -> the command's stdout, trailing newlines kept
   local __v="$1" o
   shift
   o="$("$@" 2>/dev/null; printf x)"
   printf -v "$__v" '%s' "${o%x}"
 }
-capture s1 "$wf/session-context.sh" --slot 1 "$proj"
-capture s2 "$wf/session-context.sh" --slot 2 "$proj"
-capture all "$wf/session-context.sh" "$proj"
-orch_nomarker="$(grep -vxF "$MARKER" "$wf/skills/role-contracts/ORCHESTRATOR.md"; printf x)"
-orch_nomarker="${orch_nomarker%x}"
-case "$s1" in
+claude_out='' codex_out=''
+capture claude_out "$wf/session-context.sh" "$proj"
+capture codex_out "$wf/session-context.sh" --runtime codex "$proj"
+check_output() { # runtime text
+  local msg
+  msg="$(budget_problem "$2")"; [ -z "$msg" ] || fail "S309/budget-$1 — $msg"
+  msg="$(content_problems "$2")"; [ -z "$msg" ] || fail "S309/no-rule-text-$1 — $(head -n 3 <<<"$msg" | tr '\n' ';')"
+}
+check_output claude "$claude_out"
+check_output codex "$codex_out"
+case "$claude_out" in
   "Warning: CLAUDE.md in $proj is not a link"*) ;;
-  *) fail "S309/slot1 — slot 1 does not start with the CLAUDE.md warning" ;;
+  *) fail "S309/worst — the Claude output does not start with the CLAUDE.md warning" ;;
 esac
-grep -q '^# Multi-agent pipeline run rules, part 1 of 2: fundamentals$' <<<"$s1" \
-  || fail "S309/slot1 — slot 1 lacks the part 1 heading"
-case "$s2" in
-  "# Multi-agent pipeline run rules, part 2 of 2: procedure"*) ;;
-  *) fail "S309/slot2 — slot 2 does not start with the part 2 heading" ;;
+[ "$(grep -c '^Warning:' <<<"$claude_out")" -ge 2 ] \
+  || fail "S309/worst — the worst case does not print both the CLAUDE.md and the core-link warning"
+# Negative controls: over-budget text and a printed rule line are each caught.
+over="$(printf 'x%.0s' $(seq 1 $((CONTEXT_BUDGET_CHARS + 1))))"
+msg="$(budget_problem "$over")"
+case "$msg" in
+  *"$((CONTEXT_BUDGET_CHARS + 1))"*"$CONTEXT_BUDGET_CHARS"*) ;;
+  *) fail "S309/neg-budget — the failure must name size and budget: '$msg'" ;;
 esac
-for o in "$s1" "$s2" "$all"; do
-  case "$o" in *"$MARKER"*) fail "S309/marker — an output contains the marker line" ;; esac
-done
-[ "$s1$s2" = "$all" ] || fail "S309/join — slots 1..K joined differ from the output without --slot"
-warn_line="$(head -n 1 <<<"$all")"
-[ "$all" = "$warn_line"$'\n\n'"$orch_nomarker" ] \
-  || fail "S309/unsplit — the output without --slot is not the warning plus ORCHESTRATOR.md minus the marker line"
-capture codex "$wf/session-context.sh" --runtime codex "$proj"
-case "$codex" in
-  *"$orch_nomarker") ;;
-  *) fail "S309/codex — Codex output does not end with ORCHESTRATOR.md minus the marker line" ;;
-esac
-case "$codex" in *"$MARKER"*) fail "S309/codex — Codex output contains the marker line" ;; esac
-capture cs1 "$wf/session-context.sh" --runtime codex --slot 1 "$proj"
-capture cs2 "$wf/session-context.sh" --runtime codex --slot 2 "$proj"
-[ "$cs1$cs2" = "$codex" ] || fail "S309/codex-join — Codex slots joined differ from Codex output"
-
-# Past the last chunk: nothing, exit 0.
-out="$("$wf/session-context.sh" --slot $((K + 1)) "$proj" 2>&1)"; st=$?
-[ "$st" = 0 ] || fail "S309/past — --slot $((K + 1)) exited $st"
-[ -z "$out" ] || fail "S309/past — --slot $((K + 1)) printed output"
-
-# Invalid n: exit 2 before any read. The declared file is removed in this
-# copy, so a read would print the missing-file warning.
-miss="$SANDBOX/miss"
-mkdir -p "$miss"
-(cd "$wf" && tar -cf - .) | (cd "$miss" && tar -xf -)
-rm -f "$miss/skills/role-contracts/ORCHESTRATOR.md"
-probe="$("$miss/session-context.sh" --slot 1 "$proj" 2>&1)"
-case "$probe" in *"doesn't exist"*) ;; *) fail "S309/invalid — the missing-file probe does not show a read" ;; esac
-for bad in 0 -1 x 1x ""; do
-  out="$("$miss/session-context.sh" --slot "$bad" "$proj" 2>&1)"; st=$?
-  [ "$st" = 2 ] || fail "S309/invalid — --slot '$bad' exited $st, expected 2"
-  case "$out" in *"doesn't exist"*|*Warning*) fail "S309/invalid — --slot '$bad' read before exiting" ;; esac
-done
-out="$("$miss/session-context.sh" "$proj" --slot 2>&1)"; st=$?
-[ "$st" = 2 ] || fail "S309/invalid — --slot with no value exited $st, expected 2"
-out="$("$miss/session-context.sh" --slot 2>&1)"; st=$?
-[ "$st" = 2 ] || fail "S309/invalid — bare --slot exited $st, expected 2"
+grep -q 'rule line OR10 printed' <<<"$(content_problems "warning
+$(grep '^- OR10 ' "$ORCH")")" || fail "S309/neg-content — a printed rule line was not caught"
 
 # --- the docs state the constant -----------------------------------------
 doc_number() { # file -> the N of "`CONTEXT_BUDGET_CHARS` (N characters" (commas dropped)

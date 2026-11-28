@@ -5,7 +5,7 @@
 # Seam: `session-context.sh --runtime claude|codex <project>` output under a
 # built environment (fixture HOME and CLAUDE_CONFIG_DIR), compared with a
 # baseline run of the same project; the worst-case budget with S309's fixture
-# and lib/context-budget.sh.
+# and lib/context-budget.sh, measured on the one output (#750 A66: no slots).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -155,7 +155,7 @@ for answer in yes no; do
   [ "$(added_lines "$b" "$sc_out")" = "$warn_line" ] || fail "S708/answer-$answer — the warning depends on the routing answer"
 done
 
-# --- worst case: still within the budget, the line counted in slot 1 -----------
+# --- worst case: the one output stays within the budget and carries the line ----
 long="$(printf 'p%.0s' $(seq 1 100))"
 wf="$SANDBOX/clone-$long"
 mkdir -p "$wf"
@@ -166,21 +166,20 @@ mkdir -p "$wproj/.claude"
 git -C "$wproj" init -q -b main
 ids=()
 while IFS='|' read -r id value _; do
-  case "$value" in session-context:*) ids+=("$id" yes) ;; esac
+  case "$value" in opt-in-loaded:*) ids+=("$id" yes) ;; esac
 done < <(. "$wf/lib/changes.sh"; reaches_session_values "$wf/CHANGES.md")
-write_adoption "$wproj/WORKFLOW-ADOPTION.md" "${ids[@]}"
+[ "${#ids[@]}" -ge 2 ] || fail "S708/budget — no CHANGES.md entry declares opt-in-loaded: (worst case not built)"
+write_adoption "$wproj/WORKFLOW-ADOPTION.md" ${ids[@]+"${ids[@]}"} process-multi-agent-roles yes
 ln -s "$SANDBOX/nowhere/WORKFLOW.md" "$wproj/CLAUDE.md"
 route_json "$token_url" >"$user_file"
-for n in 1 2; do
-  out="$(env -i "PATH=$pathx" "HOME=$X/home" "CLAUDE_CONFIG_DIR=$X/cfg" "ANTHROPIC_BASE_URL=$token_url" \
-    "$wf/session-context.sh" --runtime claude --slot "$n" "$wproj" 2>/dev/null; printf x)"
-  out="${out%x}"
-  size="$(printf '%s' "$out" | context_chars)"
-  [ "$size" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S708/budget — slot $n is $size characters, over $CONTEXT_BUDGET_CHARS"
-  if [ "$n" = 1 ] && [ -n "$warn_line" ]; then
-    grep -qxF "$warn_line" <<<"$out" || fail "S708/budget — the warning is not printed in slot 1"
-  fi
-done
+out="$(env -i "PATH=$pathx" "HOME=$X/home" "CLAUDE_CONFIG_DIR=$X/cfg" "ANTHROPIC_BASE_URL=$token_url" \
+  "$wf/session-context.sh" --runtime claude "$wproj" 2>/dev/null; printf x)"
+out="${out%x}"
+size="$(printf '%s' "$out" | context_chars)"
+[ "$size" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S708/budget — the output is $size characters, over $CONTEXT_BUDGET_CHARS"
+if [ -n "$warn_line" ]; then
+  [ "$(grep -cxF "$warn_line" <<<"$out")" = 1 ] || fail "S708/budget — the warning is not printed exactly once in the output"
+fi
 reset_files
 
 # --- test hygiene: sandbox_create clears a routed calling shell ------------------

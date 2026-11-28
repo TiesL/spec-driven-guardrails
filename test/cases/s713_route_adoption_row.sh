@@ -154,13 +154,12 @@ git -C "$wproj" init -q -b main
 ln -s "$SANDBOX/nowhere/WORKFLOW.md" "$wproj/CLAUDE.md"
 ids=()
 while IFS='|' read -r sid value _; do
-  case "$value" in session-context:*) ids+=("$sid" yes) ;; esac
+  case "$value" in opt-in-loaded:*) ids+=("$sid" yes) ;; esac
 done < <(reaches_session_values "$wf/CHANGES.md")
-compare_answers "$wf" "$wproj" worst "${ids[@]}"
-write_adoption "$wproj/WORKFLOW-ADOPTION.md" "${ids[@]}" "$id" yes
-for n in 1 2; do
-  size="$("$wf/session-context.sh" --runtime claude --slot "$n" "$wproj" 2>/dev/null | context_chars)"
-  [ "$size" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S713/budget — slot $n is $size characters with $id yes"
-done
+[ "${#ids[@]}" -ge 2 ] || fail "S713/worst — no CHANGES.md entry declares opt-in-loaded: (worst case not built)"
+compare_answers "$wf" "$wproj" worst ${ids[@]+"${ids[@]}"} process-multi-agent-roles yes
+write_adoption "$wproj/WORKFLOW-ADOPTION.md" ${ids[@]+"${ids[@]}"} process-multi-agent-roles yes "$id" yes
+size="$("$wf/session-context.sh" --runtime claude "$wproj" 2>/dev/null | context_chars)"
+[ "$size" -le "$CONTEXT_BUDGET_CHARS" ] || fail "S713/budget — the output is $size characters with $id yes"
 
 test_done

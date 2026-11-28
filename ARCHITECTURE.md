@@ -13084,3 +13084,211 @@ the affected runtime; observations are kept and FAILs routed by #680 AC5.
 evidence commit OID plus the private path; Product may adopt that wording.
 #731 Q5's unconditional pass-and-fail pair still needs Product reconciliation to
 D5. No other AC is contradicted or narrowed.
+
+### A66 — The orchestrator core moves from the capped `SessionStart` hook to an opt-in always-loaded rules file; checks and hooks stay the binding layer (#750; amends A41, A16/A17)
+
+- **Why.** A41 fits `ORCHESTRATOR.md` into two `SessionStart` outputs of at
+  most `CONTEXT_BUDGET_CHARS=9000` each, because Claude Code caps one hook's
+  output at 10,000 characters. Rule text was cut to fit, and #724 (one OR46
+  clause) is parked on the 500-character floor. Maintainer decisions D1-D3 on
+  #750: same coverage in both runtimes, with the always-loaded file holding
+  only what both CLAUDE.md and AGENTS.md honour and checks/hooks holding the
+  rest (D1); overlap only between that file and checks/hooks, the hook copy is
+  replaced (D2); installed on opt-in only, never user-level (D3).
+- **Verified platform facts** (Architect report on #750, quoted with URLs):
+  Claude Code loads each CLAUDE.md "whole ... as long as the file is 4 MiB or
+  smaller" and loads rules "without paths frontmatter ... at launch with the
+  same priority as .claude/CLAUDE.md"; `.claude/rules/` "supports symlinks",
+  a target outside the working directory needs the external-import approval.
+  Over the recommended length (200 lines) it warns; it does not truncate.
+  Codex concatenates AGENTS.md root to cwd and "stops adding files once the
+  combined size reaches the limit defined by `project_doc_max_bytes`" (32 KiB
+  default). Not verified: whether project `.codex/config.toml` may set that
+  key, whether path-less rules are re-injected after `/compact`, and whether
+  Codex subagents load AGENTS.md.
+- **D1. One file, both runtimes.** The always-loaded core is
+  `skills/role-contracts/ORCHESTRATOR.md`, byte for byte: plain Markdown, no
+  `@` imports, no `paths:` frontmatter, no runtime-specific syntax. Its rule
+  text does not change in this item.
+  - **Claude Code:** `adopt.sh` creates the symlink
+    `.claude/rules/sdg-orchestrator-core.md` -> the clone's `ORCHESTRATOR.md`,
+    gitignored with the other managed paths, like the `CLAUDE.md` and skill
+    links. A release reaches the next session without re-adoption. The link
+    target lies outside the working directory, so Claude Code may ask once
+    for the external-import approval; the maintainer accepts that risk (D7).
+  - **Codex:** `lib/codex-adoption.py` writes a second managed block
+    (`<!-- spec-driven-guardrails: orchestrator-core begin -->` / `end`)
+    into the project's `AGENTS.md`, after the workflow block, holding the same
+    bytes. It also writes the managed key `project_doc_max_bytes = 65536` in
+    the project `.codex/config.toml` (D4). `status` reports
+    the block stale when its bytes differ from the clone, and reports
+    `instructions-over-limit` when the project-root `AGENTS.md` exceeds the
+    limit the project config sets (32768 when unset or unreadable). That is
+    a root-file approximation: the global and nested AGENTS.md files count
+    towards Codex's combined limit too, and the D4 live observation covers
+    the real chain. The check runs only when the core block is installed
+    (review round 1 on #751): a project that did not answer yes gets no
+    over-limit line and no exit change from its own AGENTS.md size (D3).
+- **D3. Opt-in boundary.** Both installers act only when `answered_yes
+  <project> process-multi-agent-roles` (the shared reader); otherwise they
+  remove their own symlink or block and touch nothing else. Never
+  `~/.claude/CLAUDE.md`, `~/.claude/rules/` or `~/.codex/`. A project that
+  changes from `yes` to `no` without an `adopt.sh` re-run keeps loading the
+  core, with the D2 warning, until the re-run; enforcement stops at once,
+  because the hooks read the answer at run time (D5).
+- **D2. No hook copy.** `session-context.sh` prints no declared file any
+  more, in either runtime. In its place, one warning line without rule text
+  (Product's suggestion on #750, adopted): opted in and the core link is
+  missing or does not resolve to this clone's `ORCHESTRATOR.md`; or not opted
+  in and the link is present. Codex reuses its existing status warning.
+  A yes answered after the last Codex adoption (no core block yet) keeps
+  `status` at exit 0 with its `pending:` line, and `session-context.sh
+  --runtime codex` passes that `pending:` line through to the session. It
+  holds no rule text, and it names `adopt.sh --runtime codex`. This gives
+  parity with the Claude `yes`-and-link-missing warning (review round 1).
+  `--slot`, the marker split in `session-context.sh` and the second
+  `SessionStart` command are removed; one `session-context` command remains.
+- **`Reaches session` vocabulary.** The closed list in `CHANGES.md` replaces
+  `session-context: <path>` with `opt-in-loaded: <path>`: installed by
+  `adopt.sh` into the always-loaded instructions of a project that answered
+  `yes`. `process-multi-agent-roles` declares it for `ORCHESTRATOR.md`; both
+  installers and the warning read the declaration, not a literal path. The
+  *Yes means* sentence about the `SessionStart` hook is rewritten to match
+  (no meaning-version bump, D6; the obligations are unchanged, OR43).
+- **Checks and hooks (binding layer).** Unchanged in this item: the `Agent`
+  dispatch hook (OR7, OR8, OR14, OR30, OR31) still quotes the rule line read
+  from `ORCHESTRATOR.md` at run time, and the merge guard and
+  `model-record-gate.sh` still enforce OR10 and the single-session refusal.
+  New checks or hooks for further rules are named follow-ups, each built once
+  and wired into both runtimes (D1).
+- **AC5 drift.** The repo holds one copy of each rule's text; installed
+  copies are a symlink (Claude) or status-checked bytes (Codex). A new
+  `./check` assertion keeps that true: no hook, gate script or adapter file
+  contains a non-retired `OR<n>` rule line's text; an enforcing script
+  quotes by ID from `ORCHESTRATOR.md`. AC5 is met by construction, not by
+  comparing copies. An exact copy fails `./check` in the commit that adds
+  it, so a green branch never holds a second copy that a later one-place
+  edit could leave stale. A paraphrased copy is out of reach of any exact
+  check, and fuzzy matching is not proportional to that risk. S735 needs
+  no changed-in-one-place case (review round 1, Architect reading of AC5).
+- **Budget.** `CONTEXT_BUDGET_CHARS` stays, for what hooks still print
+  (warnings, `pending-changes.sh`). It no longer measures rule text. S318 is
+  retired. S627 drops its slot-headroom part and keeps its pointer and
+  projection checks. S309 checks A41 5-7 become: the one `session-context`
+  output, worst case, fits the budget and contains no rule line. S708 and S713
+  measure the single output. The only size limit left on the core is Codex's
+  `project_doc_max_bytes`, guarded by the adoption `status` check, not by
+  cutting text.
+- **Further tests broken by D2 and D4 (QA finding on #750).** Each moves to
+  the new delivery; none keeps a hook copy.
+  - S177 changes: `session-context.sh` prints no declared file for any
+    answer, still exits 0 in every case, and keeps the `CLAUDE.md` warning.
+  - S178 changes: the one `SessionStart` command carries no
+    `ORCHESTRATOR.md` rule text for yes, no or never. It keeps the
+    pending-changes report, the `CLAUDE.md` warning and the `readlink`
+    clone lookup. "A release arrives without re-adoption" moves to S732.
+  - S179 changes: the row stays a reasoned yes. On this repo the S732
+    installer links the core to its own `ORCHESTRATOR.md`, with no special
+    case. The `session-context.sh` run prints none of the core.
+  - S181 changes: `opt-in-loaded: <existing file>` passes;
+    `session-context:` now fails as outside the vocabulary.
+  - S182 changes: the row declares
+    `opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md` and the gate.
+    The closed list stays at five keywords.
+  - S294 changes: `session-context.sh --runtime codex` prints no part of
+    the core for yes or no. The marker-count assertion stays. The core's
+    path into Codex is S733's block.
+  - S378 changes: the `slot1` pin and its mutation arm are retired.
+    `pin_or34` already pins the same text in the delivered file.
+  - S295 and S366 are kept: their fixtures do not answer yes, so a
+    byte-identical `config.toml` stays correct. S733 owns the yes case.
+    The D4 live observation is a maintainer note, not a new scenario.
+  - S405 changes (its fixture answers yes): HOME, CODEX_HOME,
+    `hooks.state` and trust stay unwritten. The project `config.toml`
+    holds only the managed key line. Any other config written fails.
+  - The `lib/codex-adoption.py` inventory line changes to: config, only
+    the managed `project_doc_max_bytes` for a yes project, in effect only
+    for a trusted project; trust/permissions/unrelated-hooks/plugins not
+    installed or changed.
+- **D4 key ownership.** The key is written on yes only and removed on any
+  other answer. Removal restores the project-owned bytes and deletes a file
+  that adoption created. An empty `config.toml` that existed before a yes
+  adoption counts as adoption-created and is deleted on opt-out; this edge
+  is accepted (no bytes are lost). A key the project set itself is not
+  owned, whatever its TOML form (underscores, hex, quoted key, after a
+  table or multi-line array). Any line outside the managed line that names
+  `project_doc_max_bytes` counts as project-owned. Adoption then writes no
+  managed key, so the file never holds a duplicate key. `status` reads a
+  plain-integer project key as the limit and falls back to 32768
+  otherwise, which fails closed.
+  `instructions-over-limit` and a stale block make `status` exit non-zero.
+- **Trust precondition (review round 1).** Codex "loads project `.codex/`
+  layers only when you trust the project"
+  (https://learn.chatgpt.com/docs/config-file/config-basic, redirected
+  from developers.openai.com/codex). The managed key is therefore in effect
+  only in a trusted project; so are the project `.codex/hooks.json` guard
+  hooks, which already presume trust (see the Codex hooks entry above).
+  `status` does not read trust: the docs do not say where trust is stored,
+  and reading `CODEX_HOME` would couple to an undocumented format. Instead
+  the inventory line says the key takes effect only for a trusted project.
+  The D4 live observation adds one untrusted case, expected to show
+  `AGENTS.md` truncated.
+- **AC5 seam.** `check-core-rule-copies.sh [dir]`, run from `check`, as S735
+  proposes. `ORCHESTRATOR.md` and test fixtures are out of its scope.
+- **Behavior runner and stamp.** The runner keeps `ORCHESTRATOR.md` as its
+  system prompt, with hooks disabled; that models always-loaded delivery. The
+  file's bytes and the scenarios do not change, so the stamp hash stays valid
+  and no scenario is listed as intentionally changed (AC7). The two-part
+  headers and the marker line stay for now; folding them into one part is a
+  follow-up that needs a fresh differential run.
+- **#724.** Unblocked: OR46 may grow without a character budget.
+- **D4-D7 (maintainer, 2026-11-28, #750).** D4: the managed
+  `project_doc_max_bytes = 65536` goes in the project `.codex/config.toml`,
+  plus a one-time live observation by the maintainer ("List active
+  instruction sources"). D5: the opt-out lag above is acceptable. D6: no
+  meaning-version bump. D7: symlink, not copy.
+- **Base check (#706, #728, #731).** `adapters/codex/AGENTS.md` (24,416 bytes)
+  plus `ORCHESTRATOR.md` (16,468 bytes) is 40,884 bytes: over Codex's 32 KiB
+  default, under 64 KiB, so D4's key is needed and sufficient. S318, S627,
+  S309, S708 and S713 exist under `test/cases/` and are changed as above.
+- **Ownership addendum (OR20 redesign, review round 2 on #751).** Rounds 1
+  and 2 each opened a medium because adoption decided "is this ours?" by
+  inference (target suffix, line patterns). Ownership of both installed
+  artefacts is now a stated rule, not an inference. No new record file:
+  each artefact already carries its own explicit mark, and a separate
+  record would add a format, corruption handling and a record-versus-disk
+  conflict case without telling apart any real case the mark cannot.
+  - **Claude link: a reserved path.** `.claude/rules/sdg-orchestrator-core.md`
+    is reserved by adoption: the `sdg-` name and the managed `.gitignore`
+    block declare it. This is the rule `adopt.sh` already applies to
+    `CLAUDE.md` and `.claude/settings.json`. Any symlink at the reserved
+    path is ours, whatever its target: an old declared path, a moved
+    clone, dangling or foreign. Yes replaces it, any other answer removes
+    it, and adoption may untrack it. Replacing or removing a symlink
+    never writes through it, so no project bytes are lost. A regular file
+    or directory at the path is the project's: never replaced, removed or
+    untracked. The core path is also left out of the managed `.gitignore`
+    block while one is there, so the file stays visible to git. The target
+    suffix check of round 1 is retired, so a changed `opt-in-loaded:`
+    declaration is repaired by the next `adopt.sh` run (S732 §4).
+  - **Warning follows the same rule.** `session-context.sh`: not opted in
+    and any symlink at the path, then "run adopt.sh again to remove it",
+    which is now true. Opted in and a regular file at the path, then a line
+    that names the project file and says adoption will not link the core
+    while it is there. It no longer advises an `adopt.sh` run that cannot
+    succeed. Opted in, and the path is absent or a symlink not resolving to
+    this clone's core: unchanged, "run adopt.sh again to restore it".
+  - **Codex block and key: in-band markers, unchanged.** The core block's
+    begin/end markers and the managed key's marker comment line already
+    record what adoption wrote. Removal and refresh act only on marked
+    bytes. What remains is reading the project's own key, which is
+    detection of theirs, not ownership of ours. A line counts as a project
+    definition only if it is not a comment line (its first non-blank
+    character is not `#`). A comment that mentions the key therefore no
+    longer blocks the managed key; before, a project with such a comment
+    stayed at 32768 and truncated. `top_level_limit` reads the first such
+    top-level definition: bare or quoted key, any TOML integer form
+    (`int(value.replace('_', ''), 0)`). If the project defines the key
+    but the value cannot be read, `status` still fails closed. Its
+    over-limit line then says to write `project_doc_max_bytes` as a plain
+    top-level integer, which the project can do.

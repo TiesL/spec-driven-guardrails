@@ -1235,10 +1235,21 @@ elif SCENARIO == 404:
         require('conflict' in (result.stdout + result.stderr).lower(), f'{variant}: missing conflict diagnostic')
         require(snapshot(q) == before, f'{variant}: conflict wrote adoption files')
 elif SCENARIO == 405:
+    # Amended by #750 (A66 D4): the project answers yes, so the only config
+    # adoption may write is the managed project_doc_max_bytes line in the
+    # project .codex/config.toml (comments and blank lines aside).
+    (PROJECT / 'WORKFLOW-ADOPTION.md').write_text(
+        '| process-multi-agent-roles | yes | date | fixture |\n')
     home = Path(ENV['HOME']); before = snapshot(home)
     adopt(); adopt('--hooks')
     require(snapshot(home) == before, 'adoption wrote HOME/Codex config')
-    require(not (PROJECT / '.codex/config.toml').exists(), 'adoption wrote project Codex config')
+    config = PROJECT / '.codex/config.toml'
+    require(config.is_file(), 'a yes adoption wrote no project .codex/config.toml')
+    if config.is_file():
+        lines = [l.strip() for l in config.read_text().splitlines()
+                 if l.strip() and not l.strip().startswith('#')]
+        require(lines == ['project_doc_max_bytes = 65536'],
+                f'project Codex config holds more than the managed key line: {lines}')
     require(not list(PROJECT.rglob('hooks.state')), 'adoption wrote hooks.state')
     for p in PROJECT.rglob('*'):
         if p.is_file() and not p.is_symlink() and '.git' not in p.parts:

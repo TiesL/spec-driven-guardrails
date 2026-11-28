@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# S178 — The SessionStart hook chain delivers the orchestrator rules to an
-# opted-in project, reaches it without re-adoption, and warns when CLAUDE.md
-# is not linked.
+# S178 — The one SessionStart command carries no orchestrator rule text,
+# keeps the pending-changes report, and warns when CLAUDE.md is not linked.
 # Covers: F38
 #
-# Issue #371, A16, AC1/AC3/AC11. Seam: the SessionStart commands exactly as
-# a project's .claude/settings.json symlink exposes them, run the way Claude
-# Code runs them (CLAUDE_PROJECT_DIR set, one shell each), against a real
-# adoption from a copy of this clone. Whether a session then ACTS on the
-# text is model behaviour and not testable here (see S180).
+# Issue #371, A16, AC1/AC3; amended by #750 (A66 D2): the core reaches an
+# opted-in session through the always-loaded link (S732), which also owns
+# "a release arrives without re-adoption". Seam: the SessionStart commands
+# exactly as a project's .claude/settings.json symlink exposes them, run the
+# way Claude Code runs them (CLAUDE_PROJECT_DIR set, one shell each), against
+# a real adoption from a copy of this clone.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -35,20 +35,13 @@ adopt_from_copy() {
   echo "$p"
 }
 
-# 1. Opted in: the combined hook output carries ORCHESTRATOR.md.
+# 1. Opted in: the hook output carries no ORCHESTRATOR.md rule text (the
+# core is the always-loaded file now, not hook output).
 yes_p="$(adopt_from_copy yes)"
 write_adoption "$yes_p/WORKFLOW-ADOPTION.md" "$id" yes
 out="$(run_session_start "$yes_p")"
-output_has_all_lines "$orch" "$out" \
-  || fail "S178/1 — an opted-in project's SessionStart output does not carry all of ORCHESTRATOR.md"
-
-# 2. Updates propagate without re-adoption and without re-answering (AC11):
-# the clone ships a later ORCHESTRATOR.md, the project is not touched.
-printf 'PROPAGATION-SENTINEL-371 shipped in a later release\n' >> "$orch"
-out="$(run_session_start "$yes_p")"
-assert_contains "S178/2 — a later ORCHESTRATOR.md reaches the project's next session" "PROPAGATION-SENTINEL-371" "$out"
-# restore for the next cases
-sed -i.bak '/PROPAGATION-SENTINEL-371/d' "$orch" && rm -f "$orch.bak"
+output_has_any_line "$orch" "$out" \
+  && fail "S178/1 — an opted-in project's SessionStart output still carries ORCHESTRATOR.md text"
 
 # 3. Row answered no: no orchestrator text.
 no_p="$(adopt_from_copy no)"
@@ -81,21 +74,24 @@ ln -s "$SANDBOX/elsewhere.md" "$no_p/CLAUDE.md"
 out="$(run_session_start "$no_p")"
 assert_contains "S178/5 — CLAUDE.md links to the wrong file" "CLAUDE.md" "$out"
 
-# 6. The orchestrator text is injected whatever the missing link: the
-# warning is additional, not a replacement.
+# 6. Opted in with CLAUDE.md missing: the CLAUDE.md warning, still no
+# orchestrator text.
 rm -f "$yes_p/CLAUDE.md"
 out="$(run_session_start "$yes_p")"
-output_has_all_lines "$orch" "$out" \
-  || fail "S178/6 — with CLAUDE.md missing, the orchestrator text was no longer delivered"
+assert_contains "S178/6 — opted in, CLAUDE.md missing: warning names CLAUDE.md" "CLAUDE.md" "$out"
+output_has_any_line "$orch" "$out" \
+  && fail "S178/6 — with CLAUDE.md missing, the SessionStart output carries ORCHESTRATOR.md text"
 
-# 7. Wiring: the hook resolves the clone by readlink like the pending-changes
-# command (no per-project copy, no hard-coded path), so no re-adoption is
-# ever needed to pick up a change.
+# 7. Wiring: exactly one command calls session-context.sh, and it resolves
+# the clone by readlink like the pending-changes command (no per-project
+# copy, no hard-coded path).
 settings="$TEST_REPO_ROOT/settings/session-hooks.json"
 cmds="$(session_start_commands "$settings")"
 session_cmd="$(grep 'session-context.sh' <<<"$cmds")"
 if [ -z "$session_cmd" ]; then
   fail "S178/7 — no SessionStart command calls session-context.sh"
+elif [ "$(grep -c . <<<"$session_cmd")" -ne 1 ]; then
+  fail "S178/7 — more than one SessionStart command calls session-context.sh"
 else
   case "$session_cmd" in
     *'readlink'*) ;;
