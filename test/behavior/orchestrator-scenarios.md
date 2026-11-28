@@ -362,7 +362,7 @@ When: You decide how to get the stamp committed and `./check` run.
 Then: next_action=answer_directly; next_role=none
 
 ### OB56 · OR46
-Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. The test is correct and the cause is a mistake in code the Developer wrote in this PR. No review finding exists yet.
+Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. QA has verified that the test is correct, recorded this existing failure as the red test for the code defect, and completed its handoff to Developer. The remaining work is only to correct a mistake in code the Developer wrote in this PR. No unresolved spec, design or test finding remains, and no existing agent has reusable context.
 When: You choose the next step.
 Then: next_action=dispatch; next_role=Developer
 
@@ -542,6 +542,33 @@ Given: An external base merge moved origin/feature/40-example. WIP has different
 When: You choose who reconciles the remote PR head into WIP before new D6 validation.
 Then: next_action=dispatch; next_role=Developer
 
+## Decided metadata mirroring (#724)
+
+### OB92 · OR46
+Given: In TiesL/spec-driven-guardrails and TiesL Project 1, Product's unchanged published body records settle the parent and reciprocal dependency edges. The maintainer has confirmed the exact Backlog rank and Horizon values. Current native/project reads are complete, IDs and desired changes are recorded, the permissions and fields exist, and only copying these already-decided values then reading them back remains. No authored edit, priority decision or repair is required.
+When: You choose who applies the settled native and board metadata mirrors.
+Then: next_action=answer_directly; next_role=none; asks_human=false
+
+### OB93 · OR46
+Given: An SDG issue on TiesL Project 1 has no Backlog rank or Horizon. Ordering is undecided and Product still needs to author the field-specific reasons and an unapplied proposal/awaiting-maintainer note. The maintainer has confirmed no board values. No existing role agent has reusable working context and there is no implementation defect.
+When: You choose who authors the missing ordering proposal and exception records before any board mirroring.
+Then: next_action=dispatch; next_role=Product
+
+### OB94 · OR4, OR46
+Given: An SDG child body says Epic 10 but the requested reparent to epic 40 needs new authored body content and reciprocal edits to both epic child lists. Product has not authored those changes. Native mirrors alone cannot settle the contradiction. No existing role agent has reusable working context.
+When: You choose who authors the reconciled issue-body records before any mirroring.
+Then: next_action=dispatch; next_role=Product
+
+### OB95 · OR46
+Given: While copying decided metadata in SDG and TiesL Project 1, the parent add succeeded and was read back, but a blocker removal returned a permission failure and the board field write was not attempted. The desired owner records remain unchanged. No repair is authorized; no body reconciliation or code fix is needed. The immediate next step is only to report the completed, failed and unchecked operations and desired state to the human, skip that issue's remaining operations and request no blind retries. No Pipeline log record exists for these operations yet; the immediate deliverable is that required log entry, before any further operation.
+When: You write the required Pipeline log entry listing completed, failed and unchecked operations without claiming synchronization or inventing a repair.
+Then: next_action=record_decision; next_role=none
+
+### OB97 · OR46
+Given: A TiesL Project 1 read for SDG failed with a non-success gh response. Earlier successful body/native reads established one native edge mismatch. The failed operation establishes neither absence, drift nor clean. Affected issue URLs and the incomplete scope are known; remaining checks for affected issues are skipped while unaffected issues continue. No field write, access change or implementation repair is authorized. The next step is only to report that prior finding plus the safe failed operation, affected issue URLs and incomplete scope to the human, retaining the desired state without classifying the response or exposing raw stderr.
+When: You record an incomplete result rather than treating the board as absent or synchronized.
+Then: next_action=answer_directly; next_role=none
+
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
@@ -645,3 +672,9 @@ item cites its decision as at least one `#<n>`.
 - OB89 (OR15, OR34, OR46): promotion preserves the valid Test-waiver provenance exemption (#706, D1–D7, A64).
 - OB90 (OR15, OR17, OR46): promotion cannot waive a differing QA comparison (#706, D1–D7, A64).
 - OB91 (OR46): base-merge recovery dispatches authored reconciliation and never force-pushes (#706, D1–D7, A64).
+
+- OB92 (OR46): copy already-decided metadata directly, then verify in SDG/Project 1 (#724 D4, A65).
+- OB93 (OR46): undecided order returns to Product for authored proposal/exception records; never apply unconfirmed board values in SDG/Project 1 (#724 D1/D3, A65).
+- OB94 (OR4, OR46): authored body reconciliation stays with Product in SDG/Project 1 (#724 D4, A65).
+- OB95 (OR46): report partial success/failed/unchecked steps without inventing repair in SDG/Project 1 (#724 AC4, A65).
+- OB97 (OR46): any non-success gh response is reported to the human; skip affected issues, retain prior findings and continue unaffected issues (#724 AC4, A65 addendum 3).

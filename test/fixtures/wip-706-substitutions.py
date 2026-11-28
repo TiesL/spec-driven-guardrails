@@ -8,6 +8,22 @@ import json
 
 TABLE = json.loads(Path(__file__).with_suffix('.json').read_text())['changes']
 
+# #724 is an exact extension of the historical #706 pairs, never a new hash
+# learned from candidate bytes. Fold dependent pairs into the earlier literal
+# replacement so existing per-pair omission controls still remove a whole pair.
+# The two JSON tables retain both historical and sanctioned source bytes.
+AMENDMENTS_724 = json.loads(Path(__file__).with_name('backlog-724-substitutions.json').read_text())['changes']
+for path, amendments in AMENDMENTS_724.items():
+    for old, new in amendments:
+        owners = [i for i, pair in enumerate(TABLE.get(path, [])) if old in pair[1]]
+        if owners:
+            assert len(owners) == 1, '724 amendment overlaps #706 replacements: '+path
+            pair = TABLE[path][owners[0]]
+            assert pair[1].count(old) == 1, '724 amendment source not unique: '+path
+            pair[1] = pair[1].replace(old, new, 1)
+        else:
+            TABLE.setdefault(path, []).append([old, new])
+
 
 def apply(path, data):
     for old, new in TABLE.get(path, []):

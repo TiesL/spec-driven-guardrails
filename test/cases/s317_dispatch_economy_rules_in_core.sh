@@ -40,6 +40,9 @@ cc() {
   done
   row() { awk -F'\t' -v i="$1" '$1==i{print $2" "$3" "$4" "$5}' "$t"; }
   [[ "$(row OR46)" == "no-agent-steps judgment 1 "*OB* ]] || echo "row-or46: expected 'no-agent-steps judgment 1' with covered_by OBs, got '$(row OR46)'"
+  for ob in OB92 OB93 OB94 OB95 OB97; do
+    has "$(awk -F'\t' '$1=="OR46"{print ","$5","}' "$t")" ",$ob," || echo "row-or46-mirror: missing $ob decided-metadata behavior"
+  done
   [[ "$(row OR47)" == "fresh-brief-size judgment 2 "*OB* ]] || echo "row-or47: expected 'fresh-brief-size judgment 2' with covered_by OBs, got '$(row OR47)'"
   [[ "$(row OR48)" == "run-scope judgment 2 "*OB* ]] || echo "row-or48: expected 'run-scope judgment 2' with covered_by OBs, got '$(row OR48)'"
   [[ "$(row OR13)" == "continuation-rule judgment 1 "* ]] || echo "row-or13: OR13 must be 'continuation-rule judgment 1', got '$(row OR13)'"
@@ -60,7 +63,9 @@ cc() {
   has "$line" "never repair" || echo "or46-repair: OR46 must say the orchestrator never repairs a failing command"
   has "$line" "generated" || echo "or46-generated: OR46 (b) is about generated, unedited files"
   has "$line" "read-only" || echo "or46-readonly: OR46 (c) is read-only git or gh"
-  has "$line" "Pipeline log" || echo "or46-label-log: OR46 (d) names label and Pipeline log"
+  has "$line" "(d) labels/log;" || echo "or46-label-log: OR46 (d) retains labels/log"
+  has "$line" "mirror decided metadata;" || echo "or46-decided-mirror: OR46 (d) permits only decided metadata mirrors"
+  has "$line" "Failed promotion/moved head blocks Review; head moved at Review start: stop. All else:" || echo "or46-moved-head-stop: OR46 must name stop for a moved head at Review start"
   line="$(item OR33 "$o")"
   has "$line" "OR46" || echo "or33-or46: OR33 must say an OR46 step never replaces a stage's dispatch or counts as stage done"
   line="$(item OR13 "$o")"
@@ -144,9 +149,22 @@ negc or46-sixth or46-sixth "$d/o-6th.md" "$TSV"
 sed 's/promote existing D6-green commits/edit any file/' "$ORCH" > "$d/o-promotion-edit.md"
 negc promotion-not-authored or46-promotion "$d/o-promotion-edit.md" "$TSV"
 
+# D4 retains bookkeeping but only adds copying already-decided metadata.
+sed '/^- OR46 /s/labels\/log;/metadata;/' "$ORCH" > "$d/o-no-label-log.md"
+negc label-log or46-label-log "$d/o-no-label-log.md" "$TSV"
+sed '/^- OR46 /s/mirror decided metadata;/mirror any metadata;/' "$ORCH" > "$d/o-any-metadata.md"
+negc decided-mirror or46-decided-mirror "$d/o-any-metadata.md" "$TSV"
+
+sed '/^- OR46 /s/; head moved at Review start: stop\././' "$ORCH" > "$d/o-no-moved-head.md"
+negc moved-head-unnamed or46-moved-head-stop "$d/o-no-moved-head.md" "$TSV"
+sed '/^- OR46 /s/head moved at Review start: stop/head moved: stop/' "$ORCH" > "$d/o-moved-head-unscoped.md"
+negc moved-head-unscoped or46-moved-head-stop "$d/o-moved-head-unscoped.md" "$TSV"
+
 awk -F'\t' -v OFS='\t' '$1=="OR46"{$5=""} {print}' "$TSV" > "$d/t-nocov.tsv"
 negh or46-uncovered judgment-no-ob "$ORCH" "$d/t-nocov.tsv"
 negc or46-uncovered-cc row-or46 "$ORCH" "$d/t-nocov.tsv"
+awk -F'\t' -v OFS='\t' '$1=="OR46"{gsub(/,OB92/,"",$5)} {print}' "$TSV" > "$d/t-no-mirror.tsv"
+negc mirror-uncovered row-or46-mirror "$ORCH" "$d/t-no-mirror.tsv"
 
 sed 's/^OR13\tcontinuation-rule/OR13\tcontinuing-other-roles-undecided/' "$TSV" > "$d/t-name.tsv"
 negc or13-oldname row-or13 "$ORCH" "$d/t-name.tsv"

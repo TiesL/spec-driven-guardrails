@@ -3001,6 +3001,102 @@ separate advisory-nudge item: network-free, adoption-gated, visible to the
 agent, never a refusal or open-PR lookup. Reconsider concurrency separately.
 No such follow-up is implemented here.
 
+### F77 — Keep SDG's backlog current and report drift on request (issue #724; epic #742)
+
+**Serves:** #724 AC1–AC6, narrowed by maintainer D6/D7 on 2026-11-27.
+The first version serves only `TiesL/spec-driven-guardrails` and TiesL's
+Project 1. Its maintenance rule and `backlog-drift.sh` are SDG-internal.
+Put the rule in this repository's own workflow documentation, not the
+adopter-facing `write-spec` skill. Issue templates retain their base text;
+F14 retains its base meaning. This local rule supplements that baseline
+for SDG only. No `process-issue-tracking` meaning-version change is made.
+
+**Decisions.** D1 retains issue-body authority for relations, native mirrors
+and board authority for ordering. D2 retains on-request reporting. D3
+retains field-specific durable exceptions for empty rank/Horizon. D4 retains
+the narrowly authorized OR46(d) wording for mirroring already-decided
+metadata, with the required whole-file behavior evidence and current stamp;
+Architect states whether it remains necessary under D7. D5 (meaning v2
+and its release-notice approval requirement) is withdrawn. D6 limits the
+repository/board and requires reporting every non-success gh response to
+the human for the affected issue, without classifying ambiguous answers.
+D7 limits delivery to SDG's own workflow; it does not revoke D4.
+
+**Outcome and maintenance (AC1).** Keep this repository's issue records,
+native relations, labels and Project 1 aligned at creation, relationship
+or stage changes, confirmed reprioritization and closure. Work items name
+their epic; epics list children, nested epics name their parent and
+top-level epics have none. Maintain realized Covers, explicit dependency
+sets (`none` when empty), reciprocal parent/child and Blocked by/Blocks
+records, and removal of obsolete edges at both ends and in native mirrors.
+Examples are not declarations. Contradictory or missing declarations need
+owner reconciliation before mirroring. Product owns authored body changes;
+the orchestrator publishes owner-produced content unchanged and mirrors
+settled metadata only. This grants no prioritization, repair or
+project-configuration authority.
+
+Use SDG's type/status/active-role labels and Project 1 lifecycle mapping;
+inactive items need no invented active role. Verify automatic membership
+before adding a confirmed missing item. Derived parent/progress/PR-link
+fields follow actual relations and PR linkage. Read before applying settled
+changes and read back afterward. Record completed, failed and unchecked
+operations and desired state in the Pipeline log or durable issue note.
+A partly completed sequence remains pending reconciliation.
+
+**Ordering (AC2).** Project 1 Backlog rank and Horizon own order. Apply only
+confirmed maintainer decisions and #721's child inheritance, epic-order and
+parking rules. Each empty field independently needs a durable issue-body
+or comment record naming field, reason, proposed value (or undecided),
+awaiting-maintainer or parked disposition, and decision/reference. Keep
+proposals unapplied; cite the parent/decision for inheritance and the
+parking decision for parking. Generic TBD and a note for the other field
+are insufficient. Surface valid exceptions in the report.
+
+**Report and failures (AC3–AC4).** On request, `backlog-drift.sh` reads this
+repository's open and closed issues, comments, native relations and
+Project 1, including applicable pagination. Report missing membership,
+body/native or inverse-edge disagreement, removed edges still present,
+missing rank/Horizon without AC2 evidence, label/lifecycle disagreement
+and closed items not Done. Include issue links, observed/expected values
+and exception references. A complete consistent snapshot reports no drift.
+
+For any non-success gh response, inform the human in the AI session of
+the failed operation and affected issue(s), retaining already-established
+findings. Do not classify an ambiguous response as absence, drift or
+success; do not build an ambiguity taxonomy. If an operation covers several
+issues, identify those whose checks could not complete. Incomplete reads,
+pagination or required data cannot establish a clean snapshot or authorize
+writes. Missing gh/network is likewise reported as inability to check.
+Do not expose credentials or arbitrary server stderr. Successful write
+requests require read-back before claiming synchronization; report partial
+maintenance for human reconciliation without guessing repair or rollback.
+
+The report is read-only, advisory and on request: no automatic repair,
+session-start invocation, CI/merge gate or duplicate synchronization engine.
+No other repository/board, board-less adopter mode, cross-repository edge
+alignment or multiple-project identity/collision handling is delivered.
+
+**Closure and delivery (AC5–AC6).** Reuse SDG's enabled membership/closure
+workflows first, then verify issue CLOSED, actual PR linkage, membership
+and Project 1 Done. A release-child PR merge alone does not close its issue:
+record completion/PR link, explicitly close the child under the release
+workflow, and verify CLOSED/Done. Keep the epic's release-closure rules.
+Do not add duplicate automation or change project settings. Reconcile A65,
+local workflow instructions and their generated equivalents with D6/D7;
+remove #724's adopter write-spec/template changes and meaning-v2 notice.
+Architect owns the local rule location and any still-needed D4 design.
+
+**Evidence and limits.** The supplied 2026-11-26 capture reports enabled
+Project 1 workflows, no missing open issues and successful parent/blocker
+creation. It is historical evidence, not proof of current synchronization,
+removals or release-child closure. This offline specification makes no live
+verification claim. QA must reconcile S726–S731 to the narrowed ACs, testing
+local relations/order/closure, field-specific exceptions, non-success
+human reporting, incomplete reads and partial maintenance, plus delivery
+boundaries. Fixtures do not prove server success. QA owns scenarios;
+Architect/QA/Developer artifacts still describing broader scope require
+owning-role updates before fresh Review.
+
 ## Non-functional characteristics
 
 ### Security

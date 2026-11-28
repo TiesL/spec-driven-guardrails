@@ -121,7 +121,11 @@ SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e383
  # #706 runner-generated stamp: behavior sha256=e644a58b5917fae06a1a2c205362e78647c08bff5164f9a636621a12684b584e.
  # Previous stamp snapshot: c8bfb965e6fda1835820cff84bc099820c7bc4bbc480232257f4467005242780
  # #706 runner-generated stamp: behavior sha256=6e3bb3191d30b107e54a8156f084322fcf89734df38370565892f2827af24258.
- 'test/behavior/orchestrator-diff.stamp': '981305bf026494b08fc609ef20e1c918029ac381acde439417ef9cfe21e92b3c',
+ # Previous stamp snapshot: 981305bf026494b08fc609ef20e1c918029ac381acde439417ef9cfe21e92b3c
+ # #724 runner-generated stamp: behavior sha256=c853bea031c1d3b4329901b1f0cc0dca306c5b4b1f0f9237c61165bf64028949.
+ # Previous stamp snapshot: ab5a5bc119c0cfed4d582bd82c707ca948d8fd5fd5bfcc915a266fbd42929dce
+ # #724 runner-generated stamp (final core): behavior sha256=af90e4c2b6a5fbf8e04c189201a1565a9fbfd3e23679bc174ee68c0c76258edc.
+ 'test/behavior/orchestrator-diff.stamp': 'bcf432557a697625e6fd9a933ea51e3999c6e5113a38b6ee5348f6166e428ba0',
  'test/behavior/orchestrator-scenarios.md': '35c9f032e3344764c2a919d25beb68c8169f3076a46a54d49368c6c7237eb638',
  'test/fixtures/orchestrator-core-pins.tsv': '2e1a30b503bd1c294db97e50111fc2759777592b8fffb8597b1cda3a514228d7'}
 errors = []

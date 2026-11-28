@@ -12832,6 +12832,909 @@ above; preserve its historical source and base, every other pair and all
 rejection controls. Update S720's exact commit-on-main witness and its
 independent deletion/reversion control to the same assignment. Preserve
 S47's existing assertion; no oracle relaxation or repin is authorized.
+
+### A65 — Portable issue relations, decided board fields and an on-request drift report (#724; epic #742)
+
+Planning, 2026-11-27; supplied release head
+`3e3e94f0c1d2e756ca248ee37e91dd22cca4ca61` (includes #706).
+This implements maintainer D1–D3 recorded on #724: body relations own the
+graph, native relations mirror it, board fields own order; reporting is on
+request; empty ordering fields need durable decision evidence. PR base is
+`release/742-process-hygiene`. A65 is the next free A-number by heading
+search. F77 and S726–S731 are proposals, not defined coverage: Product/QA
+must establish their headings before using them as resolved `Covers:`.
+
+#### One rule owner and a narrowly necessary core permission
+
+Put the create-time **and continuing maintenance** rule in
+`skills/write-spec/SKILL.md`, immediately after numbered item 3. It already
+owns issue creation, templates and portable traceability, for single-session
+projects as well as role pipelines. Add one subsection, “Maintaining issue
+and board metadata”, with the operational recipe below. Do not introduce
+a second board skill, a daemon, a hook or a replacement issue registry.
+The existing policy issue-first sentence already routes creation there;
+append one routing sentence at the end of `policy/WORKFLOW.md`'s “Issue
+labels” section: “At creation, relationship or stage changes, reprioritization
+and closure, follow `write-spec`'s issue and board maintenance rule.”
+Generate runtime copies with `./generate-workflow-adapters.sh`; never edit
+`WORKFLOW.md`, `AGENTS.md` or runtime payloads independently. No adapter
+source change is needed for this runtime-neutral sentence.
+
+**ORCHESTRATOR.md must change, narrowly.** Its OR46 closed no-agent list
+currently permits labels/log, read-only gh and named repository commands;
+it does not authorize direct native-relation or board writes. Do not
+interpret a `gh api` mutation as read-only, turn the reporter into an
+apply tool to evade this limit, or dispatch a fresh Developer for every
+mechanical mirror operation. In OR46's first sentence replace exactly
+`(d) set label, edit Pipeline log;` with
+`(d) labels/log; mirror decided metadata;`. Every other byte of that rule
+and every other core rule remains unchanged. “labels/log” retains the
+existing label/Pipeline-log actions; the added action copies already
+decided issue relations and board values. It grants no authored body
+content, prioritization judgment, project-setting change or repair authority.
+Product still authors body changes and inverse body-edge changes; the
+orchestrator publishes owner-produced records unchanged and mirrors them.
+Unsettled source content returns to Product/the maintainer under OR4/OR43.
+
+This is reserved contract content, proposed for the maintainer's exact
+content decision, not an override authorized by this role. Reserved edits
+are precisely: the new write-spec subsection; the one policy routing
+sentence; OR46(d) above; both template guidance blocks and the epic fields
+below; generated equivalents; and any adoption notice. Do not edit other
+role responsibilities or OR46's repair prohibition. D1–D3 settle substance;
+they do not authorize arbitrary contract rewrites or project settings.
+
+**Measured cost.** At the supplied head, ORCHESTRATOR.md is 16,468 UTF-8
+bytes; its source parts are 7,984 and 8,449 characters. Running
+`bash test/cases/s318_dispatch_economy_context_budget.sh` exited 0 and
+reported worst-case slots 8,491/8,449, budget 9,000. The exact replacement
+adds seven ASCII characters: projected slots 8,498/8,449, headroom 502/551;
+the one-character control should retain 501 in slot 1. This arithmetic
+is a target, not candidate validation. Keep K=2, budget 9,000, floor 500
+and fallback 8,500. Do not add a core pointer or any extra words there.
+Because the core changes, a real whole-file behavior run and current
+runner-generated stamp are required; a prose-only waiver is not proposed.
+Policy/skill-only placement was considered and rejected because it leaves
+the OR46 permission conflict unresolved. An automatic sync engine was
+rejected because it adds write-state machinery and decision risks for a
+manual workflow with an initially on-request report.
+
+#### Authority and maintenance transaction
+
+The rule applies when an epic/work item is created, a relation or stage
+changes, order is confirmed, or completion is recorded. The owner prepares
+the concrete body/decision first. The orchestrator reads current data,
+computes the difference, applies only settled changes, then reads it back.
+This is a non-atomic sequence: log each completed/failed/unchecked operation
+and affected issue/edge in the Pipeline log (or a durable issue note outside
+role pipelines). Never describe a partially applied sequence as synchronized.
+
+- A work item has one live whole-line `**Epic:** #N`, realized `**Covers:**`
+  tokens and explicit `**Blocked by:**` / `**Blocks:**` sets (`none` for
+  empty). A top-level epic has no parent and lists its children under
+  “Work items”; epic bodies also carry Covers and dependency fields.
+  An epic nested under another epic uses Epic too. Parent child-list and
+  child Epic must agree before mirroring; do not choose silently between
+  contradictory body declarations. Ignore quoted/template examples using
+  the existing `lib/markdown.sh` live-text convention, excluding indented
+  code too. Duplicate/malformed/ambiguous fields are unchecked, not empty.
+- A says “Blocked by B” iff B says “Blocks A”; the single native edge is
+  A blocked-by B. Remove obsolete edges from both body ends and the native
+  graph. Likewise remove the old epic child entry/native parent on a
+  reparent, then attach the settled new parent. Read all affected ends,
+  including old parents and removed blockers. Missing inverse body data
+  is drift requiring owner reconciliation, not permission to invent it.
+  Explicit settled removals may repair stale native inverses; neither a
+  missing field nor a failed lookup authorizes deletion.
+- Keep type, status and the active role label aligned with the decided
+  lifecycle. Preserve the existing canonical role names and stage order;
+  inactive/backlog/closed items need no invented active role. Use existing
+  labels; do not create label vocabulary or infer stages from the board.
+  Stage transitions still follow OR5; reporter output never drives them.
+  For Project 1, mirror backlog to Backlog, active Discovery through
+  Implementation to In progress, Review to In review, and verified closure
+  to Done; use Ready only for explicitly decided ready work. A blocked
+  label/body reason remains visible because this board has no Blocked
+  option; retain the applicable stage Status rather than inventing an
+  option or claiming the blocker is resolved. Other projects use their
+  documented Status mapping; missing mapping/options are unchecked, not
+  permission to create configuration. Closed issues drop active status/
+  role labels under the existing closed-is-done convention.
+- Board membership is checked after existing auto-add workflows have had
+  a chance to act. Add only a confirmed missing item, then verify it. A
+  duplicate/already-exists response is a reason to re-read, not a success
+  assertion. Project parent/progress/PR-link fields are derived from native
+  relations and PR linkage; do not attempt to edit those derived fields.
+- Backlog rank/Horizon are authoritative in the configured board. Apply
+  only the maintainer's confirmed order/horizon, including #721's child
+  rank inheritance and epic ordering. Do not rank children independently,
+  infer priority from issue number, or write an unapplied proposal. No
+  detailed #721 implementation artifact was supplied here; its settled
+  rule must be included in the implementation brief rather than guessed.
+  Where inheritance leaves a physical field empty, record that reason
+  and the parent/decision reference explicitly; it is not an invisible
+  exception to AC2.
+
+For each empty field use a durable issue-body “Board decisions” note,
+one row per `Backlog rank` / `Horizon`: field, reason, proposed value (or
+explicitly undecided), disposition `awaiting-maintainer` or `parked`, and
+decision/reference. An awaiting row records that confirmation is pending;
+a parked row cites its documented parking decision. Existing equivalent
+issue comments count when they name the same field, reason and pending
+proposal/parking decision; the report must read all comments to recognize
+them. Generic “priority TBD”, an unlinked label or a proposal already
+applied without confirmation is not evidence. A confirmed value supersedes
+an earlier awaiting note; contradictory unresolved notes are indeterminate.
+The record makes a permitted empty visible; it does not grant ordering
+authority. The report checks completeness/exceptions, not whether a human
+priority decision was wise.
+
+**Command recipe (future implementation, not commands run in Planning).**
+Use explicit repository identity and fetched numeric/node IDs, never token
+values. `R` below is OWNER/REPO; numbers/IDs are validated data, never eval.
+Read `gh api repos/$R/issues/$n`, `.../parent`, `.../sub_issues`,
+`.../dependencies/blocked_by` and `.../dependencies/blocking`; paginate every
+list. Fetch issue IDs from the issue objects rather than confusing an
+issue number, REST numeric ID, GraphQL node ID or project-item ID.
+
+- Parent add: `gh api --method POST repos/$R/issues/$parent/sub_issues -F
+  sub_issue_id="$child_id"`. Parent removal uses `--method DELETE
+  repos/$R/issues/$old_parent/sub_issue -F sub_issue_id="$child_id"`.
+  Do not use blind replacement of a parent on incomplete evidence.
+- Blocker add: `gh api --method POST
+  repos/$R/issues/$blocked/dependencies/blocked_by -F issue_id="$blocker_id"`;
+  remove with `--method DELETE
+  repos/$R/issues/$blocked/dependencies/blocked_by/$blocker_id`. Verify the
+  corresponding blocking read on the blocker too.
+- Labels: `gh issue edit "$n" -R "$R" --add-label ... --remove-label ...`.
+  Role-owned body updates use `--body-file`, preserving newlines and the
+  unedited owner content. No body interpolation into executable shell text.
+- Resolve the configured project, complete item inventory, fields, field
+  types and option IDs. `gh project item-add "$project" --owner "$owner"
+  --url "$issue_url"` only after confirmed absence. For decided values,
+  `gh project item-edit --id "$item_id" --project-id "$project_id"
+  --field-id "$field_id" --number "$rank"`, or `--single-select-option-id
+  "$option_id"` for Horizon/Status. Clear only an explicitly decided
+  removal, using `--clear`. Verify each value in a fresh read. Never change
+  project workflows or create missing fields/options in this work item.
+
+Board facts prove that parent/blocker POSTs and auto-membership have worked
+on Project 1, not that every read/removal/field write works today. Developer
+must check command shapes against the installed gh help/endpoint contract;
+QA's fake verifies requests and expected IDs. The orchestrator must record
+actual authorized add/remove/read-back evidence before claiming live
+maintenance, especially removal and release-child closure. A fake is not
+server evidence. 401/403/404, unsupported relations, rate limits, GraphQL
+errors, malformed JSON and partial pagination all name the operation,
+issue(s) and unchecked scope. Do not print raw HTTP headers, auth status,
+tokens, debug traces or arbitrary server stderr into reports. Do not alter
+credentials/scopes or retry writes blindly. After partial writes, re-read
+and reconcile; retain the owner-approved desired state and the failed-step
+list so another session can finish safely. No rollback that guesses state.
+Distinguish the documented no-parent result from an unavailable endpoint:
+only an established supported relation read's explicit absence semantics
+may establish no parent. An ambiguous 404 is unchecked, not an empty graph.
+QA must include a supported top-level/no-parent case as well as an
+unsupported-endpoint case; otherwise a permanently incomplete report could
+pass the failure tests while never producing a useful clean snapshot.
+
+#### One read-only report Module
+
+Add one executable root script, `backlog-drift.sh`. Its Interface is
+`./backlog-drift.sh [--repo OWNER/REPO] [--project-owner OWNER --project N]`,
+run from the project checkout (adopters may invoke it via
+`$SPEC_DRIVEN_GUARDRAILS_DIR/backlog-drift.sh`). With no `--repo`, resolve
+the current repo using gh's existing placeholder pattern. Board arguments
+are a pair identifying an explicitly configured board; omission means
+board checks `not-applicable`, printed prominently. Do not discover an
+arbitrary board, assume Project 1 for adopters, or treat a configured but
+inaccessible board as absent. Keep existing project-board documentation as
+the source of these arguments; no new config file/adoption parser.
+
+The scope is all repository issues, open and closed (exclude PRs), their
+referenced parents/dependencies and inverse relations, and same-repository
+issue items on the selected board, including archived items where exposed.
+State the repository, project, snapshot time, counts and unchecked scope.
+No capped `gh issue list --limit` or first-page-only project listing counts
+as complete. REST issue/comment/relation lists use `--paginate` with page
+validation. Projects v2 needs GraphQL queries with explicit cursor loops
+for items, fields and nested field values: validate `pageInfo`, terminal
+pages, required objects/types, and both process exit and GraphQL `errors`.
+GraphQL's transport POST is allowed only for a query, never a mutation.
+REST for issue data preserves useful partial reporting if GraphQL is
+unavailable, as already documented by `role-label-staleness.sh`.
+
+Within one script, normalize the collected data and compare sets/fields.
+Reuse `lib/markdown.sh` for live text; use existing bash 3.2/gh/jq patterns
+and deterministic sorting. No new dependency framework or shared graph
+library. The Module has Depth because it hides complete collection,
+normalization, inverse checks, exceptions and partial-read diagnostics
+behind one invocation. Its deletion would spread those concerns across
+manual callers. That gives Leverage and Locality. The actual Seam is gh
+on PATH: real gh and a recording fake gh are two real adapters; no
+speculative transport abstraction is needed. Reuse the staleness script's
+failure discipline and fake-gh patterns, not its marker/PR-discovery
+implementation. Existing `role-label-staleness.sh` remains independently
+available for role evidence; do not duplicate that parser here.
+
+For each finding print issue URL, field/edge, observed and expected value,
+and evidence/decision URL for valid exceptions. Report missing membership;
+body/native parent and blocker drift, extra/removed edges and inverse
+disagreement; missing rank/Horizon without valid field-specific evidence;
+closed issue items whose Status is not Done. Print valid awaiting/parking
+exceptions explicitly. A missing required project field is unchecked scope,
+not an empty value; an open issue absent from a complete project inventory
+is missing membership. A closed issue absent from it is also reported,
+rather than claiming its board Status was verified. Parent/child body
+contradictions are reported alongside native differences. Do not repair.
+
+Use aggregate `result=clean|drift|incomplete`, with per-check applicability
+and findings. `clean` requires every applicable read/check complete and
+no drift. Any incomplete required read yields `incomplete` even if known
+drift is printed too; never discard that drift. No gh/network/permission
+means `incomplete`, operation and scope named, not clean. Advisory results
+(including unavailable prerequisites) exit 0; invalid usage exits 2 and
+internal defects exit 1. This is fail-open for work, not false success:
+stdout must distinguish unchecked from verified. It is never a check/CI,
+merge gate, SessionStart hook or automatic repair. Later session-start
+integration needs the cost/noise decision deferred by D2.
+
+#### Closure, portability and delivery ownership
+
+After an issue closes or a linked PR merges, verify actual issue state,
+membership and Status through fresh reads, allowing existing workflows to
+run first. Closed issue with non-Done Status is drift. Correct a remaining
+Status only to the already settled Done value and verify it; a failed read
+is not authority to write. Link the PR with the real issue relationship
+and the required `Closes #724` body reference; verify linkage rather than
+assuming a textual mention populated “Linked pull requests”.
+
+For a release-targeted child, follow the existing
+`release-branch-workflow` skill: confirm PR merge to the release, record
+the child completion/PR link, explicitly `gh issue close "$n" -R "$R"`,
+then verify CLOSED and board Done. A merged PR into `release/*` alone
+does not prove closure. Keep the epic open under its existing release
+rules. No change to `epic-auto-close.sh`, its hooks or GitHub workflows;
+enabled automation is reused and its observed outcome checked.
+
+Without a board, maintain portable bodies, labels and applicable native
+GitHub mirrors; rank/Horizon, membership and board Status are N/A. Without
+native GitHub support/access, preserve portable records and name native
+checks as unchecked. Board-less does not mean native sub-issues require
+Projects. Without gh/network the human/owner can still prepare portable
+records; record pending external maintenance, never claim it happened.
+
+**Product reconciliation before affected implementation.** Replace F14's
+sentences beginning “Deliberately a plain field” through “GitHub Projects”
+with body authority plus optional-platform native mirrors under D1; retain
+the dependency fields. Remove the work-item template comment's exact
+three-line sentence beginning “Deliberately this flat field, not native
+sub-issues” and replace it with that same authority distinction and a
+write-spec reference. Preserve the adjacent instruction to fill both ends.
+Update the epic template guidance to require reciprocal children, Covers,
+and explicit empty dependency sets; add optional Epic for nested epics
+with a comment that top-level epics have no parent. Refresh the matching
+`.github/ISSUE_TEMPLATE/{work-item,epic}.md` copies via the normal template
+ownership path. Product owns F14/F77; QA owns S726–S731 or their final IDs.
+This known, requested reconciliation does not authorize Developer edits
+to an unresolved oracle. No AC1–AC6 is contradicted or narrowed by A65.
+
+The materially expanded issue-tracking duty needs an adoption notice:
+recommend updating only `process-issue-tracking`'s “Yes means” and
+meaning version 1 to 2, plus `Reaches session` to name the existing
+write-spec route. Maintainer owns the exact `CHANGES.md` content/version
+decision and any adoption-answer reconfirmation; do not silently bump
+`process-multi-agent-roles` or claim existing adopters have accepted it.
+The new metadata permission does not itself require use of a board or
+enable any delegation. Update the corresponding CHANGES snapshot and
+release note only after that content decision, retaining unrelated pins.
+
+#### QA handoff and Developer file scope
+
+QA should establish the proposed six scenario groups (AC1–AC6), with
+multiple falsifying examples in each rather than one happy path per AC:
+
+| Group / Seam | Falsifying checks |
+| --- | --- |
+| AC1, relation/lifecycle recipe and report | Child, top-level/nested epic, reciprocal Blocks/Blocked by, changed parent, removed blocker, extra native edge and inverse-only mismatch. Reversed edge or issue-number/ID substitution fails. Owner-unspecified/duplicate fields produce incomplete, never destructive instructions. Labels retain canonical stage order; inactive items need no role. |
+| AC2, field/decision comparison | Confirmed rank/Horizon preserved; unconfirmed proposal never applied. Empty field without a field-specific note drifts; both valid awaiting and parked notes print exceptions. One documented empty field cannot excuse the other; inherited child rank names its parent/decision under #721. |
+| AC3, report Interface | Fully consistent fixture is clean; each independent membership/relation/ordering/closure mutation produces the linked observed/expected finding. Record all gh argv; a reachable catch-all rejects unrecognized requests. Positive control injects a write and proves the witness fails. Reject REST write verbs and GraphQL mutation content, not all GraphQL POST transport. |
+| AC4, collection/fail-open | Missing gh; REST/GraphQL denial; errors with HTTP success; malformed/missing fields; page-two failure and truncated/cyclic cursor data; inaccessible configured board; failing comments hiding an exception. Every case names unchecked scope and cannot be clean. A confirmed drift survives an unrelated failed read. Partial maintenance records exactly the successful and unfinished steps and demands read-back. No credentials/debug headers appear. |
+| AC5, closure and existing automation | Already auto-added item is not added again; failed add is not success. Main closure observes Done; delayed/non-Done closure reports drift. Release child PR merge while issue remains OPEN cannot be called complete; explicit close plus CLOSED/Done read-back can. Do not duplicate the enabled workflows or alter epic closure. |
+| AC6, canonical text/portability | Both templates and F14 stop rejecting native mirrors. Board omitted gives board N/A while issue/native checks still run; configured denied board is incomplete. Source/generated policy agree; unrelated adapters remain unchanged. |
+
+Reuse `test/lib.sh`'s `fake_gh_bin` and the reachable witness/positive
+control approach of S152 and `test/fixtures/role-label-fake-gh.sh`; use
+fresh #724 fixtures, not changes to role-label fixtures or production
+staleness logic. Exercise the script's actual argv and JSON/exit results,
+not a duplicate comparison implementation. Include more than one page and
+empty successful pages. Use isolated fixtures only, no live writes in
+the test suite. Documentation checks delete one obligation at a time;
+an assertion just matching a heading is insufficient maintenance evidence.
+
+Because OR46 changes, add behavior examples for decided mirror directly,
+undecided order dispatched to its owner, owner-authored body changes still
+dispatched, partial failure reported without invented repair, and board
+omission versus access failure. Preserve OB55–OB58, promotion/QA provenance
+and repair prohibitions. QA updates the OR inventory and exact protection
+pins only for the sanctioned OR46(d) pair, retaining historical source
+bytes and independent rejection controls. Rerun S309/S318 including the
+one-character control on candidate bytes. Run the real
+`test/behavior/orchestrator-diff.sh --base <actual-PR-merge-base>`: the stamp
+hashes the whole file/scenario corpus, so its coverage must be whole-file,
+logged under OR48(1). Commit the runner-generated stamp before final D6;
+no fabricated/stale stamp or broad hash repin. This offline Planning run
+claims no such behavior evidence or live board verification.
+
+Developer's implementation scope, after owner reconciliation: new
+`backlog-drift.sh`; the named write-spec subsection; one policy sentence
+and command-generated equivalents; exactly OR46(d); template changes and
+their managed copies; QA-owned approved scenarios/cases/fixtures; the
+inventory/pins/stamp updates required by that exact core pair; approved
+CHANGES entry/snapshot and a CHANGELOG note. Product/QA, not Developer,
+author PRD/scenario oracles. Developer briefs name the affected new test
+fragments, S152 preservation, S309/S318, core/pin and adapter/template
+checks, traceability and real behavior evidence. Promotion still needs
+clean exact-head `./check --no-tests` and the affected checks under D6;
+no checkpoint or offline fixture substitutes for it.
+
+Keep #726's clone/worktree cleanup and #685's role-name work untouched:
+no branch-cleanup scripts, role renames, model routing, hook settings or
+existing staleness changes here. Shared ARCHITECTURE/PRD/scenarios and the
+small OR46/inventory/stamp surface require serialized release integration;
+revalidate against the merged release head, never overwrite a sibling's
+text or reuse its stamp. If #685 changes the same core, coordinate its
+exact pair and regenerate whole-file evidence after integration. Defer
+unrelated refactoring and project configuration. Effort is small for the
+manual recipe/reporter, with the existing required whole-file behavior run
+the main validation cost; this is not a reason to evade that run.
+
+**Violated when:** body and native relations have competing authority;
+an unconfirmed ordering proposal is applied; inverse/removal steps vanish;
+a failed/truncated read yields clean or absence; a reported mutation lacks
+read-back; release merge alone proves child closure; board-less becomes
+permission to drop portable metadata; an automatic writer is added to the
+reporter; or reserved content/pins/core budgets are weakened silently.
+
+#### A65 addendum 1 — Keep repository vocabulary out of adopter obligations (Review round 1, #747)
+
+Planning loop-back, 2026-11-27, reviewed head
+`083071584be5112908e7c951e8da1932060515d4`.
+`repo-specific-vocabulary-shipped-to-adopters` is **design, medium**:
+A65 names other projects' mappings but does not delimit the reporter's
+embedded mapping or the adoption promise. This addendum supersedes the
+generic lifecycle wording above; it does not offer this repository's
+three label axes through adoption.
+
+**Exact replacement text and placement.** In
+`skills/write-spec/SKILL.md`, under “Maintaining issue and board metadata”,
+replace the paragraph beginning “Maintain type/status” and ending
+“authority to configure.” with:
+
+> Maintain applicable labels and board lifecycle Status according to the
+> project's documented vocabulary and mapping. Preserve the canonical role
+> names and stage order when the role pipeline applies. Inactive items
+> need no invented active role. Follow the project's closure and blocked-work
+> conventions; do not infer an unblocked state from a board option. This
+> rule does not adopt spec-driven-guardrails' type/status/role label axes
+> or Project 1 option names for another project. Missing mapping or options
+> are unchecked, never authority to create labels or configure a project.
+
+In `CHANGES.md`, `process-issue-tracking`, replace the entire “Yes means”
+bullet with this exact text (retain meaning v2 and D5's draft/approval notice):
+
+> - **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets
+>   split from the PRD into an `Epic` issue with `Work item` issues. Follow
+>   `write-spec`'s issue and board maintenance rule at creation,
+>   relationship/stage changes, reprioritization and closure. Bodies own
+>   portable parent/dependency declarations; native relations mirror settled
+>   records; configured board fields own decided order. Maintain reciprocal
+>   relations and membership, and use this project's documented label and
+>   lifecycle mapping. Record empty-field decision evidence, verify closure
+>   and report partial or unchecked operations. `backlog-drift.sh` reports
+>   on request without writes; unsupported label/lifecycle mappings remain
+>   explicitly unchecked. Adoption supplies no repository-specific label
+>   vocabulary or board Status mapping. A board is optional; board-less
+>   projects keep portable records and applicable native mirrors.
+
+**Reporter Interface and scope.** Keep the existing invocation, one report
+Module and gh-on-PATH Seam; no new configuration file or adoption parser.
+The embedded type/status/role vocabulary and cardinality/closure rules
+apply only when the resolved repository identity is
+`TiesL/spec-driven-guardrails`. Its embedded board Status mapping, including
+closed-to-Done, additionally requires the explicitly selected project
+owner `TiesL` and number `1`. Compare canonical identities, allowing GitHub's
+case-insensitive owner/repository spelling. Neither the script's installation
+path, an adopter's adoption answer, matching option names nor project number
+alone selects this mapping. Keep the repository's existing label policy as
+its authority; do not relocate that vocabulary into adopter instructions.
+
+For another repository, name label/lifecycle vocabulary as unchecked;
+for another configured board, name board lifecycle mapping as unchecked.
+Continue independent relation, membership and ordering checks and preserve
+known drift. Never emit SDG-derived type/status/role or Status drift for
+these scopes, and never call a missing mapping verified or clean. Board
+omission still makes board checks N/A, but cannot resolve unknown label
+mapping. Other projects maintain their documented mappings manually; this
+version does not load arbitrary mappings automatically. Supporting them
+later needs an explicit Interface decision, not inferred configuration.
+This is the existing missing-mapping/incomplete rule made explicit, not
+an expansion of adoption or an automatic configuration feature. It retains
+Depth, Leverage and Locality inside the existing Module; the real and fake
+gh adapters remain the two adapters at the existing Seam.
+
+**Code-class medium findings: owner route unchanged.** None requires an
+incorrect A65 contract to be replaced:
+
+- `no-parent-absence-unreachable-live` remains **code**. A65 already requires
+  established supported absence semantics and a reachable clean top-level
+  case. Normalize the actual supported response; JSON `null` is not a
+  requirement. Do not turn an ambiguous 404 into absence. QA must reproduce
+  actual empty-body/status/exit behavior; this offline decision supplies no
+  new live endpoint evidence.
+- `ordinary-project-fields-always-incomplete` /
+  `ordinary-project-values-force-incomplete` remain **code**. A65 requires
+  required-field validation, not rejection of valid unrelated text/date/
+  iteration values. Collection must distinguish unrelated values from
+  malformed required rank/Horizon/Status data; ignoring unknown values
+  must not hide a required-field failure.
+- `cross-repository-edge-collisions-hidden` remains **code**. A65 explicitly
+  requires repository identity and fetched numeric/node IDs. Bare body
+  `#N` references resolve in the selected repository; a distinct foreign
+  native edge must remain visible with its URL even when numbers collide.
+- `unknown-status-label-reports-clean` /
+  `unknown-status-label-can-pass-clean` remain **code**, within the applicable
+  repository vocabulary. Counting a prefix cannot validate a canonical
+  label or silently waive lifecycle comparison. Invalid labels must be
+  reported; an indeterminate lifecycle is unchecked. Neither yields clean.
+  This addendum prevents exporting that validation to unrelated vocabularies.
+- `incomplete-inventory-reports-missing-membership` remains **code**. A65
+  already requires complete inventory before asserting absence. Denial or
+  page failure yields unchecked membership for unobserved items, preserving
+  independently established findings, not invented missing-item drift.
+
+**QA handoff.** Follow OR17: QA supplies discriminating regressions before
+Developer repair, then a fresh Reviewer. Include the foreign-repository
+`["feature"]` board-less case (no SDG-derived drift; named unchecked mapping),
+another owner's Project 1, and another project under TiesL (no inherited
+Status mapping); retain a complete, consistent SDG/Project 1 clean control.
+Exercise every code medium above independently, including real-shaped
+empty-body absence, ordinary field types, colliding foreign IDs, unknown
+canonical status, and denied/page-two inventory without false absences.
+Developer owns reporter/text implementation and managed snapshot updates;
+this entry changes no implementation or scenario oracle. D5 still reserves
+final adoption-notice approval. No AC1–AC6 is contradicted or narrowed:
+missing mapping was already unchecked under A65. ORCHESTRATOR.md needs no
+further change; preserve its bytes and existing behavior evidence. All low
+findings remain deferred under OR40. Estimated additional design work is
+complete here; implementation is a bounded mapping-selection/diagnostic
+change with regression fixtures, not a new mapping framework.
+
+#### A65 addendum 2 — Preserve observation certainty before comparison (OR20 redesign, #747)
+
+Planning, 2026-11-27; reviewed head
+`dab2b428da2b3ebbe678909902dfcb7006bcdce0`. Both consecutive Review rounds
+count under OR20, including the carried parent finding despite disagreement
+among lenses. Reconsidered the whole A65 design and addendum 1, not just
+the latest slugs. The repeated failure is guessed transport shapes plus
+completeness recorded separately from the values used by comparisons.
+**Decision: strengthen the internal observation contract and fixture
+provenance; retain the public Interface and maintenance authority.**
+
+Body authority, reciprocal native mirrors, board-owned decided order,
+field-specific durable exceptions, non-atomic maintenance with read-back,
+existing automation before manual closure/membership, release-child closure
+and adopter-neutral mappings remain sound. The reporter remains advisory,
+read-only and on request, covering open and closed issues. No new writer,
+configuration, adoption duty, stage permission or ORCHESTRATOR.md edit.
+Cost/noise, comment-exception authority, behavior discrimination and draft
+notice lows remain deferred under OR40; this redesign does not resolve them.
+
+**One internal normalization layer.** Within the existing report Module,
+normalize transport and schema evidence before any comparison. Each scoped
+observation carries `state=present|verified-absent|unchecked`, its validated
+value/identities when present, completeness, operation/object scope and a
+safe reason/provenance. Applicability remains separate: omitted board is
+N/A, whereas an inaccessible configured board is unchecked. Do not use
+JSON null, an empty array, a global warning or a resettable shared flag as
+a substitute for that state. Raw response parsing belongs here, not in
+individual comparison branches.
+
+- `present` means validated positive data. A partial collection may retain
+  known members, but cannot prove a missing member, uniqueness or equality
+  of the complete set. Preserve full repository/REST/node identities.
+- `verified-absent` requires a complete validated relevant collection, or
+  supported explicit absence semantics for a verified existing object.
+  Empty body, nonzero gh exit, 404, omitted JSON property, malformed value
+  and partial pagination alone never establish absence.
+- `unchecked` contributes neither a drift finding nor a passed check.
+  A finding requires sufficient independent evidence for that particular
+  comparison; independent findings survive another unchecked scope.
+  Any required unchecked scope still makes the aggregate incomplete;
+  clean requires every applicable comparison verified and no drift.
+
+Carry this information through issue inventories, comments, parent/native
+relations, project field declarations, membership and each item's nested
+fieldValues. Missing ordering evidence cannot be asserted from unread
+comments. Missing membership needs complete item inventory. Missing project
+field declarations are unchecked. A field value is verified absent only
+after its declaration/type, item identity and complete fieldValues stream
+are verified. Malformed/duplicate required values are unchecked, never
+null/empty. Valid unrelated field variants must remain distinguishable from
+required-field failures; unknown/unidentifiable variants cannot silently
+prove required-field absence. Preserve selected typename/field identity.
+
+For this implementation, an incomplete per-item fieldValues connection
+makes that item's rank/Horizon/Status comparisons unchecked: emit no
+missing/null finding or awaiting/parking exception for them. Other complete
+items, membership, body/native checks and independently proved drift still
+report. Keep field-connection completeness with its item instead of losing
+it when the next traversal starts. Do not require a speculative optimization
+that proves individual values complete before their connection finishes.
+
+**Parent absence and live evidence.** `no-parent-absence-unreachable-live`
+remains code, with a changed repair strategy: stop treating synthetic 204
+or historical JSON-null fixtures as proof of live reachability. Keep
+validated REST present-parent observations; when REST absence is ambiguous,
+use a read-only GraphQL issue query selecting the issue identity and its
+`parent { ... }`. Select `id` and `databaseId` explicitly and normalize
+GraphQL node versus REST numeric identity without interchanging them.
+An error-free, supported response with the verified
+issue present and the explicitly selected `parent: null` can establish
+absence; missing issue/property, errors or denial cannot. Confirm that
+nullable-parent contract and response shape before implementing that path.
+If the live schema cannot supply it and REST remains ambiguous, return to
+Architect with the evidence; do not whitelist all 404s or waive the clean
+top-level control. Native relations still require no Projects board.
+
+The orchestrator captures a bounded fixture set once using its existing gh
+access: current gh version/time, exact read-only argv/query, process exit,
+HTTP status where applicable and sanitized selected bodies. Include #742
+as the candidate parentless control, #724 as the candidate parented control,
+their actual issue/parent identities, project field declarations, populated
+ordinary value variants, items and nested pagination envelopes. Verify the
+controls' current relationships rather than assuming them from issue names.
+The stage report supplies commands. Retain only necessary response fields;
+never commit headers, credentials or arbitrary stderr. Redactions must
+preserve null versus omitted, typename, field identity, list/page and exit
+shapes, with a provenance manifest. Captures are evidence of those reads,
+not of all live failure modes or a clean historical repository.
+
+QA replays captured shapes through the real CLI Seam, replacing guessed
+successful defaults. Keep synthetic denied/error/truncated/page-two/cycle
+cases, explicitly labelled as fault injection; do not deliberately cause
+live failures or mutate the board to obtain them. If no live instance of
+a variant/page is available, record that coverage limit and use labelled
+schema-derived fixtures, never call them captured. Query fragments and
+fixture selection must agree; adding fields in a fake that the query did
+not select is invalid evidence. Missing live samples leave the live-parent
+finding unresolved, even when offline tests pass.
+
+**Repository-local Status authority.** Resolve
+`project1-status-mapping-undocumented` by adding a subsection headed
+“This repository's Project 1 lifecycle” under README.md's “How this repo
+builds itself”. It is the operational source for
+`TiesL/spec-driven-guardrails` on `TiesL` Project `1`, linked to the existing
+Issue labels policy. It is not template/adoption text. Document:
+
+| Decided lifecycle | Project 1 Status |
+| --- | --- |
+| Backlog | Backlog |
+| Active Discovery, Planning, Test or Implementation | In progress |
+| Review | In review |
+| Verified issue closure | Done |
+| Explicit maintainer decision that work is ready | Ready |
+
+Blocked work retains its applicable stage Status and visible blocked
+label/body reason; Project 1 has no Blocked option. Ready requires an
+explicit durable maintainer decision, never inferred priority, dependency
+readiness or a cleared blocker. Indeterminate/conflicting lifecycle or
+missing options are unchecked, never configuration authority. The reporter
+does not gain a ready-decision parser here: for otherwise inactive open
+work, an observed Ready that cannot be verified from its supported inputs
+is Status-unchecked, not an invented Backlog mismatch or a verified ready
+decision. This never suppresses a verified closed-to-Done or active-stage
+mismatch. Independent checks continue.
+Other lifecycle observations use the documented table and existing closed
+label rules. Preserve addendum 1's exact neutral write-spec/CHANGES wording
+and canonical identity selection; do not copy this table into shared
+policy, skills, templates, adapters or adoption payloads. README's local
+placement restores operational authority without exporting vocabulary.
+
+**QA/Developer route and limits.** Architect design work is complete;
+orchestrator obtains the read-only samples, then QA owns discriminating
+red regressions before Developer changes and fresh Review. The new
+`incomplete-field-values-report-missing-ordering` remains code: A65 already
+forbids truncated reads proving emptiness; the stronger observation contract
+generalizes its fix beyond an aggregate incomplete flag. Independently fail
+fieldValues pages one and two, including a second-page rank and earlier
+Status; assert unchecked scopes, no invented absence/exception and retained
+independent drift. Complete genuine empty-value controls must still drift
+or print valid field-specific exceptions. Exercise failed comments, field
+definitions, inventory and relation pagination under the same principle.
+Parent controls must include captured present and explicit absent shapes,
+ambiguous REST 404, GraphQL null issue, omitted parent, errors and denial.
+Keep a supported, fully consistent clean fixture with ordinary value types.
+Delete each mapping obligation separately to falsify documentation coverage;
+retain foreign-repository/board negative controls and add Ready/blocked
+indeterminacy checks. No code finding is marked resolved by this entry.
+
+Developer scope additionally includes the README subsection, internal
+normalization and parent verification, with QA-owned fixtures/scenarios;
+no shared graph framework or new public switches. The gh-on-PATH Seam
+still has real gh and recording fake adapters. Depth, Leverage and Locality
+improve by concentrating certainty rules: deleting the Module would spread
+collection/normalization/comparison complexity across callers, not erase it.
+Local condition-only patches were rejected because they repeat the source
+of successive findings; a general transport framework was rejected because
+two existing adapters need no new public Seam. Estimated implementation is
+moderate: all collection-to-comparison paths need auditing, with a bounded
+capture pass rather than an unbounded live integration suite. No AC1–AC6 is
+contradicted or narrowed. D5's approval reservation and D6 remain intact;
+unchanged core/scenario bytes do not require a new behavior run solely for
+this redesign. Revisit if a captured shape cannot satisfy verified absence
+or the same certainty rule cannot be enforced locally within this Module.
+
+#### A65 addendum 3 — SDG-only maintenance and direct failure reporting (D6/D7, #747)
+
+Planning, 2026-11-27, input head `ab80a00`; narrowed issue AC1–AC6 and
+Product's reconciled F77 govern. This entry supersedes conflicting parts
+of A65 and addenda 1–2: portable delivery, arbitrary repo/project selection,
+adopter mappings, foreign-edge identity reconciliation, the observation
+certainty layer and its capture prerequisite, template expansion, and D5's
+meaning-v2/release-notice path are withdrawn. Keep D1–D4 and the local
+relations, ordering, read-back, closure and advisory-report requirements.
+No narrowed AC is contradicted or further narrowed by this design.
+
+**One local rule owner.** Put the complete maintenance recipe in
+`README.md`, under “How this repo builds itself”, in a subsection
+“Keeping this repository's backlog current”. Include the Project 1
+lifecycle table from addendum 2 there, rather than in a separate rule:
+Backlog → Backlog; active Discovery/Planning/Test/Implementation → In
+progress; Review → In review; verified CLOSED → Done; Ready requires an
+explicit maintainer decision. Blocked work retains its stage Status and
+visible blocked reason. Indeterminate lifecycle cannot establish agreement.
+This is SDG's own workflow documentation, outside adopter payloads.
+
+Retain the original operational recipe here with fixed SDG names:
+Product authors reconciled bodies and reciprocal declarations; the
+orchestrator publishes them unchanged and mirrors settled metadata only.
+Cover creation, relation/stage changes, reprioritization and closure;
+explicit empty dependency sets, nested/top-level epics, realized Covers,
+inverse/removal updates, type/status/active-role labels, automatic membership
+before manual add, confirmed rank/Horizon and independent field-specific
+pending/parked/inheritance records. Contradictions return to their owner.
+Use actual numeric/node/item IDs where operations require them; removing
+foreign identity machinery does not make issue numbers interchangeable
+with those IDs. Preserve safe body-file publication and read-before/read-back.
+Use enabled workflows first; verify PR linkage, membership and CLOSED/Done.
+A release child's PR merge alone is insufficient: record completion/link,
+explicitly close under the release workflow, then verify. Preserve epic
+closure rules; add no automation or project-setting authority.
+
+**Small report Interface.** `./backlog-drift.sh` always reads
+`TiesL/spec-driven-guardrails` and TiesL Project 1, regardless of checkout
+directory. Delete repo/project switches, current-repository discovery,
+board-less mode and mapping selection. No foreign graph traversal,
+multi-project support or adopter configuration. Keep one read-only Module
+and the existing gh-on-PATH Seam with real gh and recording fake adapters.
+Its Depth hides paginated collection and local comparisons behind one
+invocation; its deletion would spread those chores to callers. Fixed scope
+improves Locality and Leverage. A configurable transport/mapping framework
+fails the two-adapters test for actual variation here.
+
+Read open/closed issues, live bodies, comments, native relations and Project
+1 items (including exposed archived items), fields and nested values with
+pagination. Keep the markdown live-text convention, ordinary unrelated
+field support, deterministic linked observed/expected findings, visible
+exception references and a complete consistent clean control. Preserve the
+read-only request witness; GraphQL query transport POST is still allowed.
+
+**Failure means report and skip, without classification.** Any non-success
+gh response, including REST 404 or GraphQL errors with process exit 0,
+prints a safe operation description, affected issue URL(s), failure and
+checks left incomplete to the AI session's human. Skip that issue's remaining
+checks; the failed response establishes neither clean nor a finding.
+Unavailable gh/network, invalid required data or incomplete/cyclic pagination
+follow the same report-and-skip path. A board-wide failure identifies all
+affected issues and leaves their dependent checks incomplete. Preserve
+findings already established from successful evidence; continue other issues
+whose required reads succeeded. Never infer missing membership, empty order
+or absent relations from failed/partial reads. If a global issue inventory
+fails, report that inventory scope and known affected URLs without claiming
+the unknown remainder was enumerated.
+
+Delete `present|verified-absent|unchecked` observation records, certainty
+normalization, ambiguous-response taxonomies, alternate absence probes and
+the mandatory live-capture/manifest stage. Parse supported successful
+response shapes directly; unsupported shapes are incomplete, never guessed
+absence. Simple operation/page success flags and early skip suffice; do not
+recreate the layer under new names. Keep aggregate clean/drift/incomplete
+output and advisory exit 0 (usage 2, internal defect 1); any skipped issue
+precludes aggregate clean. Maintenance failures also reach the human and
+durable Pipeline log/note with desired state and completed/failed/unattempted
+steps. Stop dependent writes; no blind repair, rollback or synchronization
+claim without read-back. Suppress credentials/raw server stderr.
+
+**D4: keep the exact permission.** OR46's shared core is loaded by every
+adopter, but SDG still needs direct decided native/project writes and its
+closed list otherwise permits only labels/log, read-only calls and named
+commands. README cannot extend that list. Reverting D4 would require a
+different execution owner or a writer command merely to route around it.
+Keep only `(d) labels/log; mirror decided metadata;` replacing
+`(d) set label, edit Pipeline log;`; D4 already authorizes this exact edit.
+It adds no adopter maintenance obligation. Keep Product ownership,
+undecided-order referral and the existing no-repair prohibition. No extra
+core pointer or permission is needed. Recheck S309/S318 budgets unchanged.
+Final scenario changes below require another real whole-file differential
+behavior run and runner-generated stamp; reverting the core instead would
+also change hashed bytes and require that evidence. Prior stamps cannot
+cover either revised corpus. Log the actual base, commands and results;
+commit generated evidence before clean exact-head D6.
+
+**Minimal file scope and QA handoff.** Keep/simplify `backlog-drift.sh`;
+add the README subsection; retain Product's F77/F14 reconciliation and this
+design record. QA owns `TEST-SCENARIOS.md`, S726–S731 cases and
+`backlog-724-{cases,gh,text}.py`. Retain only D4-required core/inventory,
+S317/S725, exact-substitution consumers and final genuine stamp/pin changes.
+Preserve historical #706 pairs and unrelated owner-approved route corrections.
+Restore #724 changes in `skills/write-spec/SKILL.md`, all four issue-template
+copies, `CHANGES.md` and `test/fixtures/baseline/CHANGES.md.snapshot` to
+`origin/release/742-process-hygiene` text. Remove D5's S336 exception.
+Remove the write-spec maintenance pointer from `policy/WORKFLOW.md` and
+`adapters/codex/AGENTS.md`; regenerate `WORKFLOW.md`/`AGENTS.md` normally.
+Preserve unrelated release work when reconciling these files.
+
+- S726: retain local parent/blocker inverses, removals, labels, body parsing
+  and distinct operation IDs; delete foreign-number collisions and certainty
+  classifications. A failed parent read is reported/skipped, never absence.
+- S727: retain confirmed ordering and separate pending/parked/inherited
+  exceptions, including comment pagination; retarget recipe checks to README.
+- S728: retain complete pagination, closed/archived issues, ordinary values,
+  missing-membership control, clean snapshot and mutation/unexpected-call
+  witnesses. Invoke with no repo/project arguments.
+- S729: simplify independent non-success/malformed/truncated cases to human
+  diagnostics, affected-issue skipping, no fabricated finding/clean, retained
+  prior findings and unaffected-issue continuation. Delete certainty states,
+  fallback/classification and capture-provenance oracles.
+- S730: retain verified linkage/membership/CLOSED/Done, release-child close,
+  read-back and reuse of existing automation; inspect the local README rule.
+- S731: replace portability/adoption assertions with fixed-scope/local-rule
+  and exact release-base restoration checks. Delete board-less, alternate
+  owner/project, case-normalization/mapping and meaning-v2 parser fixtures.
+  Rename its case to describe SDG scope. Keep D4 protection checks; narrow
+  OB92–OB95/OB97 to SDG and direct failure reporting; retire board-less OB96
+  without reusing its ID and reconcile reciprocal inventory/exact allowances.
+
+QA establishes revised red cases before Developer, then fresh Review. Do
+not preserve superseded broad assertions as regression requirements or mark
+old findings resolved merely by this design. Implementation is principally
+deletion plus local documentation; the full behavior run remains the main
+validation cost. No new maintainer decision is required by this design.
+
+#### A65 addendum 4 — Name the action for a moved head at Review start (behavior-ob87-unstable, #747)
+
+Planning, 2026-11-28, input head `10c605e`. QA classed the unstable OB87
+result as design: OR46 (A64) says a moved head "blocks Review" but names
+no next action. `stop`, `answer_directly` and `dispatch` all fit that
+text, so the new arm splits. The gap predates #724, but it blocks #724's
+stamp. The OB87 Then (`stop`) is already correct and stays unchanged.
+
+**Decision.** Name the action in OR46 with one exact pair:
+
+- old: `Failed promotion/moved head blocks Review.`
+- new: `Failed promotion/moved head blocks Review; moved head at Review start: stop.`
+
+"At Review start" scopes the action. A head that moves before Review and is
+seen through a rejected promotion (OB91) still follows "All else: dispatch
+owner". The `stop` enum already means "stop and report, with nothing to
+ask", so the text needs no "report" word. The rule does not let the
+orchestrator validate or adopt unknown pushes itself.
+
+**Constraints checked.** The change adds 34 bytes to OR46, which is in core
+part 1. S627 measured slot1=8495 and slot2=8449 against budget=9000, so
+slot1 stays within budget. Slot 2 and S318's 8,500 fallback do not change.
+The `wip-promotion-706.py` failed-promotion-stop duty keeps its pattern,
+and its `Failed promotion/` cut still occurs once. Its deletion control
+still kills the duty.
+
+**Handoff.** QA adds the pair to `test/fixtures/backlog-724-substitutions.json`
+under `skills/role-contracts/ORCHESTRATOR.md`, with S725/S317 consumers
+reconciled. The Developer then applies the exact pair. No scenario,
+inventory or runner change is needed. The change alters hashed core bytes,
+so the orchestrator reruns the whole-file behavior runner and commits the
+runner-generated stamp before clean exact-head D6. This is a shared
+contract-text change: the maintainer accepts it at the release merge.
+
+#### A65 addendum 5 — No OR46 wording fits; addendum 4's pair is withdrawn (design conflict, OR19, #747)
+
+Planning, 2026-11-28, input head `f556b7e`. The Developer applied the
+addendum 4 pair exactly. Three checks failed: S725 (`duty cut not unique:
+moved-head-stop moved head`), S627 (slot1=8529, headroom 471) and S318
+(slot1=8532, headroom 468). The floor is 500 and the budget is 9000.
+
+**Budget math (measured, not estimated).** On `f556b7e`, S318 measures
+slot1=8498 and slot2=8449. S627 measures slot1=8495 in its own sandbox.
+The binding check is S318's one-character control: slot 1 plus one
+character must still leave headroom >= 500. So 8498 + d + 1 <= 8500,
+and OR46 may grow by at most **d = +1 byte**. The +5 figure from S627
+alone is not the limit.
+
+**Wording search.** Any text that names the action and its scope needs
+at least about 20 bytes, for example ` (Review start: stop)` or `; head moved
+at Review start: stop`. It must also avoid a second `moved head `, which
+the `wip-promotion-706.py` moved-head-stop cut pins to one occurrence.
+`Failed promotion/moved head blocks Review.` cannot shrink. Its regexes
+and its `Failed promotion/` and `moved head ` cuts pin all of it. A short
+unscoped `: stop` flips OB91, which is a failed promotion that dispatches
+the Developer. The rest of OR46 is pinned by the #706 duty table,
+`oracle-contract-pins.py` and S317. Only about 12 bytes are not pinned:
+`by `, three pairs of backticks, and ` and` -> `,`. Removing them damages
+the markup and still does not pay for the clause. **No exact OR46 pair
+satisfies all of S725, S627, S318 and OB91.** Addendum 4's pair is
+withdrawn, and OR46 returns to its base bytes.
+
+**Options (maintainer choice; the Architect does not pick a budget).**
+1. *Recommended:* leave OR46 and OB87 unchanged in #724. Record OB87 as
+   a pre-existing OR46 (A64) ambiguity in a follow-up issue. That issue
+   designs the clause together with reclaimed part-1 headroom. This only
+   works if the stamp gate accepts a known pre-existing unstable arm.
+   If it does not, use option 2 or 3.
+2. Reclaim at least 25 bytes of part 1 outside OR46. Either shorten
+   another part-1 rule (each rule needs its own exact allowance and
+   duty-fixture review), or move one part-1 sentence to part 2. Slot 2
+   has 551 bytes of headroom. Both are wider shared-contract changes, and
+   the moved-head clause must still avoid a second `moved head `.
+3. Raise `CONTEXT_BUDGET_CHARS` or lower the floor. This changes A41/A57
+   human decisions, so it is maintainer-only.
+
+Rewording the OB87 Given until it stabilizes is rejected. That fits the
+scenario to the model and leaves the rule gap open.
+
+#### A65 addendum 6 — Final OR46 pair after #750 removed the character budget (D8, #747)
+
+Planning, 2026-11-28, input head `25ac490`. This supersedes addendum 5's
+withdrawal and its options. D8 chose to make room and name the action. A66
+(#750) then removed the per-part character budget: S318 is retired and S627
+no longer checks slot headroom. So addendum 5's +1-byte limit is gone, and
+no part-1 text has to move.
+
+**Decision.** Use one exact OR46 pair:
+
+- old: `Failed promotion/moved head blocks Review.`
+- new: `Failed promotion/moved head blocks Review; head moved at Review start: stop.`
+
+The new clause uses the noun phrase "head moved", not "moved head". This
+keeps the `wip-promotion-706.py` cuts unique on the OR46 line: `moved head `
+(moved-head-stop) and `Failed promotion/` (failed-promotion-stop) each occur
+once. Both duty patterns and the #722 `moved-blocks` pattern still match,
+and each deletion control still kills its duty. The #706 duty fixture does
+not change. The scope "at Review start" keeps OB91 unchanged: a head that
+moves before Review and shows up as a rejected promotion still follows
+"All else: dispatch owner". The OB87 Then (`stop`) stays unchanged.
+
+**Size rules after #750 (checked).** The pair adds 34 bytes.
+- Codex: `adapters/codex/AGENTS.md` (24,560) plus `ORCHESTRATOR.md` (16,475)
+  is 41,035 bytes. With the pair it is 41,069, well under the 65,536 that
+  S733 pins in `project_doc_max_bytes`.
+- S627 keeps only its pointer and projection checks, so it has no size term.
+- S309 measures the `session-context` output, which holds no rule line, so
+  OR46 bytes do not affect it.
+- S318 is retired. No other size rule applies to core bytes.
+
+**Exact-allowance consumers.** `backlog-724-substitutions.json` (second
+ORCHESTRATOR.md pair, which folds into the #706 pair through
+`wip-706-substitutions.py` for S725 and S627), the S731 `backlog-724-text.py`
+D4 pair and mutants, and the S317 `or46-moved-head-stop` check and its two
+`sed` controls all carry the addendum 4 bytes now. They change to the new
+bytes and do not change shape.
+
+**Handoff.** QA updates those consumers to `head moved at Review start: stop`.
+The unscoped mutant becomes `; head moved: stop`. QA then reruns S725, S317,
+S627, S731, S309 and S733 red-first. The Developer applies the exact pair to
+OR46 only. The orchestrator then reruns the whole-file behavior runner and
+commits the runner-generated stamp before clean exact-head D6. The
+maintainer accepts the shared contract-text change at the release merge.
 ### A56 addendum 9 (Architect, Planning, 2026-11-27, redesigned under D6): two repositories, one secret scan, a closed public result (#731; resumes #680 only after reconciliation)
 
 **Authority and scope.** #731 D1-D6. D6 (maintainer, 2026-11-27) asks for a
