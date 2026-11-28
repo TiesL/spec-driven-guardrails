@@ -567,6 +567,7 @@ def main():
     links = {}
     removals = []
     deletes = []
+    core_pending = False
     old = None
     try:
         # Shared scaffolding runs after this Module, but belongs to this same
@@ -601,6 +602,11 @@ def main():
         span = block(data, BEGIN, END, 'AGENTS.md')
         payload = (source / 'adapters/codex/AGENTS.md').read_bytes()
         core = opt_in_core(source)
+        # Status reports drift of an installed core block. A yes answered
+        # after the last adoption has nothing installed to drift yet:
+        # installing it is adoption's job, so status notes it, not stale.
+        core_pending = status and core is not None and block(data, CORE_BEGIN, CORE_END, 'AGENTS.md') is None
+        if core_pending: core = None
         files['AGENTS.md'] = core_agents(managed(data, span, framed(payload)), core)
         config_bytes, config_changed = config_plan(project, core is not None)
         if config_changed and config_bytes is None: deletes.append(CONFIG)
@@ -707,6 +713,8 @@ def main():
             else: print('unchanged: ' + name)
         for name in removals: print('stale removed canonical skill: ' + name); stale = True
         for name in deletes: print('stale/not removed: ' + name); stale = True
+        if core_pending:
+            print('pending: orchestrator-core block not installed yet; run adopt.sh --runtime codex to install it')
         # A66 D4: the Codex AGENTS.md chain against the effective limit.
         agents = project / 'AGENTS.md'
         size = agents.stat().st_size if agents.is_file() else 0

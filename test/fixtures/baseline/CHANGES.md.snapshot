@@ -542,8 +542,8 @@ the shared parser warns if it has no `Applies if`.
   records and override-value requirements, remain in force.
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, using `ROLE SESSION: Developer` for Implementation, each with its own write/action
-  scope and input scope, by the orchestrating Claude Code session. At session
-  start, every session of this project loads the skill's `ORCHESTRATOR.md` (the run
+  scope and input scope, by the orchestrating Claude Code session.
+  At session start, every session of this project loads the skill's `ORCHESTRATOR.md` (the run
   rules: what is a work item, stage order, fresh dispatch, human override,
   stop-and-ask, resume) as always-loaded instructions, installed by `adopt.sh`
   (the `.claude/rules/sdg-orchestrator-core.md` link, or the Codex
