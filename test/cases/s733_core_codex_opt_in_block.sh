@@ -274,8 +274,49 @@ for form in 'project_doc_max_bytes = 100_000' 'project_doc_max_bytes=0x10000' \
       || fail "S733/key-form/$form/$a — adoption changed a project-owned config whose key is written as: $form"
     [ "$(grep -cE '^[[:space:]]*"?project_doc_max_bytes"?[[:space:]]*=' "$k/.codex/config.toml" 2>/dev/null)" = 1 ] \
       || fail "S733/key-form/$form/$a — project_doc_max_bytes is not defined exactly once"
+    # The core block (about 41 KB) is installed under yes: status reads the
+    # project's key in any TOML integer form, so it is not over the limit.
+    if [ "$a" = yes ] && [ "$form" != after-array ]; then
+      status_run "$k"
+      [ "$st_rc" = 0 ] || fail "S733/key-form/$form/status — status exited $st_rc with the project key written as: $form ($(grep 'instructions-over-limit' <<<"$st_out" | cut -c1-120))"
+      cmp -s "$k/.codex/config.toml" "$SANDBOX/config.form$i" || fail "S733/key-form/$form/status — status changed the config bytes"
+    fi
   done
 done
+
+# 7e. A comment naming the key is not a definition: yes writes the managed
+# key once and status exits 0; a no re-run restores the project's bytes.
+k="$(fresh_project key-comment)"
+mkdir -p "$k/.codex"
+printf '# project_doc_max_bytes note\nmodel = "project-owned"\n\n[profiles.fixture]\nmodel = "fixture"\n' > "$k/.codex/config.toml"
+cp "$k/.codex/config.toml" "$SANDBOX/config.comment"
+write_adoption "$k/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+core750_adopt "$wf" "$k" --runtime codex || fail "S733/key-comment/yes — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+[ "$(core750_toml_top "$k/.codex/config.toml" project_doc_max_bytes)" = 65536 ] \
+  || fail "S733/key-comment/yes — a comment mentioning the key blocked the managed project_doc_max_bytes = 65536"
+[ "$(grep -cE '^[[:space:]]*"?project_doc_max_bytes"?[[:space:]]*=' "$k/.codex/config.toml" 2>/dev/null)" = 1 ] \
+  || fail "S733/key-comment/yes — project_doc_max_bytes is not defined exactly once"
+status_run "$k"
+[ "$st_rc" = 0 ] || fail "S733/key-comment/yes — status exited $st_rc: $(grep 'instructions-over-limit' <<<"$st_out" | cut -c1-120)"
+write_adoption "$k/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
+core750_adopt "$wf" "$k" --runtime codex || fail "S733/key-comment/no — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+cmp -s "$k/.codex/config.toml" "$SANDBOX/config.comment" \
+  || fail "S733/key-comment/no — a no re-run did not restore the project's config bytes"
+
+# 7f. A defined key with an unreadable value: no managed key, status fails
+# closed (exit 1) and its over-limit line says to write a plain top-level integer.
+k="$(fresh_project key-unreadable)"
+mkdir -p "$k/.codex"
+printf 'project_doc_max_bytes = "big"\n\n[profiles.fixture]\nmodel = "fixture"\n' > "$k/.codex/config.toml"
+cp "$k/.codex/config.toml" "$SANDBOX/config.big"
+write_adoption "$k/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+core750_adopt "$wf" "$k" --runtime codex || fail "S733/key-unreadable — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+cmp -s "$k/.codex/config.toml" "$SANDBOX/config.big" \
+  || fail "S733/key-unreadable — adoption changed a config whose project key has an unreadable value (managed key added)"
+status_run "$k"
+[ "$st_rc" = 1 ] || fail "S733/key-unreadable — status exited $st_rc, not 1 (fail closed) for an unreadable project key"
+grep 'instructions-over-limit' <<<"$st_out" | grep -qi 'plain top-level integer' \
+  || fail "S733/key-unreadable — the instructions-over-limit line does not say to write project_doc_max_bytes as a plain top-level integer"
 
 # --- 6. never ~/.codex ------------------------------------------------------------
 [ "$(core750_tree_digest "$HOME")" = "$home_before" ] || fail "S733/user — Codex adoption wrote under HOME"

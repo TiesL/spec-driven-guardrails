@@ -12831,7 +12831,7 @@ agreement stays covered by S311; the budget of what hooks still print stays in
 S309 and S310. Behavior scenarios (OB) and the stamp are unchanged (AC7): the
 runner already loads `ORCHESTRATOR.md` as its system prompt.
 
-### S732 — Claude: opt-in yes links the always-loaded core; no or unanswered installs nothing; only the own link is removed; never user-level (#750 AC1, AC3; A66 D1, D3, D7)
+### S732 — Claude: opt-in yes links the always-loaded core; no or unanswered installs nothing; any symlink at the reserved path is ours, a project file is never touched; never user-level (#750 AC1, AC3; A66 D1, D3, D7)
 **Covers:** F38
 - Given: a sandbox clone used as `SPEC_DRIVEN_GUARDRAILS_DIR`; a fixture HOME
   with user-owned `~/.claude/CLAUDE.md`, `~/.claude/rules/mine.md` and
@@ -12840,8 +12840,13 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   with no answer file; a project with a project-owned regular file at
   `.claude/rules/sdg-orchestrator-core.md`; four committed projects (a
   project regular file, a foreign symlink, each answering yes and no) with
-  that path tracked; a second clone whose
-  `opt-in-loaded:` declaration names another file
+  that path tracked; a project with a dangling symlink there answering
+  yes; a second clone whose
+  `opt-in-loaded:` declaration names another file; a third clone that
+  declares `skills/role-contracts/NEW.md`, with projects (yes and no) whose
+  link points at its old `ORCHESTRATOR.md`; for the session-start warning,
+  a no project given a foreign symlink after adoption and a yes project
+  with a project regular file at the path
 - When: `adopt.sh <project>` runs (twice for yes; again after yes changes to
   no), and `adopt.sh --user` runs once
 - Then: `CHANGES.md` declares `opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md`
@@ -12854,19 +12859,32 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   frontmatter and no `@` import; for no, pending, row absent and no answer
   file nothing is linked and no project file carries core rule text; after
   yes changes to no a re-run removes the link, keeps a project-owned
-  `.claude/rules/own.md` and the clone's file; a project-owned regular file
-  at the link path is left byte for byte; for the committed regular file
-  and the foreign symlink, under yes and under no, the file or link is
-  unchanged (not replaced, not removed), still in `git ls-files`, and has no
-  staged change (not `git rm --cached`); the second clone's link resolves
-  to its declared file; project adoptions write nothing under HOME,
+  `.claude/rules/own.md` and the clone's file, and the managed block lists
+  the absent path; a project-owned regular file
+  at the link path is left byte for byte; for the committed regular file,
+  under yes and under no, the file is unchanged (not replaced, not
+  removed), still in `git ls-files`, and has no staged change (not `git rm
+  --cached`); for every project regular file at the path the managed
+  `.gitignore` block does not list it and `git check-ignore` exits 1; any
+  symlink at the reserved path is ours (A66 ownership addendum): the
+  committed foreign symlink is replaced by the core link under yes and
+  removed under no, untracked either way, its target file unchanged and
+  the path listed in the managed block; the dangling symlink is replaced by
+  the core link; the second clone's link resolves to its declared file; in
+  the third clone a link to the old file is relinked to `NEW.md` under yes
+  and removed under no; the no project's foreign symlink draws a
+  `Warning:` line naming `sdg-orchestrator-core.md`, and after `adopt.sh`
+  the link and that warning are gone; the yes project's regular file draws
+  one `Warning:` line naming the file, without "restore it"; project adoptions write nothing under HOME,
   `--user` writes only its trigger, no user-level file carries core rule
   text and `~/.claude/rules/sdg-orchestrator-core.md` does not exist
 - Falsifier: a literal path instead of the declaration; a copy instead of a
   link; the link tracked or shown by git; a link for no or unanswered; a
   no re-run that leaves the link or removes a project-owned file; yes that
-  replaces a project file or foreign link; adoption that git-untracks a
-  committed project file or foreign link at the path; anything
+  replaces a project file; adoption that git-untracks or git-ignores a
+  project file at the path; a symlink at the reserved path (foreign,
+  dangling or to a previously declared file) left in place; a warning whose
+  advice `adopt.sh` cannot carry out; anything
   written to `~/.claude` or `~/.codex` by a project adoption
 - Test seam: filesystem after `adopt.sh`; rule text found by
   `core750_rule_hits` (live `- OR<n>` line text, whitespace normalized)
@@ -12875,6 +12893,16 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   no `.gitignore` entry; the release and declaration cases fail on the
   missing link. The no, unanswered, foreign-file and user-level controls are
   green and must stay green
+- Red-before-green at `71bdc5a` (A66 ownership addendum, OR20 redesign):
+  the core path is in the managed `.gitignore` block while a project file
+  is there (untracked: `git check-ignore` exits 0); the committed foreign
+  symlink is kept and still tracked under yes and no; the dangling link
+  is not replaced; the rename case is neither relinked nor removed; after
+  `adopt.sh` the no project's foreign link and its warning remain; the yes
+  project-file warning says "restore it". Round 1's own-link-only
+  expectation for a foreign symlink is reversed on purpose. The regular
+  file byte, tracking and staging asserts, the warning presence controls,
+  and the absent-path `.gitignore` line are green and must stay green
 
 ### S733 — Codex: opt-in yes installs the byte-identical core block and the managed project_doc_max_bytes key; status reports a stale block and instructions-over-limit; no or unanswered installs nothing; never ~/.codex (#750 AC1, AC3, AC4; A66 D1, D3, D4)
 **Covers:** F38
@@ -12949,6 +12977,26 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   Falsifier: no trust note; the pending line filtered out of the session;
   an over-limit line or non-zero exit without an installed core block; a
   managed key prepended next to a project-owned key in any TOML form
+- Variant, A66 ownership addendum (Codex key rule): Given yes projects
+  with the core block installed (about 41 KB); the project key written as
+  `project_doc_max_bytes = 100_000`, `project_doc_max_bytes=0x10000` and
+  `"project_doc_max_bytes" = 70000`; a project config whose only mention of
+  the key is the comment line `# project_doc_max_bytes note`; a project
+  config with `project_doc_max_bytes = "big"`. Then: for the three key
+  forms, status exits 0 and the config bytes are unchanged; for the comment,
+  yes writes the managed `project_doc_max_bytes = 65536` exactly once and
+  status exits 0, and a no re-run restores the project's bytes; for
+  `"big"`, adoption writes no managed key (bytes unchanged), status exits 1
+  (fails closed) and its `instructions-over-limit` line says to write the
+  key as a plain top-level integer. Falsifier: status falling back to 32768
+  for a readable non-plain integer; a comment counted as a definition;
+  an unreadable key passing status or getting advice the project cannot
+  follow
+- Red-before-green at `71bdc5a`: the three key forms make status fall
+  back to 32768 and exit 1 with `instructions-over-limit`; the comment
+  blocks the managed key and status exits 1; the `"big"` over-limit line
+  does not name a plain top-level integer. The `"big"` exit 1 and
+  unchanged bytes, and the key-form bytes, are green and must stay green
 - Red-before-green at `3fa4bfa`: no trust note; the Codex session output
   drops the `pending:` line; the no, pending and yes-pending projects
   report `instructions-over-limit` and exit 1; yes prepends a second key

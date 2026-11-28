@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S732 — Claude: opt-in yes links the always-loaded core; no or unanswered installs nothing; only the own link is removed; never user-level (#750 AC1, AC3; A66 D1, D3, D7)
+# S732 — Claude: opt-in yes links the always-loaded core; no or unanswered installs nothing; any symlink at the reserved path is ours, a project file is never touched; never user-level (#750 AC1, AC3; A66 D1, D3, D7)
 # Covers: F38
 #
 # Seam: `adopt.sh <project>` run from a sandbox clone (SPEC_DRIVEN_GUARDRAILS_DIR
@@ -105,37 +105,72 @@ core750_adopt "$wf" "$p" || fail "S732/foreign — adopt.sh failed"
 [ "$(cat "$p/$CORE750_LINK" 2>/dev/null)" = 'project-owned file at the managed name' ] \
   || fail "S732/foreign — a project-owned file at $CORE750_LINK was removed or changed"
 
-# Committed project-owned regular file / foreign symlink at the link path, under
-# yes and no: left untouched and still tracked (not git-rm'd, not replaced).
-for kind in file link; do
-  for v in yes no; do
-    p="$(fresh_project "own-$kind-$v")"
-    mkdir -p "$p/.claude/rules"
-    if [ "$kind" = file ]; then
-      printf 'project-owned committed file\n' > "$p/$CORE750_LINK"
-      want_val='project-owned committed file'
-    else
-      printf 'foreign target\n' > "$p/foreign-target.md"
-      ln -s ../../foreign-target.md "$p/$CORE750_LINK"
-      want_val='../../foreign-target.md'
-    fi
-    git -C "$p" add -A >/dev/null 2>&1
-    git -C "$p" -c user.name=t -c user.email=t@t commit -q -m seed >/dev/null 2>&1
-    write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$v"
-    core750_adopt "$wf" "$p" || fail "S732/own-$kind-$v — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
-    if [ "$kind" = file ]; then
-      [ -f "$p/$CORE750_LINK" ] && [ ! -L "$p/$CORE750_LINK" ] && [ "$(cat "$p/$CORE750_LINK")" = "$want_val" ] \
-        || fail "S732/own-$kind-$v — the committed project file was replaced, removed or changed"
-    else
-      [ -L "$p/$CORE750_LINK" ] && [ "$(readlink "$p/$CORE750_LINK")" = "$want_val" ] \
-        || fail "S732/own-$kind-$v — the foreign symlink was replaced or removed"
-    fi
-    git -C "$p" ls-files --error-unmatch "$CORE750_LINK" >/dev/null 2>&1 \
-      || fail "S732/own-$kind-$v — $CORE750_LINK was git-untracked (git rm --cached)"
-    [ -z "$(git -C "$p" diff --cached --name-only -- "$CORE750_LINK")" ] \
-      || fail "S732/own-$kind-$v — a staged change to $CORE750_LINK"
-  done
+# gitignore_has <project> -> 0 when the managed .gitignore block lists the core path.
+gitignore_has() {
+  awk '/^# claude-workflow: begin/{f=1;next} /^# claude-workflow: end$/{f=0} f' "$1/.gitignore" 2>/dev/null \
+    | grep -qxE "/?\\.claude/rules/sdg-orchestrator-core\\.md"
+}
+# not_ignored_for_file <label> <project>: a project regular file at the path
+# stays visible to git (A66 ownership addendum).
+not_ignored_for_file() {
+  gitignore_has "$2" && fail "S732/$1 — the managed .gitignore block lists $CORE750_LINK while a project file is there"
+  git -C "$2" check-ignore -q "$CORE750_LINK"
+  [ "$?" = 1 ] || fail "S732/$1 — git check-ignore does not exit 1 for the project file at $CORE750_LINK"
+}
+not_ignored_for_file foreign "$p"
+gitignore_has "$yes_p" || fail "S732/opt-out — the path is absent but the managed .gitignore block does not list it"
+
+# Committed project-owned regular file at the link path, under yes and no:
+# left untouched, still tracked, not git-ignored (A66 ownership addendum).
+for v in yes no; do
+  p="$(fresh_project "own-file-$v")"
+  mkdir -p "$p/.claude/rules"
+  printf 'project-owned committed file\n' > "$p/$CORE750_LINK"
+  git -C "$p" add -A >/dev/null 2>&1
+  git -C "$p" -c user.name=t -c user.email=t@t commit -q -m seed >/dev/null 2>&1
+  write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$v"
+  core750_adopt "$wf" "$p" || fail "S732/own-file-$v — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+  [ -f "$p/$CORE750_LINK" ] && [ ! -L "$p/$CORE750_LINK" ] && [ "$(cat "$p/$CORE750_LINK")" = 'project-owned committed file' ] \
+    || fail "S732/own-file-$v — the committed project file was replaced, removed or changed"
+  git -C "$p" ls-files --error-unmatch "$CORE750_LINK" >/dev/null 2>&1 \
+    || fail "S732/own-file-$v — $CORE750_LINK was git-untracked (git rm --cached)"
+  [ -z "$(git -C "$p" diff --cached --name-only -- "$CORE750_LINK")" ] \
+    || fail "S732/own-file-$v — a staged change to $CORE750_LINK"
+  not_ignored_for_file "own-file-$v" "$p"
 done
+
+# Committed foreign symlink at the reserved path: any symlink there is ours.
+# Yes replaces it with the core link, no removes it; either way it is
+# untracked, its target is unchanged and the path is in the managed block.
+for v in yes no; do
+  p="$(fresh_project "own-link-$v")"
+  mkdir -p "$p/.claude/rules"
+  printf 'foreign target\n' > "$p/foreign-target.md"
+  ln -s ../../foreign-target.md "$p/$CORE750_LINK"
+  git -C "$p" add -A >/dev/null 2>&1
+  git -C "$p" -c user.name=t -c user.email=t@t commit -q -m seed >/dev/null 2>&1
+  write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$v"
+  core750_adopt "$wf" "$p" || fail "S732/own-link-$v — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+  if [ "$v" = yes ]; then
+    msg="$(link_ok "$p")" || fail "S732/own-link-yes — a foreign symlink at the reserved path was not replaced by the core link: $msg"
+  else
+    { [ -e "$p/$CORE750_LINK" ] || [ -L "$p/$CORE750_LINK" ]; } \
+      && fail "S732/own-link-no — a foreign symlink at the reserved path survived a no run"
+  fi
+  git -C "$p" ls-files --error-unmatch "$CORE750_LINK" >/dev/null 2>&1 \
+    && fail "S732/own-link-$v — the symlink at the reserved path is still tracked"
+  [ "$(cat "$p/foreign-target.md" 2>/dev/null)" = 'foreign target' ] \
+    || fail "S732/own-link-$v — the foreign symlink's target was changed or removed"
+  gitignore_has "$p" || fail "S732/own-link-$v — the managed .gitignore block does not list $CORE750_LINK"
+done
+
+# A dangling symlink at the reserved path, yes: replaced by the core link.
+p="$(fresh_project dangling)"
+mkdir -p "$p/.claude/rules"
+ln -s "$SANDBOX/gone/elsewhere.md" "$p/$CORE750_LINK"
+write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+core750_adopt "$wf" "$p" || fail "S732/dangling — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+msg="$(link_ok "$p")" || fail "S732/dangling — a dangling symlink at the reserved path was not replaced: $msg"
 
 # --- 4. the installer reads the declaration ----------------------------------
 alt="$(sandbox_copy_repo alt)"
@@ -146,6 +181,54 @@ write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
 core750_adopt "$alt" "$p" || fail "S732/declared — adopt.sh failed"
 [ "$(core750_physical "$p/$CORE750_LINK")" = "$(core750_physical "$alt/skills/role-contracts/ALT-750.md")" ] \
   || fail "S732/declared — the link does not follow the declared opt-in-loaded path (a literal path is used)"
+
+# A changed declaration (rename) is repaired: a project link to the old
+# declared file is ours, relinked on yes and removed on no.
+ren="$(sandbox_copy_repo ren)"
+cp "$ren/$CORE750_ORCH_REL" "$ren/skills/role-contracts/NEW.md"
+sed -i.bak "s#opt-in-loaded: $CORE750_ORCH_REL#opt-in-loaded: skills/role-contracts/NEW.md#" "$ren/CHANGES.md"
+for v in yes no; do
+  p="$(fresh_project "rename-$v")"
+  mkdir -p "$p/.claude/rules"
+  ln -s "$ren/$CORE750_ORCH_REL" "$p/$CORE750_LINK"
+  write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$v"
+  core750_adopt "$ren" "$p" || fail "S732/rename-$v — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+  if [ "$v" = yes ]; then
+    [ -L "$p/$CORE750_LINK" ] && [ "$(core750_physical "$p/$CORE750_LINK")" = "$(core750_physical "$ren/skills/role-contracts/NEW.md")" ] \
+      || fail "S732/rename-yes — a link to the previously declared file was not relinked to the declared NEW.md"
+  else
+    { [ -e "$p/$CORE750_LINK" ] || [ -L "$p/$CORE750_LINK" ]; } \
+      && fail "S732/rename-no — a link to the previously declared file survived a no run"
+  fi
+done
+
+# --- 4b. the session-start warning follows the same rule ---------------------
+sc_claude() { "$wf/session-context.sh" --runtime claude "$1" 2>/dev/null; }
+# Not yes plus a foreign symlink: warned, and adopt.sh clears link and warning.
+p="$(fresh_project warn-no-link)"
+write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
+core750_adopt "$wf" "$p" || fail "S732/warn-no-link — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+mkdir -p "$p/.claude/rules"
+printf 'foreign target\n' > "$p/foreign-target.md"
+ln -s ../../foreign-target.md "$p/$CORE750_LINK"
+grep -q '^Warning:.*sdg-orchestrator-core\.md' <<<"$(sc_claude "$p")" \
+  || fail "S732/warn-no-link — no warning for a foreign symlink at the reserved path without a yes (control)"
+core750_adopt "$wf" "$p" || fail "S732/warn-no-link — adopt.sh re-run failed"
+{ [ -e "$p/$CORE750_LINK" ] || [ -L "$p/$CORE750_LINK" ]; } \
+  && fail "S732/warn-no-link — the warning said run adopt.sh to remove it, but adopt.sh left the link"
+grep -q 'sdg-orchestrator-core' <<<"$(sc_claude "$p")" \
+  && fail "S732/warn-no-link — the warning persists after following its advice"
+# Yes plus a project regular file: the warning names the file, no "restore it".
+p="$(fresh_project warn-yes-file)"
+mkdir -p "$p/.claude/rules"
+printf 'project-owned file at the managed name\n' > "$p/$CORE750_LINK"
+write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+core750_adopt "$wf" "$p" || fail "S732/warn-yes-file — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+out="$(sc_claude "$p")"
+[ "$(grep -c '^Warning:' <<<"$out")" = 1 ] || fail "S732/warn-yes-file — expected one Warning: line, got: $(tr '\n' ' ' <<<"$out" | cut -c1-200)"
+grep -q 'sdg-orchestrator-core\.md' <<<"$out" || fail "S732/warn-yes-file — the warning does not name the project file"
+grep -qi 'restore it' <<<"$out" \
+  && fail "S732/warn-yes-file — the warning advises an adopt.sh restore that cannot succeed while the project file is there"
 
 # --- 5. never user-level ------------------------------------------------------
 [ "$(core750_tree_digest "$HOME")" = "$home_before" ] || fail "S732/user — a project adoption wrote under HOME"
