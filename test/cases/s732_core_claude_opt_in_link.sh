@@ -107,8 +107,9 @@ core750_adopt "$wf" "$p" || fail "S732/foreign — adopt.sh failed"
 
 # gitignore_has <project> -> 0 when the managed .gitignore block lists the core path.
 gitignore_has() {
-  awk '/^# claude-workflow: begin/{f=1;next} /^# claude-workflow: end$/{f=0} f' "$1/.gitignore" 2>/dev/null \
-    | grep -qxE "/?\\.claude/rules/sdg-orchestrator-core\\.md"
+  local blk
+  blk=$(awk '/^# claude-workflow: begin/{f=1;next} /^# claude-workflow: end$/{f=0} f' "$1/.gitignore" 2>/dev/null)
+  grep -qxE "/?\\.claude/rules/sdg-orchestrator-core\\.md" <<<"$blk"
 }
 # not_ignored_for_file <label> <project>: a project regular file at the path
 # stays visible to git (A66 ownership addendum).

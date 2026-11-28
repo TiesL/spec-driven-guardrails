@@ -315,7 +315,8 @@ cmp -s "$k/.codex/config.toml" "$SANDBOX/config.big" \
   || fail "S733/key-unreadable — adoption changed a config whose project key has an unreadable value (managed key added)"
 status_run "$k"
 [ "$st_rc" = 1 ] || fail "S733/key-unreadable — status exited $st_rc, not 1 (fail closed) for an unreadable project key"
-grep 'instructions-over-limit' <<<"$st_out" | grep -qi 'plain top-level integer' \
+ol_line=$(grep 'instructions-over-limit' <<<"$st_out")
+grep -qi 'plain top-level integer' <<<"$ol_line" \
   || fail "S733/key-unreadable — the instructions-over-limit line does not say to write project_doc_max_bytes as a plain top-level integer"
 
 # --- 6. never ~/.codex ------------------------------------------------------------
