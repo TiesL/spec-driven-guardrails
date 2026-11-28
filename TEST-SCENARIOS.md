@@ -12924,6 +12924,29 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
 - Red-before-green at `29533cb`: no block and no managed key (the S733 red
   above). Green when `lib/codex-adoption.py` records key ownership, as the
   Architect's handoff says
+- Variant, review round 1 on #751 (A66 D3, D4, trust precondition): Given
+  the status inventory of a project; a project adopted with no and then
+  answered yes (yes-pending); the no, pending and yes-pending projects with
+  project-owned text making `AGENTS.md` 40,000 bytes; and yes projects
+  whose own `.codex/config.toml` writes the key as
+  `project_doc_max_bytes = 100_000`, `project_doc_max_bytes=0x10000`,
+  `"project_doc_max_bytes" = 70000`, or after a multi-line array whose
+  item lines start with `[`. Then: the inventory contains `in effect only
+  for a trusted project`; for yes-pending, status exits 0 with a
+  `pending:` line and `session-context.sh --runtime codex` prints a line
+  naming `adopt.sh --runtime codex`, with no core rule text and no `OR<n>`
+  ID; the 40,000-byte projects without an installed core block exit 0
+  with no `instructions-over-limit` line (the installed over-limit case
+  above stays non-zero); for each key form, yes and a later no leave the
+  config bytes unchanged, with exactly one line defining the key.
+  Falsifier: no trust note; the pending line filtered out of the session;
+  an over-limit line or non-zero exit without an installed core block; a
+  managed key prepended next to a project-owned key in any TOML form
+- Red-before-green at `3fa4bfa`: no trust note; the Codex session output
+  drops the `pending:` line; the no, pending and yes-pending projects
+  report `instructions-over-limit` and exit 1; yes prepends a second key
+  for all four forms. The status-pending controls and the no-re-run bytes
+  are green and must stay green
 
 ### S734 — Session start prints one warning line, without rule text, when an opted-in project's core link is missing or wrong or a not-opted-in project still has it; enforcement follows the answer at once (#750 AC3, AC6; A66 D2, D3, D5)
 **Covers:** F38
@@ -12976,7 +12999,8 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   `adapters/`, every `hook:` and `gate:` path declared in `CHANGES.md`, and
   `session-context.sh`; a rule line is `- OR<n> <text>` in
   `skills/role-contracts/ORCHESTRATOR.md`, a copy is that whole text,
-  whitespace normalized
+  whitespace normalized. Per D8 only exact copies count: a reworded copy is
+  not detected (no fuzzy matching) and this scenario does not claim it
 - Falsifier: a planted copy passing; a failure that does not name file and
   ID; a re-wrapped copy passing; an ID reference failing; the script not
   wired into `check`

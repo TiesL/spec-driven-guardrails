@@ -206,6 +206,77 @@ write_adoption "$c/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
 core750_adopt "$wf" "$c" --runtime codex || fail "S733/created — no re-run failed"
 [ -e "$c/.codex/config.toml" ] && fail "S733/created — a no re-run left the config.toml that adoption created"
 
+# --- 7. review round 1 on #751 (A66 D3, D4, trust precondition) ----------------
+# 7a. The inventory states the trust precondition of the managed key.
+status_run "$c"
+grep -qF 'in effect only for a trusted project' <<<"$st_out" \
+  || fail "S733/trust-note — the status inventory does not say the managed key is in effect only for a trusted project"
+
+# 7b. Yes answered after the last adoption: status notes pending and exits 0,
+# and session-context.sh --runtime codex passes that line through, without
+# core rule text or an OR ID.
+y="$(fresh_project yes-pending)"
+write_adoption "$y/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
+core750_adopt "$wf" "$y" --runtime codex || fail "S733/pending — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+write_adoption "$y/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+status_run "$y"
+[ "$st_rc" = 0 ] || fail "S733/pending — status exited $st_rc for a yes answered after the last adoption (control)"
+grep -q '^pending:' <<<"$st_out" || fail "S733/pending — status prints no pending: line (control)"
+out="$(sc_codex "$y")"
+grep -qF 'adopt.sh --runtime codex' <<<"$out" \
+  || fail "S733/pending — session-context.sh --runtime codex does not pass the pending line (no 'adopt.sh --runtime codex' line)"
+grep -q 'OR[0-9]' <<<"$out" && fail "S733/pending — session-context.sh --runtime codex prints an OR ID"
+[ -z "$(printf '%s' "$out" > "$SANDBOX/sc.pending"; core750_rule_hits "$ORCH" "$SANDBOX/sc.pending")" ] \
+  || fail "S733/pending — session-context.sh --runtime codex prints core rule text"
+
+# 7c. instructions-over-limit only with an installed core block: a project
+# that answered no, pending or yes-pending, with a 40,000-byte project-owned
+# AGENTS.md, exits 0 without the line (S733 section 3 keeps the installed
+# over-limit case non-zero).
+for v in no pending yes-pending; do
+  q="$SANDBOX/codex-$v"
+  [ "$v" = yes-pending ] && q="$y" # section 4 made codex-no and codex-pending
+  status_run "$q"
+  [ "$st_rc" = 0 ] || fail "S733/limit-gate/$v — status exited $st_rc before padding (control): $(grep -v '^unchanged:' <<<"$st_out" | tail -n 3 | tr '\n' ' ')"
+  python3 -I - "$q/AGENTS.md" <<'PY'
+import sys
+p = sys.argv[1]
+d = open(p, 'rb').read()
+pad = max(0, 40000 - len(d) - 1)
+open(p, 'wb').write(d + b'\n' + b'q' * pad)
+PY
+  [ "$(wc -c < "$q/AGENTS.md" | tr -d ' ')" -ge 40000 ] || fail "S733/limit-gate/$v — fixture AGENTS.md is under 40000 bytes"
+  status_run "$q"
+  grep -q 'instructions-over-limit' <<<"$st_out" \
+    && fail "S733/limit-gate/$v — instructions-over-limit for a project without an installed core block"
+  [ "$st_rc" = 0 ] || fail "S733/limit-gate/$v — status exited $st_rc for a 40000-byte project AGENTS.md without an installed core block"
+done
+
+# 7d. A project-owned key in any TOML form: yes writes no managed key (bytes
+# unchanged, exactly one definition), and a no re-run leaves the bytes too.
+# Python 3.9 has no tomllib, so the definitions are counted as lines.
+i=0
+for form in 'project_doc_max_bytes = 100_000' 'project_doc_max_bytes=0x10000' \
+            '"project_doc_max_bytes" = 70000' 'after-array'; do
+  i=$((i + 1))
+  k="$(fresh_project "key-form-$i")"
+  mkdir -p "$k/.codex"
+  if [ "$form" = after-array ]; then
+    printf 'model = "project-owned"\nmatrix = [\n  [1, 2],\n  [3, 4],\n]\nproject_doc_max_bytes = 131072\n\n[profiles.fixture]\nmodel = "fixture"\n' > "$k/.codex/config.toml"
+  else
+    printf '%s\n\n[profiles.fixture]\nmodel = "fixture"\n' "$form" > "$k/.codex/config.toml"
+  fi
+  cp "$k/.codex/config.toml" "$SANDBOX/config.form$i"
+  for a in yes no; do
+    write_adoption "$k/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$a"
+    core750_adopt "$wf" "$k" --runtime codex || fail "S733/key-form/$form/$a — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+    cmp -s "$k/.codex/config.toml" "$SANDBOX/config.form$i" \
+      || fail "S733/key-form/$form/$a — adoption changed a project-owned config whose key is written as: $form"
+    [ "$(grep -cE '^[[:space:]]*"?project_doc_max_bytes"?[[:space:]]*=' "$k/.codex/config.toml" 2>/dev/null)" = 1 ] \
+      || fail "S733/key-form/$form/$a — project_doc_max_bytes is not defined exactly once"
+  done
+done
+
 # --- 6. never ~/.codex ------------------------------------------------------------
 [ "$(core750_tree_digest "$HOME")" = "$home_before" ] || fail "S733/user — Codex adoption wrote under HOME"
 
