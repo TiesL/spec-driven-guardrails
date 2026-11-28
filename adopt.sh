@@ -519,23 +519,38 @@ install_user_skill() {
 # .claude/rules/sdg-orchestrator-core.md -> the file that row declares as
 # `opt-in-loaded:` in this clone (a symlink, so a release reaches the next
 # session without re-adoption). Any other answer removes that symlink, and
-# only a symlink: a project-owned regular file at the path is left alone and
+# only ours (core_rule_ours): a project-owned regular file at the path is left alone and
 # reported. Never user level: --user installs no core.
 CORE_RULE_LINK=".claude/rules/sdg-orchestrator-core.md"
+
+# Ownership by target, not by name: only a symlink whose target ends in the
+# declared core path (any clone location) is ours. A project-owned regular
+# file or a foreign symlink at the path is never replaced, removed or
+# untracked.
+core_rule_ours() {
+  local link="$1/$CORE_RULE_LINK" core
+  core="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
+  [ -n "$core" ] && [ -L "$link" ] || return 1
+  case "$(readlink "$link")" in
+    */"$core") return 0 ;;
+  esac
+  return 1
+}
+
 install_core_rule() {
   local project_dir="$1" link core
   link="$project_dir/$CORE_RULE_LINK"
   core="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
   if [ -n "$core" ] && answered_yes "$project_dir" process-multi-agent-roles; then
-    if [ -e "$link" ] && [ ! -L "$link" ]; then
-      echo "Not linking the orchestrator core: $link is a project-owned file, left untouched." >&2
+    if { [ -e "$link" ] || [ -L "$link" ]; } && ! core_rule_ours "$project_dir"; then
+      echo "Not linking the orchestrator core: $link is a project-owned file or foreign link, left untouched." >&2
       return 0
     fi
     mkdir -p "$(dirname "$link")"
     rm -f "$link"
     ln -s "$CLAUDE_WORKFLOW_DIR/$core" "$link"
     echo "Orchestrator core linked: $CORE_RULE_LINK -> $CLAUDE_WORKFLOW_DIR/$core"
-  elif [ -L "$link" ]; then
+  elif core_rule_ours "$project_dir"; then
     rm "$link"
     echo "Orchestrator core link removed (process-multi-agent-roles is not answered yes): $CORE_RULE_LINK"
   fi
@@ -575,7 +590,10 @@ adopt_project() {
   # path on *this* machine. Committing them yields broken links in every
   # other checkout, and without this line, the first re-adoption after W9
   # would leave a pile of untracked files in all four projects.
-  untrack_managed_paths "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/" "$CORE_RULE_LINK"
+  untrack_managed_paths "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
+  if core_rule_ours "$project_dir" || { [ ! -e "$project_dir/$CORE_RULE_LINK" ] && [ ! -L "$project_dir/$CORE_RULE_LINK" ]; }; then
+    untrack_managed_paths "$project_dir" "$CORE_RULE_LINK"
+  fi
   write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/" "$CORE_RULE_LINK"
   install_skills "$project_dir"
   install_git_hooks "$project_dir"

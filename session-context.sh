@@ -121,7 +121,7 @@ if [ "$runtime" = codex ]; then
   if [ "$?" -ne 0 ]; then
     echo "Warning: Codex installation is missing, stale, conflicting or recovery pending; run adopt.sh --runtime codex again and verify actual instruction loading."
   fi
-  printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p; /^guard bundle:/p; /^Refresh must /p'
+  printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p; /^guard bundle:/p; /^Refresh must /p; /^pending:/p'
 else
 claude_md="$project_dir/CLAUDE.md"
 expected="$(physical "$workflow_dir/WORKFLOW.md")"

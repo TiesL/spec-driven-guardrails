@@ -50,7 +50,7 @@ def inventory(source, project):
                          capture_output=True, text=True)
     print('runtime: codex\nproject: ' + str(project) + '\ncheckout: ' + str(source))
     print('revision: ' + (rev.stdout.strip() if rev.returncode == 0 else 'unavailable (unversioned checkout)'))
-    print('config: only the managed ' + LIMIT_KEY + ' for a yes project; trust/permissions/unrelated-hooks/plugins: not installed or changed')
+    print('config: only the managed ' + LIMIT_KEY + ' for a yes project, in effect only for a trusted project; trust/permissions/unrelated-hooks/plugins: not installed or changed')
     print('native-hooks: shared; foreign hooks/hooksPath/--no-verify may make coverage unavailable')
     print('structural installation only; not live-loaded')
 
@@ -99,7 +99,9 @@ def config_plan(project, install):
     data = regular(path, CONFIG)
     if data.count(MANAGED_KEY) > 1: raise Conflict(CONFIG + ': duplicated managed key')
     own = data.replace(MANAGED_KEY, b'')
-    wanted = MANAGED_KEY + own if install and top_level_limit(own) is None else own
+    # A66 D4: any other line naming the key (any TOML form: quoted, 100_000,
+    # hex, after a multi-line array) makes it the project's; never add ours.
+    wanted = MANAGED_KEY + own if install and LIMIT_KEY.encode() not in own else own
     if not wanted and data: return None, True
     return wanted, wanted != data or not present
 
@@ -715,9 +717,11 @@ def main():
         for name in deletes: print('stale/not removed: ' + name); stale = True
         if core_pending:
             print('pending: orchestrator-core block not installed yet; run adopt.sh --runtime codex to install it')
-        # A66 D4: the Codex AGENTS.md chain against the effective limit.
+        # A66 D4: the project-root AGENTS.md against the effective limit, only
+        # once the core block is installed (opt-in only; D3).
         agents = project / 'AGENTS.md'
-        size = agents.stat().st_size if agents.is_file() else 0
+        installed = block(data, CORE_BEGIN, CORE_END, 'AGENTS.md') is not None
+        size = agents.stat().st_size if installed and agents.is_file() else 0
         config = project / CONFIG
         limit = top_level_limit(config.read_bytes()) if config.is_file() and not config.is_symlink() else None
         limit = DEFAULT_LIMIT if limit is None else limit
