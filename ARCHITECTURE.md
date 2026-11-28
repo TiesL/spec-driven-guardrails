@@ -13582,3 +13582,37 @@ not preserve superseded broad assertions as regression requirements or mark
 old findings resolved merely by this design. Implementation is principally
 deletion plus local documentation; the full behavior run remains the main
 validation cost. No new maintainer decision is required by this design.
+
+#### A65 addendum 4 — Name the action for a moved head at Review start (behavior-ob87-unstable, #747)
+
+Planning, 2026-11-28, input head `10c605e`. QA classed the unstable OB87
+result as design: OR46 (A64) says a moved head "blocks Review" but names
+no next action. `stop`, `answer_directly` and `dispatch` all fit that
+text, so the new arm splits. The gap predates #724, but it blocks #724's
+stamp. The OB87 Then (`stop`) is already correct and stays unchanged.
+
+**Decision.** Name the action in OR46 with one exact pair:
+
+- old: `Failed promotion/moved head blocks Review.`
+- new: `Failed promotion/moved head blocks Review; moved head at Review start: stop.`
+
+"At Review start" scopes the action. A head that moves before Review and is
+seen through a rejected promotion (OB91) still follows "All else: dispatch
+owner". The `stop` enum already means "stop and report, with nothing to
+ask", so the text needs no "report" word. The rule does not let the
+orchestrator validate or adopt unknown pushes itself.
+
+**Constraints checked.** The change adds 34 bytes to OR46, which is in core
+part 1. S627 measured slot1=8495 and slot2=8449 against budget=9000, so
+slot1 stays within budget. Slot 2 and S318's 8,500 fallback do not change.
+The `wip-promotion-706.py` failed-promotion-stop duty keeps its pattern,
+and its `Failed promotion/` cut still occurs once. Its deletion control
+still kills the duty.
+
+**Handoff.** QA adds the pair to `test/fixtures/backlog-724-substitutions.json`
+under `skills/role-contracts/ORCHESTRATOR.md`, with S725/S317 consumers
+reconciled. The Developer then applies the exact pair. No scenario,
+inventory or runner change is needed. The change alters hashed core bytes,
+so the orchestrator reruns the whole-file behavior runner and commits the
+runner-generated stamp before clean exact-head D6. This is a shared
+contract-text change: the maintainer accepts it at the release merge.
