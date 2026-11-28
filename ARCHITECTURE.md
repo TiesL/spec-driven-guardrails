@@ -13251,3 +13251,44 @@ D5. No other AC is contradicted or narrowed.
   plus `ORCHESTRATOR.md` (16,468 bytes) is 40,884 bytes: over Codex's 32 KiB
   default, under 64 KiB, so D4's key is needed and sufficient. S318, S627,
   S309, S708 and S713 exist under `test/cases/` and are changed as above.
+- **Ownership addendum (OR20 redesign, review round 2 on #751).** Rounds 1
+  and 2 each opened a medium because adoption decided "is this ours?" by
+  inference (target suffix, line patterns). Ownership of both installed
+  artefacts is now a stated rule, not an inference. No new record file:
+  each artefact already carries its own explicit mark, and a separate
+  record would add a format, corruption handling and a record-versus-disk
+  conflict case without telling apart any real case the mark cannot.
+  - **Claude link: a reserved path.** `.claude/rules/sdg-orchestrator-core.md`
+    is reserved by adoption: the `sdg-` name and the managed `.gitignore`
+    block declare it. This is the rule `adopt.sh` already applies to
+    `CLAUDE.md` and `.claude/settings.json`. Any symlink at the reserved
+    path is ours, whatever its target: an old declared path, a moved
+    clone, dangling or foreign. Yes replaces it, any other answer removes
+    it, and adoption may untrack it. Replacing or removing a symlink
+    never writes through it, so no project bytes are lost. A regular file
+    or directory at the path is the project's: never replaced, removed or
+    untracked. The core path is also left out of the managed `.gitignore`
+    block while one is there, so the file stays visible to git. The target
+    suffix check of round 1 is retired, so a changed `opt-in-loaded:`
+    declaration is repaired by the next `adopt.sh` run (S732 §4).
+  - **Warning follows the same rule.** `session-context.sh`: not opted in
+    and any symlink at the path, then "run adopt.sh again to remove it",
+    which is now true. Opted in and a regular file at the path, then a line
+    that names the project file and says adoption will not link the core
+    while it is there. It no longer advises an `adopt.sh` run that cannot
+    succeed. Opted in, and the path is absent or a symlink not resolving to
+    this clone's core: unchanged, "run adopt.sh again to restore it".
+  - **Codex block and key: in-band markers, unchanged.** The core block's
+    begin/end markers and the managed key's marker comment line already
+    record what adoption wrote. Removal and refresh act only on marked
+    bytes. What remains is reading the project's own key, which is
+    detection of theirs, not ownership of ours. A line counts as a project
+    definition only if it is not a comment line (its first non-blank
+    character is not `#`). A comment that mentions the key therefore no
+    longer blocks the managed key; before, a project with such a comment
+    stayed at 32768 and truncated. `top_level_limit` reads the first such
+    top-level definition: bare or quoted key, any TOML integer form
+    (`int(value.replace('_', ''), 0)`). If the project defines the key
+    but the value cannot be read, `status` still fails closed. Its
+    over-limit line then says to write `project_doc_max_bytes` as a plain
+    top-level integer, which the project can do.
