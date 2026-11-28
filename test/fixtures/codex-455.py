@@ -191,17 +191,21 @@ try:
         p = project(); adopt(p)
         (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | yes | date | reason |\n')
         out = run(wf / 'session-context.sh', '--runtime', 'codex', p)
-        # Amended by #499 (AC14, A41): verbatim means the file minus its one
-        # slot marker line, both parts and their headers kept; the marker
-        # line itself is never printed.
+        # Amended by #750 (A66 D2): session-context.sh prints no part of the
+        # core for yes or no; the core reaches Codex through S733's AGENTS.md
+        # block. The one-marker-line check on ORCHESTRATOR.md stays.
         orch_text = (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text()
         assert orch_text.count(SLOT_MARKER + '\n') == 1, 'ORCHESTRATOR.md has one slot marker line'
-        expect(out, orch_text.replace(SLOT_MARKER + '\n', ''))
-        assert SLOT_MARKER not in out, 'the slot marker line was printed'
+        rule_lines = [l for l in orch_text.splitlines() if re.match(r'- OR\d+ ', l)]
+        assert rule_lines, 'ORCHESTRATOR.md has no OR rule lines'
         (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | no | date | reason |\n')
         out_no = run(wf / 'session-context.sh', '--runtime', 'codex', p)
-        for part in orch_text.split(SLOT_MARKER + '\n'):
-            assert part.splitlines()[0] not in out_no, 'a part printed for a project that did not opt in'
+        for answer, text in (('yes', out), ('no', out_no)):
+            assert SLOT_MARKER not in text, f'the slot marker line was printed ({answer})'
+            for part in orch_text.split(SLOT_MARKER + '\n'):
+                assert part.splitlines()[0] not in text, f'a core part heading was printed ({answer})'
+            for line in rule_lines:
+                assert line not in text, f'a core rule line was printed ({answer}): {line[:40]}'
 
     elif SCENARIO in (295, 296):
         p = project(); (p / '.codex').mkdir(); (p / '.codex/config.toml').write_text('trust = "withheld"\n')

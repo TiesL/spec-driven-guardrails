@@ -1,5 +1,6 @@
 {
-  "base": "97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581",
+  "base": "255040eb0802798a2f81ff408be4008826873b61",
+  "base_provenance": "First parent of the #706 squash merge 3e3e94f on main. Replaces the #706 WIP commit 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581, which the squash left unreachable. For every path below, restoring these pairs on 3e3e94f gives the bytes at 255040e exactly, and 255040e equals A (5117885) on the four S627-protected paths.",
   "changes": {
     "hooks/rules.sh": [
       [

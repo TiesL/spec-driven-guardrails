@@ -54,10 +54,10 @@ block="$(awk '/^# spec-driven-guardrails: begin$/{f=1;next} /^# spec-driven-guar
 grep -qxE "/?\\.claude/rules/sdg-orchestrator-core\\.md" <<<"$block" \
   || fail "S732/yes — the managed .gitignore block does not list $CORE750_LINK"
 git -C "$yes_p" check-ignore -q "$CORE750_LINK" || fail "S732/yes — git does not ignore $CORE750_LINK"
-git -C "$yes_p" status --porcelain --untracked-files=all | grep -qF 'sdg-orchestrator-core' \
+grep -qF 'sdg-orchestrator-core' <<<"$(git -C "$yes_p" status --porcelain --untracked-files=all)" \
   && fail "S732/yes — the link shows as untracked or changed in git status"
 # Plain Markdown, no import or paths frontmatter (one file, both runtimes).
-head -n 1 "$ORCH" | grep -qx -- '---' && fail "S732/yes — ORCHESTRATOR.md starts with frontmatter"
+grep -qx -- '---' <<<"$(head -n 1 "$ORCH")" && fail "S732/yes — ORCHESTRATOR.md starts with frontmatter"
 grep -qE '^@|[[:space:]]@[A-Za-z0-9_./-]+\.md' "$ORCH" && fail "S732/yes — ORCHESTRATOR.md carries an @ import"
 # Idempotent re-run keeps the same link.
 before="$(readlink "$yes_p/$CORE750_LINK" 2>/dev/null)"

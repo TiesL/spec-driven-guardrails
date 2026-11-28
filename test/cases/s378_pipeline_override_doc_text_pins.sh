@@ -3,9 +3,10 @@
 # Covers: F38
 #
 # Issue #564 (AC7, AC9, AC10 and the doc-text pins clause). Seam: the doc and
-# script texts read as data (grep on the real tree) and the output of
-# `session-context.sh --slot 1` for an opted-in project. Each pin has a
+# script texts read as data (grep on the real tree). Each pin has a
 # mutation arm on a sandbox copy: remove that text and the pin must go red.
+# The former `session-context.sh --slot 1` pin is retired (#750, A66 D2):
+# the session reads ORCHESTRATOR.md itself, and pin_or34 pins that file.
 #
 # Falsifiers: a pin that stays green when its text is deleted; a pin that
 # greps a file other than the one the session reads.
@@ -14,8 +15,6 @@ set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-# shellcheck source=../fixtures/pipeline-371-helpers.sh disable=SC1091
-. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/pipeline-371-helpers.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -44,16 +43,6 @@ pin_or34() {
   or34="$(grep '^- OR34 ' "$1/skills/role-contracts/ORCHESTRATOR.md")"
   grep -q 'pipeline-override\.sh' <<<"$or34" \
     || { echo "OR34 does not name pipeline-override.sh"; return 1; }
-}
-# pin_slot1 <root>: the session text a project gets in slot 1 names the script.
-pin_slot1() {
-  local proj="$SANDBOX/slotproj"
-  rm -rf "$proj"; mkdir -p "$proj"
-  write_adoption "$proj/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
-  local out
-  out="$("$1/session-context.sh" --slot 1 "$proj" 2>/dev/null)"
-  grep -q 'pipeline-override\.sh' <<<"$out" \
-    || { echo "session-context.sh --slot 1 does not mention pipeline-override.sh"; return 1; }
 }
 # pin_quote <root>: AC10, the text says single quote(s) in all three files.
 pin_quote() {
@@ -87,7 +76,7 @@ fresh_copy() { rm -rf "$SANDBOX/m"; sandbox_copy_repo m >/dev/null; echo "$SANDB
 sed_i() { local last="${*: -1}"; sed -i.bak "$@" && rm -f "$last.bak"; }
 
 R="$TEST_REPO_ROOT"
-for p in pin_abbrev pin_or34 pin_slot1 pin_quote pin_closes pin_help_pointer; do
+for p in pin_abbrev pin_or34 pin_quote pin_closes pin_help_pointer; do
   msg="$($p "$R")" || fail "S378/$p — on the real tree: $msg"
 done
 
@@ -128,8 +117,6 @@ arm abbrev-skipplanning pin_abbrev "skills/role-contracts/SKILL.md: the abbrevia
   mut_sed skills/role-contracts/SKILL.md 's/skip=Planning/skip=X/g'
 arm or34 pin_or34 "OR34 does not name pipeline-override.sh" \
   mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /s/pipeline-override\.sh/the-script/g'
-arm slot1 pin_slot1 "session-context.sh --slot 1 does not mention pipeline-override.sh" \
-  mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /,/^- OR35 /s/pipeline-override\.sh/the-script/g'
 for f in pipeline-override.sh skills/role-contracts/SKILL.md skills/role-contracts/ORCHESTRATOR.md; do
   arm "quote-$f" pin_quote "$f lacks the text 'single quote'" mut_sed "$f" 's/single quote/quote/g'
 done

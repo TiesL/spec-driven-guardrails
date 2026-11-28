@@ -62,7 +62,7 @@ printf '%s' "$USER_AGENTS" > "$p/AGENTS.md"
 core750_adopt "$wf" "$p" --runtime codex || fail "S733/yes — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
 msg="$(block_ok "$p")" || fail "S733/yes — $msg"
 grep -qF "$CORE750_WF_BEGIN" "$p/AGENTS.md" || fail "S733/yes — the workflow block is missing"
-head -n 1 "$p/AGENTS.md" | grep -qxF 'Project-owned instructions before the managed blocks.' \
+grep -qxF 'Project-owned instructions before the managed blocks.' <<<"$(head -n 1 "$p/AGENTS.md")" \
   || fail "S733/yes — project-owned AGENTS.md text was not kept"
 [ "$(core750_toml_top "$p/.codex/config.toml" project_doc_max_bytes)" = 65536 ] \
   || fail "S733/yes — .codex/config.toml has no top-level project_doc_max_bytes = 65536"
@@ -152,11 +152,59 @@ grep -qF "$CORE750_BEGIN" "$p/AGENTS.md" && fail "S733/opt-out — the core bloc
 grep -qF "$CORE750_END" "$p/AGENTS.md" && fail "S733/opt-out — a core end marker survived a no re-run"
 [ "$(awk -v b="$CORE750_WF_BEGIN" -v e="$CORE750_WF_END" 'index($0,b){f=1} f{print} index($0,e){f=0}' "$p/AGENTS.md")" = "$wf_block_before" ] \
   || fail "S733/opt-out — the workflow block changed"
-head -n 1 "$p/AGENTS.md" | grep -qxF 'Project-owned instructions before the managed blocks.' \
+grep -qxF 'Project-owned instructions before the managed blocks.' <<<"$(head -n 1 "$p/AGENTS.md")" \
   || fail "S733/opt-out — project-owned AGENTS.md text was not kept"
 printf '%s' "$USER_CONFIG" > "$SANDBOX/config.user"
 cmp -s "$p/.codex/config.toml" "$SANDBOX/config.user" \
   || fail "S733/opt-out — .codex/config.toml is not back to the project-owned bytes (managed key left or user lines changed)"
+
+# --- 5b. key ownership (A66 D4): a project-owned key is not adoption's ---------
+# The project set project_doc_max_bytes itself (131072): yes keeps that line
+# and adds no second one; status reads it as the effective limit (a chain
+# between 65536 and 131072 bytes is not over the limit); a no re-run leaves
+# the project-owned bytes, key included.
+OWNED_CONFIG='project_doc_max_bytes = 131072
+
+[profiles.fixture]
+model = "fixture"
+'
+o="$(fresh_project owned-key)"
+write_adoption "$o/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+mkdir -p "$o/.codex"
+printf '%s' "$OWNED_CONFIG" > "$o/.codex/config.toml"
+printf '%s' "$OWNED_CONFIG" > "$SANDBOX/config.owned"
+core750_adopt "$wf" "$o" --runtime codex || fail "S733/owned-key — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+msg="$(block_ok "$o")" || fail "S733/owned-key — $msg"
+[ "$(grep -c 'project_doc_max_bytes' "$o/.codex/config.toml" 2>/dev/null)" = 1 ] \
+  || fail "S733/owned-key — project_doc_max_bytes is duplicated or gone next to a project-owned key"
+[ "$(core750_toml_top "$o/.codex/config.toml" project_doc_max_bytes)" = 131072 ] \
+  || fail "S733/owned-key — the project-owned project_doc_max_bytes = 131072 was replaced"
+cp "$o/AGENTS.md" "$SANDBOX/agents.owned"
+python3 -I - "$o/AGENTS.md" <<'PY'
+import sys
+p = sys.argv[1]
+d = open(p, 'rb').read()
+pad = max(0, 70000 - len(d))
+open(p, 'wb').write((b'p' * pad) + b'\n' + d)
+PY
+status_run "$o"
+grep -q 'instructions-over-limit' <<<"$st_out" \
+  && fail "S733/owned-key — status ignores the project-owned limit (131072): a chain of about 70000 bytes reported over the limit"
+cp "$SANDBOX/agents.owned" "$o/AGENTS.md"
+write_adoption "$o/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
+core750_adopt "$wf" "$o" --runtime codex || fail "S733/owned-key — no re-run failed"
+cmp -s "$o/.codex/config.toml" "$SANDBOX/config.owned" \
+  || fail "S733/owned-key — a no re-run changed the project-owned config (the project's own key is not adoption's to remove)"
+
+# An adoption-created config.toml is deleted again by the no re-run.
+c="$(fresh_project created-config)"
+write_adoption "$c/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
+core750_adopt "$wf" "$c" --runtime codex || fail "S733/created — Codex adoption failed: $(tail -n 3 "$SANDBOX/adopt.out")"
+[ "$(core750_toml_top "$c/.codex/config.toml" project_doc_max_bytes)" = 65536 ] \
+  || fail "S733/created — no managed project_doc_max_bytes = 65536 in a project without a config"
+write_adoption "$c/WORKFLOW-ADOPTION.md" process-multi-agent-roles no
+core750_adopt "$wf" "$c" --runtime codex || fail "S733/created — no re-run failed"
+[ -e "$c/.codex/config.toml" ] && fail "S733/created — a no re-run left the config.toml that adoption created"
 
 # --- 6. never ~/.codex ------------------------------------------------------------
 [ "$(core750_tree_digest "$HOME")" = "$home_before" ] || fail "S733/user — Codex adoption wrote under HOME"

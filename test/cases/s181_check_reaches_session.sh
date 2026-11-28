@@ -5,8 +5,9 @@
 # Issue #371, A17, AC10. Seam: `check --no-tests` on a sandbox copy of this
 # repo whose CHANGES.md is edited per case. The structural rule only: the
 # `- **Reaches session:**` field is present, every value is in the closed
-# vocabulary (none, always-loaded, session-context, hook, gate), each path
-# exists, and each non-none path is named in at least one test/cases/*.sh.
+# vocabulary (none, always-loaded, opt-in-loaded, hook, gate; #750 A66
+# replaced session-context with opt-in-loaded), each path exists, and each
+# non-none path is named in at least one test/cases/*.sh.
 # Whether `none` is HONEST for a given "Yes means" is Reviewer judgment and
 # deliberately not asserted (A17).
 #
@@ -94,19 +95,20 @@ expect_reject() { # label value [culprit]
 
 # Valid forms.
 expect_pass "none" "none"
-expect_pass "session-context with an existing, test-named path" "session-context: skills/fixture/CTX.md"
+expect_pass "opt-in-loaded with an existing, test-named path" "opt-in-loaded: skills/fixture/CTX.md"
 expect_pass "hook with an existing, test-named path" "hook: skills/fixture/hook.sh"
 expect_pass "gate with an existing, test-named path" "gate: skills/fixture/hook.sh"
-expect_pass "comma list of two valid values" "session-context: skills/fixture/CTX.md, gate: skills/fixture/hook.sh"
+expect_pass "comma list of two valid values" "opt-in-loaded: skills/fixture/CTX.md, gate: skills/fixture/hook.sh"
 
 # Invalid forms, each pinned on the right entry.
 expect_reject "field missing" __DELETE__
 expect_reject "field only mentioned in prose" __PROSE__
 expect_reject "empty value" ""
 expect_reject "keyword outside the vocabulary" "telepathy: skills/fixture/CTX.md" "telepathy"
-expect_reject "declared path does not exist" "session-context: skills/fixture/NO-SUCH-FILE-371.md" "NO-SUCH-FILE-371"
+expect_reject "the retired session-context keyword (#750)" "session-context: skills/fixture/CTX.md" "session-context"
+expect_reject "declared path does not exist" "opt-in-loaded: skills/fixture/NO-SUCH-FILE-371.md" "NO-SUCH-FILE-371"
 expect_reject "path exists but no test names it" "hook: skills/fixture/unnamed.sh" "unnamed.sh"
-expect_reject "one bad path in an otherwise valid list" "session-context: skills/fixture/CTX.md, gate: skills/fixture/NO-SUCH-371.sh" "NO-SUCH-371"
+expect_reject "one bad path in an otherwise valid list" "opt-in-loaded: skills/fixture/CTX.md, gate: skills/fixture/NO-SUCH-371.sh" "NO-SUCH-371"
 expect_reject "a keyword with no path" "hook:" ""
 expect_reject "a path with no keyword" "skills/fixture/CTX.md" ""
 

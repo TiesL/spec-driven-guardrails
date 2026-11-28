@@ -56,7 +56,7 @@ plant() {
   fi
   run_check "$m"
   [ "$rc" != 0 ] || { fail "S735/$label — $id text in $rel passed"; return; }
-  grep -F "$rel" <<<"$out" | grep -qw "$id" || fail "S735/$label — the failure does not name $rel and $id: $(head -n 2 <<<"$out" | tr '\n' ' ')"
+  grep -qw "$id" <<<"$(grep -F "$rel" <<<"$out")" || fail "S735/$label — the failure does not name $rel and $id: $(head -n 2 <<<"$out" | tr '\n' ' ')"
 }
 plant hook-py hooks/agent-dispatch.py OR10 one
 plant hook-guard hooks/git-guardrails OR11 one

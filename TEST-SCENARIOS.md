@@ -2460,6 +2460,20 @@ something new is being added.
   missing, a regular file or linked elsewhere it also prints a warning that
   names `CLAUDE.md` and `adopt.sh` (silent when linked to the clone's
   `WORKFLOW.md`)
+- Amended by #750 (A66 D2): the hook copy is gone, so "prints exactly the
+  files of the entries answered yes" and the later-version clause are
+  replaced. Given: the same mini clone, its entries now declaring
+  `opt-in-loaded: <path>` and the retired `session-context: <path>` (alone,
+  in a comma list with a gate value, and a missing file). Then: no declared
+  file's text appears on stdout or stderr for any answer (yes, `ja` in the
+  old file, no, unanswered, similar ids, a later version of the file); it
+  exits 0 in every case; with nothing declaring answered yes and no
+  adoption file, the output is empty; the `CLAUDE.md` warning is unchanged.
+  Falsifier: any sentinel of a declared file printed; a non-zero exit. The
+  core's own path is S732 (Claude) and S733 (Codex)
+- Red-before-green at `29533cb`: a yes on a `session-context:` entry
+  prints its file (cases 3, 5, 9); the S309 cause. Green when
+  `session-context.sh` prints no declared file
 
 ### S178 — the SessionStart chain delivers the rules, reaches the project without re-adoption, and warns on a broken CLAUDE.md link
 **Covers:** F38
@@ -2475,6 +2489,19 @@ something new is being added.
   none, and the rules are delivered regardless; the session-context command
   finds the clone by `readlink`, hard-coding no path, and carries no
   `CLAUDE.md` warning logic itself (that lives in `session-context.sh`)
+- Amended by #750 (A66 D2): Then, replaced: the one `SessionStart` command
+  that calls `session-context.sh` carries no `ORCHESTRATOR.md` rule text
+  (no line of 25 characters or more) for yes, no or never, also with
+  `CLAUDE.md` missing; the unanswered row is still reported by
+  pending-changes; the `CLAUDE.md` warning cases are unchanged; exactly one
+  command calls `session-context.sh`, it finds the clone by `readlink`,
+  hard-codes no path and carries no `CLAUDE.md` logic. "A later
+  `ORCHESTRATOR.md` reaches the next session without re-adoption" moves to
+  S732 (through the link). Falsifier: core text in the yes output; a second
+  session-context command
+- Red-before-green at `29533cb`: the yes output carries all of
+  `ORCHESTRATOR.md` and two commands call `session-context.sh`; the S309
+  cause
 
 ### S179 — this repo answers its own row yes and gets the rules at session start
 **Covers:** F38
@@ -2484,6 +2511,16 @@ something new is being added.
 - Then: the row is a reasoned yes (not the provisional stamp); the repo's
   run prints all of `ORCHESTRATOR.md`; the no project's run prints none of
   it; no repo-specific special case
+- Amended by #750 (A66 D1, D2): Given also a sandbox copy of this repo
+  self-adopted (`adopt.sh` with the copy as source and target, the S81
+  pattern). Then, replaced: the row stays a reasoned yes; the S732 installer
+  makes `.claude/rules/sdg-orchestrator-core.md` a symlink that resolves to
+  the copy's own `ORCHESTRATOR.md`, same bytes, with no special case;
+  `session-context.sh` on the copy and on a no project prints none of the
+  core. Falsifier: no link, a link to another file, core text printed
+- Red-before-green at `29533cb`: no link after self-adoption, and the
+  repo's run prints the core (the S309 cause). Green with S732's installer
+  and the D2 removal
 
 ### S180 — ORCHESTRATOR.md states the run rules once, short, with the recursion guard first
 **Covers:** F38
@@ -2525,6 +2562,13 @@ something new is being added.
 - Then: it fails and names the entry, the field and the culprit; it passes
   for the unmodified repo, for `none`, for a valid comma list, for
   `always-loaded: WORKFLOW.md`, and for a hook path once a test case names it
+- Amended by #750 (A66 vocabulary): `opt-in-loaded: <existing, test-named
+  file>` passes, alone and in a comma list; `session-context: <path>` now
+  fails as outside the vocabulary, naming `session-context`; the missing-
+  path variants use `opt-in-loaded:`
+- Red-before-green at `29533cb`: `opt-in-loaded:` is rejected and
+  `session-context:` passes. Green when `reaches_session_invalid` in
+  `lib/changes.sh` swaps the keyword
 
 ### S182 — every CHANGES.md entry declares how it reaches a session
 **Covers:** F38
@@ -2537,6 +2581,14 @@ something new is being added.
   no-bump decision does not prohibit the approved #427 Meaning version 2 or
   #663 Meaning version 3; S265 checks the current version and retained semantics. Removing any Reaches session
   field or either declared route must still fail this scenario.
+- Amended by #750 (A66 vocabulary): the five keywords are `none`,
+  `always-loaded`, `opt-in-loaded`, `hook`, `gate`; the preamble has no
+  `session-context:` vocabulary item; `process-multi-agent-roles` declares
+  `opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md` and
+  `gate: skills/pre-merge-review/model-record-gate.sh`
+- Red-before-green at `29533cb`: the preamble lists `session-context:` and
+  the row declares `session-context: …ORCHESTRATOR.md`. Green with the
+  `CHANGES.md` edit S309 already asks for
 
 ### S183 — strict live evidence determines role-play only in opted-in projects
 **Covers:** F38
@@ -5612,6 +5664,12 @@ behavioral obedience.
   against that expectation. Counterexamples: output equal to the whole file
   with the marker line fails; output missing part 2 fails; the not-opted-in
   case still prints neither part
+- Amended by #750 (A66 D2), superseding the #499 amendment's output clause:
+  `session-context.sh --runtime codex` prints no part of the core for yes
+  or no: no part heading, no `- OR<n>` rule line, no marker line. The check
+  that `ORCHESTRATOR.md` holds exactly one marker line stays. The core
+  reaches Codex through S733's `AGENTS.md` block. Red-before-green at
+  `29533cb`: the yes output prints the core (the S309 cause)
 
 
 - Amended by #575 (AC1–AC4, A39; root carrier regression):
@@ -7870,6 +7928,10 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - When: the pins are read: (a) the policy `- **Abbreviated workflow**` bullet names the installed `role-contracts` skill (never a repo-relative path, S534), its `Stage-selection panel` and `pipeline-override.sh`; only the canonical skill carries the full `skip=Planning` and `skip=Test` definition; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
 - Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, each canonical scope dropped separately, each policy reference target removed separately, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
 - Falsifiers: a pin that stays green when its text is deleted, a policy reference that drops the installed skill name or panel entry point, a canonical definition that drops either Abbreviated scope, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
+- Amended by #750 (A66 D2): pin (c), `session-context.sh --slot 1`, and its
+  mutation arm are retired; `--slot` no longer exists, and the session reads
+  `ORCHESTRATOR.md` itself, which pin (b) `pin_or34` already pins. Green at
+  `29533cb` and after the change; the case file no longer calls `--slot`
 
 ### S379 — ./check runs ok on a read-only tree without writing bytecode and still reports a syntax error with file and line (#590 AC3; #595 AC1)
 **Covers:** F57
@@ -8097,6 +8159,15 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: default and --hooks Codex adoption run.
 - Then: HOME and CODEX_HOME remain unchanged; no project config.toml, hooks.state or trust_level is written. This unchanged-behavior control is green before implementation and leaves S381 unchanged.
 - Falsifiers: any Codex configuration or trust written by adoption.
+- Amended by #750 (A66 D4): Given also a project row
+  `process-multi-agent-roles | yes` (now written by the fixture itself).
+  Then, replaced: HOME and CODEX_HOME remain unchanged; no `hooks.state` and
+  no `trust_level` is written; the project `.codex/config.toml` exists and,
+  comments and blank lines aside, holds only `project_doc_max_bytes =
+  65536`. Falsifier: any other config line, no config for a yes, anything
+  under HOME or CODEX_HOME. S733 owns the key's ownership rules
+- Red-before-green at `29533cb`: no project config is written for a yes.
+  Green when `lib/codex-adoption.py` writes the managed key
 
 ### S406 — The hand-kept list alone suffices for source guard parity (#594 AC9)
 **Covers:** F8, F47
@@ -12743,6 +12814,7 @@ non-OPEN blocks; the accepted risk permits mistyped or invented numbers with a w
 - Then: apply only the declared pairs, once each, above the existing historical allowances. OR46 uses the exact A64 addendum 2 whole-line replacement; OR48 retains addendum 1's exact pair. A64 addendum 3 retains the regex pair and uses complete historical `REASON_COMMIT_ON_MAIN` and `REASON_BRANCH_NO_ISSUE` assignments as old sides for the exact new WIP-first messages; the overlapping branch-prefix pair is removed. Count-1 application and reverse restoration remain mandatory, with independent omitted/wrong-pair and actual extra-byte rejection in S593/S725. Independently falsify generated-only/unedited/WIP, every affected check/brief/exit 0, valid record/OR34 and each of the three exemption objects, with separate record and exemption witnesses. Reject each omitted pair, wrong or extra bytes, and each independent duty deletion within the whole-line replacements; retain every historical baseline and ordinary floor/marker freeze. Original unamended candidate code is red for the corresponding missing guard or rule behavior, never accepted as the new expectation. The behavior file's allowances contain only QA's exact additions. S627 retains A and the unchanged pins, permits only the shared core/scenario pairs and S548's genuine final stamp digest, and rejects omitted amendments, arbitrary stamps and extra bytes. No new digest authority or baseline replacement is permitted.
 - Falsifier: accepting arbitrary current candidate bytes, removing a historical freeze, accepting a missing/extra amendment or deleted duty, or hand-writing a stamp. DEV706-1 is falsified by unchanged `./test/run.sh s309` and `./test/run.sh s318`: K=2, budget 9,000, headroom floor 500 in each slot, fallback 8,500 and every padding/one-character control remain. Both are red for the budget reason at 579d3c72c52cf78eaa227cdb4a988bb7d9f08884; the exact shorter replacements must make them green. S323/S335/S709 still need a genuine final full behavior run because the stamp covers the whole core and scenario file. Protection amendments require explicit review.
 - Case file: `test/cases/s725_exact_freeze_allowances.sh`; amended freeze consumers remain strict. Exact substitution values are a concrete Developer implementation target; any owning-role change needs QA reconciliation of these oracles, not loosening them to candidate bytes.
+- Amended by #750 QA (test defect, same class as #728/S412): the anchor 97a3a6173dfa9dfccd7fd4edd06c9bcc376c0581 was a #706 WIP commit that the squash merge 3e3e94f left unreachable, so S627, S709, S725 and the 645/646/647 fixtures failed in every fresh clone. The JSON `base` is now `255040eb0802798a2f81ff408be4008826873b61`, the first parent of 3e3e94f on `main`. Equivalence, checked once: for each of the seven paths, `restore` of the pairs on 3e3e94f gives the bytes at 255040e exactly, and 255040e equals A `5117885` on S627's four protected paths. The pairs, counts, controls and every assertion are unchanged. S725 also fails, naming the base, when the base is not an ancestor of HEAD. Red at `29533cb`: `git show 97a3a61…` fails with an unknown object. Green with the repinned base
 
 ## #750 — orchestrator core through the opt-in always-loaded file (epic #742; A66; F38)
 
@@ -12838,6 +12910,20 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   a clone release and has no `instructions-over-limit`; session-context
   Codex output prints the core. The clean-status, no/unanswered and HOME
   controls are green and must stay green
+- Variant, key ownership (A66 D4): Given an opted-in project whose own
+  `.codex/config.toml` already sets top-level `project_doc_max_bytes =
+  131072`, and an opted-in project with no `.codex/config.toml`. Then: yes
+  keeps the project's line and writes no second key (exactly one, value
+  131072); `status` reads 131072 as the effective limit, so an `AGENTS.md`
+  chain of about 70,000 bytes is not `instructions-over-limit`; a no re-run
+  leaves the project-owned config byte for byte, key included; for the
+  project without a config, yes creates one with `65536` and the no re-run
+  deletes it. Falsifier: a duplicated or replaced project key; status
+  measuring against 65536 when the project set its own limit; the
+  project's key removed on opt-out; an adoption-created config left behind
+- Red-before-green at `29533cb`: no block and no managed key (the S733 red
+  above). Green when `lib/codex-adoption.py` records key ownership, as the
+  Architect's handoff says
 
 ### S734 — Session start prints one warning line, without rule text, when an opted-in project's core link is missing or wrong or a not-opted-in project still has it; enforcement follows the answer at once (#750 AC3, AC6; A66 D2, D3, D5)
 **Covers:** F38

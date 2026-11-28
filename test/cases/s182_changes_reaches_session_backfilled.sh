@@ -33,9 +33,12 @@ total="$(grep -c '^## ' "$changes")"
 # The preamble documents the field and its vocabulary.
 preamble="$(awk '/^## /{exit} {print}' "$changes")"
 assert_contains "S182 — the preamble documents the field" "Reaches session" "$preamble"
-for kw in none always-loaded session-context hook gate; do
+for kw in none always-loaded opt-in-loaded hook gate; do
   assert_contains "S182 — the preamble lists '$kw'" "$kw" "$preamble"
 done
+# Still five keywords (#750, A66): session-context: is replaced, not added to.
+grep -q '^ *- `session-context:' <<<"$preamble" \
+  && fail "S182 — the preamble still lists the retired session-context: keyword as a vocabulary item"
 
 # The decided values for this entry.
 entry_line="$(awk -v h="## $id" '
@@ -43,7 +46,7 @@ entry_line="$(awk -v h="## $id" '
   on && /^## / { exit }
   on && /^- \*\*Reaches session:\*\*/ { print; exit }
 ' "$changes")"
-assert_contains "S182 — $id reaches a session through ORCHESTRATOR.md" "session-context: skills/role-contracts/ORCHESTRATOR.md" "$entry_line"
+assert_contains "S182 — $id reaches a session through ORCHESTRATOR.md" "opt-in-loaded: skills/role-contracts/ORCHESTRATOR.md" "$entry_line"
 assert_contains "S182 — $id is also checked by the model-record gate" "gate: skills/pre-merge-review/model-record-gate.sh" "$entry_line"
 
 # #427 AC10 intentionally advances this entry to Meaning version 2.
