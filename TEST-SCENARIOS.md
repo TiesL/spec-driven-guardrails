@@ -12838,7 +12838,9 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   `~/.codex/config.toml`; fresh projects that answered
   `process-multi-agent-roles` yes, no, pending, not at all (row absent) and
   with no answer file; a project with a project-owned regular file at
-  `.claude/rules/sdg-orchestrator-core.md`; a second clone whose
+  `.claude/rules/sdg-orchestrator-core.md`; four committed projects (a
+  project regular file, a foreign symlink, each answering yes and no) with
+  that path tracked; a second clone whose
   `opt-in-loaded:` declaration names another file
 - When: `adopt.sh <project>` runs (twice for yes; again after yes changes to
   no), and `adopt.sh --user` runs once
@@ -12853,13 +12855,18 @@ runner already loads `ORCHESTRATOR.md` as its system prompt.
   file nothing is linked and no project file carries core rule text; after
   yes changes to no a re-run removes the link, keeps a project-owned
   `.claude/rules/own.md` and the clone's file; a project-owned regular file
-  at the link path is left byte for byte; the second clone's link resolves
+  at the link path is left byte for byte; for the committed regular file
+  and the foreign symlink, under yes and under no, the file or link is
+  unchanged (not replaced, not removed), still in `git ls-files`, and has no
+  staged change (not `git rm --cached`); the second clone's link resolves
   to its declared file; project adoptions write nothing under HOME,
   `--user` writes only its trigger, no user-level file carries core rule
   text and `~/.claude/rules/sdg-orchestrator-core.md` does not exist
 - Falsifier: a literal path instead of the declaration; a copy instead of a
   link; the link tracked or shown by git; a link for no or unanswered; a
-  no re-run that leaves the link or removes a project-owned file; anything
+  no re-run that leaves the link or removes a project-owned file; yes that
+  replaces a project file or foreign link; adoption that git-untracks a
+  committed project file or foreign link at the path; anything
   written to `~/.claude` or `~/.codex` by a project adoption
 - Test seam: filesystem after `adopt.sh`; rule text found by
   `core750_rule_hits` (live `- OR<n>` line text, whitespace normalized)

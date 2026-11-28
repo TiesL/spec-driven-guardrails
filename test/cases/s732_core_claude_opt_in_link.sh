@@ -105,6 +105,38 @@ core750_adopt "$wf" "$p" || fail "S732/foreign — adopt.sh failed"
 [ "$(cat "$p/$CORE750_LINK" 2>/dev/null)" = 'project-owned file at the managed name' ] \
   || fail "S732/foreign — a project-owned file at $CORE750_LINK was removed or changed"
 
+# Committed project-owned regular file / foreign symlink at the link path, under
+# yes and no: left untouched and still tracked (not git-rm'd, not replaced).
+for kind in file link; do
+  for v in yes no; do
+    p="$(fresh_project "own-$kind-$v")"
+    mkdir -p "$p/.claude/rules"
+    if [ "$kind" = file ]; then
+      printf 'project-owned committed file\n' > "$p/$CORE750_LINK"
+      want_val='project-owned committed file'
+    else
+      printf 'foreign target\n' > "$p/foreign-target.md"
+      ln -s ../../foreign-target.md "$p/$CORE750_LINK"
+      want_val='../../foreign-target.md'
+    fi
+    git -C "$p" add -A >/dev/null 2>&1
+    git -C "$p" -c user.name=t -c user.email=t@t commit -q -m seed >/dev/null 2>&1
+    write_adoption "$p/WORKFLOW-ADOPTION.md" process-multi-agent-roles "$v"
+    core750_adopt "$wf" "$p" || fail "S732/own-$kind-$v — adopt.sh failed: $(cat "$SANDBOX/adopt.out")"
+    if [ "$kind" = file ]; then
+      [ -f "$p/$CORE750_LINK" ] && [ ! -L "$p/$CORE750_LINK" ] && [ "$(cat "$p/$CORE750_LINK")" = "$want_val" ] \
+        || fail "S732/own-$kind-$v — the committed project file was replaced, removed or changed"
+    else
+      [ -L "$p/$CORE750_LINK" ] && [ "$(readlink "$p/$CORE750_LINK")" = "$want_val" ] \
+        || fail "S732/own-$kind-$v — the foreign symlink was replaced or removed"
+    fi
+    git -C "$p" ls-files --error-unmatch "$CORE750_LINK" >/dev/null 2>&1 \
+      || fail "S732/own-$kind-$v — $CORE750_LINK was git-untracked (git rm --cached)"
+    [ -z "$(git -C "$p" diff --cached --name-only -- "$CORE750_LINK")" ] \
+      || fail "S732/own-$kind-$v — a staged change to $CORE750_LINK"
+  done
+done
+
 # --- 4. the installer reads the declaration ----------------------------------
 alt="$(sandbox_copy_repo alt)"
 cp "$alt/$CORE750_ORCH_REL" "$alt/skills/role-contracts/ALT-750.md"
