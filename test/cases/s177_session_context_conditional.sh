@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# S177 — session-context.sh prints a change's session-context file only for
-# a project that answered that change's row yes.
+# S177 — session-context.sh prints no declared file, for any answer.
 # Covers: F38
 #
-# Issue #371, A16, AC1/AC3/AC4-by-construction. Seam: the clone-root script
-# `session-context.sh <project>`. The mechanism is generic (every CHANGES.md
-# entry with a `session-context: <path>` value in its Reaches session field),
-# so this test builds a mini clone with invented entries; the real
-# ORCHESTRATOR.md is S178/S179. A no / absent / not-applicable row must
-# print nothing at all.
+# Issue #371, A16, AC1/AC3; amended by #750 (A66 D2): the core now reaches a
+# session through the always-loaded instructions (S732, S733), so the hook
+# prints no declared file at all. Seam: the clone-root script
+# `session-context.sh <project>` on a mini clone whose entries declare
+# `opt-in-loaded:` values and the retired `session-context:` keyword (alone,
+# in a comma list with a gate value, and a missing file). No answer may make
+# a declared file's text appear; the script still exits 0 and keeps the
+# CLAUDE.md warning.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -49,77 +50,84 @@ ENTRY
 }
 {
   echo "# Adoptable changes"
-  entry alpha-feature "session-context: skills/fixture/ALPHA.md"
+  entry alpha-feature "opt-in-loaded: skills/fixture/ALPHA.md"
   entry beta-feature "session-context: skills/fixture/BETA.md"
   entry gamma-feature "session-context: skills/fixture/GAMMA.md, gate: skills/fixture/gate.sh"
   entry gate-feature "gate: skills/fixture/gate.sh"
   entry none-feature "none"
-  entry ghost-feature "session-context: skills/fixture/MISSING-371.md"
+  entry ghost-feature "opt-in-loaded: skills/fixture/MISSING-371.md"
 } > "$wf/CHANGES.md"
 
-run() { # project -> stdout in $out, status in $status
-  # a correctly linked CLAUDE.md, so only the session-context text can show
+run() { # project -> stdout in $out, stdout+stderr in $all, status in $status
+  # a correctly linked CLAUDE.md, so no CLAUDE.md warning gets in the way
   [ -d "$1" ] && [ ! -e "$1/CLAUDE.md" ] && ln -s "$wf/WORKFLOW.md" "$1/CLAUDE.md"
   out="$("$wf/session-context.sh" "$1" 2>/dev/null)"
   status=$?
+  all="$("$wf/session-context.sh" "$1" 2>&1)"
 }
-count() { printf '%s\n' "$out" | grep -c "$1"; }
+# no_file_text <label>: no declared file's sentinel in stdout or stderr.
+no_file_text() {
+  local s
+  for s in ALPHA-SENTINEL-371 ALPHA-V2-SENTINEL-371 BETA-SENTINEL-371 BETA-V2-SENTINEL-371 GAMMA-SENTINEL-371 GATE-SENTINEL-371; do
+    case "$all" in *"$s"*) fail "S177/$1 — a declared file's text was printed ($s)" ;; esac
+  done
+}
 
-# 1. alpha yes, beta no, gamma never answered: only alpha's text.
+# 1. alpha (opt-in-loaded) yes, beta no, gamma never answered.
 p="$(fresh_project mixed)"
 write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes beta-feature no
 run "$p"
 [ "$status" -eq 0 ] || fail "S177/1 — exit $status, a SessionStart script must always exit 0"
-assert_contains "S177/1 — alpha's session-context file is printed" "ALPHA-SENTINEL-371" "$out"
-case "$out" in *BETA-SENTINEL-371*) fail "S177/1 — a no row's file was printed" ;; esac
-case "$out" in *GAMMA-SENTINEL-371*) fail "S177/1 — an unanswered row's file was printed" ;; esac
-case "$out" in *GATE-SENTINEL-371*) fail "S177/1 — a gate: path was printed as session text" ;; esac
+no_file_text 1
 
-# 2. nothing answered yes: nothing printed (no nagging beyond pending-changes).
+# 2. nothing that declares a file answered yes: no output at all.
 p="$(fresh_project allno)"
 write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature no beta-feature no gate-feature yes none-feature yes
 run "$p"
 [ "$status" -eq 0 ] || fail "S177/2 — exit $status"
-[ -z "$out" ] || fail "S177/2 — expected no output when no session-context row is yes, got: $out"
+[ -z "$out" ] || fail "S177/2 — expected no output when no declaring row is yes, got: $out"
 
-# 3. both alpha and beta yes: each printed once.
+# 3. alpha and beta yes (the retired session-context: keyword too): neither
+# file is printed.
 p="$(fresh_project both)"
 write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes beta-feature yes
 run "$p"
-[ "$(count ALPHA-SENTINEL-371)" -eq 1 ] || fail "S177/3 — alpha's text should appear exactly once"
-[ "$(count BETA-SENTINEL-371)" -eq 1 ] || fail "S177/3 — beta's text should appear exactly once"
+[ "$status" -eq 0 ] || fail "S177/3 — exit $status"
+no_file_text 3
 
-# 4. the pre-migration file and `ja` count as yes (the shared rule).
+# 4. the pre-migration file and `ja`.
 p="$(fresh_project old)"
-write_adoption "$p/WORKFLOW-ADOPTIE.md" alpha-feature ja
+write_adoption "$p/WORKFLOW-ADOPTIE.md" alpha-feature ja beta-feature ja
 run "$p"
-assert_contains "S177/4 — ja in WORKFLOW-ADOPTIE.md" "ALPHA-SENTINEL-371" "$out"
+[ "$status" -eq 0 ] || fail "S177/4 — exit $status"
+no_file_text 4
 
-# 5. a comma list: the session-context value is used, the gate value is not.
+# 5. a comma list with a gate value.
 p="$(fresh_project gamma)"
 write_adoption "$p/WORKFLOW-ADOPTION.md" gamma-feature yes
 run "$p"
-assert_contains "S177/5 — gamma's session-context file" "GAMMA-SENTINEL-371" "$out"
-case "$out" in *GATE-SENTINEL-371*) fail "S177/5 — the gate: value of a comma list was printed" ;; esac
+[ "$status" -eq 0 ] || fail "S177/5 — exit $status"
+no_file_text 5
 
-# 6. a declared file that does not exist must not break the others or the exit.
+# 6. a declared file that does not exist: exit 0, nothing printed for it.
 p="$(fresh_project ghost)"
 write_adoption "$p/WORKFLOW-ADOPTION.md" ghost-feature yes alpha-feature yes
 run "$p"
 [ "$status" -eq 0 ] || fail "S177/6 — exit $status for a missing declared file"
-assert_contains "S177/6 — the other yes row is still printed" "ALPHA-SENTINEL-371" "$out"
+no_file_text 6
 
-# 7. similar ids are different rows; the Notes column is not the answer.
+# 7. similar ids and a Notes-column yes.
 p="$(fresh_project similar)"
 {
   echo "| Change | Answer | Date | Notes |"
   echo "|---|---|---|---|"
   echo "| alpha-feature-extra | yes | 2026-10-01 | other row |"
-  echo "| xalpha-feature | yes | 2026-10-01 | other row |"
+  echo "| xbeta-feature | yes | 2026-10-01 | other row |"
   echo "| alpha-feature | no | 2026-10-01 | the answer is yes in spirit |"
 } > "$p/WORKFLOW-ADOPTION.md"
 run "$p"
-case "$out" in *ALPHA-SENTINEL-371*) fail "S177/7 — printed alpha for a similar id or a Notes-column yes" ;; esac
+[ "$status" -eq 0 ] || fail "S177/7 — exit $status"
+no_file_text 7
 
 # 8. no adoption file, and a project path that does not exist: silent, exit 0.
 p="$(fresh_project nofile)"
@@ -128,43 +136,37 @@ run "$p"
 run "$SANDBOX/does-not-exist"
 [ "$status" -eq 0 ] || fail "S177/8 — nonexistent project: exit $status"
 
-# 6b. a missing declared file warns on stderr only, prints nothing for it.
-p="$(fresh_project ghost2)"
-write_adoption "$p/WORKFLOW-ADOPTION.md" ghost-feature yes
+# 9. a later release of a declared file is not printed either.
+p="$(fresh_project reread)"
+write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes beta-feature yes
+printf 'ALPHA-V2-SENTINEL-371 a later release\n' >> "$wf/skills/fixture/ALPHA.md"
+printf 'BETA-V2-SENTINEL-371 a later release\n' >> "$wf/skills/fixture/BETA.md"
 run "$p"
-[ -z "$out" ] || fail "S177/6b — a missing declared file produced stdout: $out"
-err="$("$wf/session-context.sh" "$p" 2>&1 >/dev/null)"
-[ -n "$err" ] || fail "S177/6b — expected a warning on stderr for the missing declared file"
+[ "$status" -eq 0 ] || fail "S177/9 — exit $status"
+no_file_text 9
 
-# 10. CLAUDE.md link drift warning lives in session-context.sh (Architect's
-# ruling): silent when CLAUDE.md links to the clone's WORKFLOW.md, a warning
-# naming CLAUDE.md and adopt.sh when it is missing, a regular file, or
-# links elsewhere; the declared-yes text is still printed with it.
+# 10. the CLAUDE.md link drift warning stays in session-context.sh: silent
+# when CLAUDE.md links to the clone's WORKFLOW.md, a warning naming
+# CLAUDE.md and adopt.sh when it is missing, a regular file, or links
+# elsewhere; still no declared file text, still exit 0.
 p="$(fresh_project drift)"
-write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes
+write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes beta-feature yes
 mkdir -p "$p/.claude"
 ln -s "$wf/settings/session-hooks.json" "$p/.claude/settings.json"
 ln -s "$wf/WORKFLOW.md" "$p/CLAUDE.md"
 run "$p"
 case "$out" in *CLAUDE.md*) fail "S177/10 — a correct CLAUDE.md link produced a warning: $out" ;; esac
 rm -f "$p/CLAUDE.md"
-out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
+out="$("$wf/session-context.sh" "$p" 2>/dev/null)"; status=$?; all="$out"
+[ "$status" -eq 0 ] || fail "S177/10 — missing link: exit $status"
 assert_contains "S177/10 — missing link: warning names CLAUDE.md" "CLAUDE.md" "$out"
 assert_contains "S177/10 — missing link: warning says to run adopt.sh" "adopt.sh" "$out"
-assert_contains "S177/10 — the session-context text is still printed" "ALPHA-SENTINEL-371" "$out"
+no_file_text 10-missing
 printf 'own notes\n' > "$p/CLAUDE.md"
 out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
 assert_contains "S177/10 — regular file instead of the link" "CLAUDE.md" "$out"
 rm -f "$p/CLAUDE.md"; ln -s "$SANDBOX/elsewhere.md" "$p/CLAUDE.md"
 out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
 assert_contains "S177/10 — link to the wrong file" "CLAUDE.md" "$out"
-
-# 9. the script reads the clone it lives in, not a path baked in: a changed
-# session-context file shows up on the next run (AC11 at script level).
-p="$(fresh_project reread)"
-write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes
-printf 'ALPHA-V2-SENTINEL-371 a later release\n' >> "$wf/skills/fixture/ALPHA.md"
-run "$p"
-assert_contains "S177/9 — a later version of the file is what gets printed" "ALPHA-V2-SENTINEL-371" "$out"
 
 test_done

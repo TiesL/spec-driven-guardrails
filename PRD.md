@@ -1446,10 +1446,9 @@ cover the loaded text and hooks that are supposed to cause that
 behaviour, not the behaviour. The merge-time block in AC9 is mechanical:
 the merge guard refuses `gh pr merge` on the gate's `role-played:`
 finding in an opted-in project (S183, S186); S185 checks the review
-procedure says the same. Delivery depends on two platform facts, probed
-once (Claude Code 2.1.287, headless): `SessionStart` output reaches the
-top-level session but not a freshly dispatched subagent, and the hook
-fires again on resume and after compaction.
+procedure says the same. Delivery of the core is stated in #750 below; the original probe (Claude
+Code 2.1.287, headless) found `SessionStart` output reaches the top-level
+session but not a freshly dispatched subagent.
 
 Record-v2 acceptance (#427 AC2, AC4-AC6, AC8; A31a, A34a): role-play
 uses the same live strict records as F27. Quoted records supply no stages
@@ -1499,15 +1498,31 @@ of inline-only records and `<`/`>` overrides. `quality-review-before-merge`
 stays at v4 with its grammar text amended; `process-model-choice` stays
 at v2. This repo's adoption and the A18 override documentation must follow.
 
-Fitting the hook cap (#499, A41): Claude Code keeps at most 10,000
-characters of one hook's output in context, so each session-start hook
-output stays within `CONTEXT_BUDGET_CHARS` (9,000 characters, from
-`lib/context-budget.sh`) in its worst case, and `./check` enforces it.
-`ORCHESTRATOR.md` is a condensed core of rules with stable IDs `OR<n>`, in
-two self-standing parts (fundamentals, procedure), each printed by its own
-`session-context.sh --slot <n>` command, so both load at startup and after
-compaction; the inventory `orchestrator-rules.tsv` proves no rule is
-dropped. Judgment rules are covered by Given/When/Then behavior scenarios
+Core delivery (#750, A66; supersedes the hook delivery of #499, A41):
+`ORCHESTRATOR.md` is a condensed core of rules with stable IDs `OR<n>`. It
+reaches the session as always-loaded instructions in both runtimes, only in a
+project that answered `process-multi-agent-roles` yes: `adopt.sh` symlinks
+`.claude/rules/sdg-orchestrator-core.md` to the clone's `ORCHESTRATOR.md`
+(Claude) and installs a status-checked block in the project's `AGENTS.md`
+chain, with a managed `project_doc_max_bytes = 65536` in the project
+`.codex/config.toml` (Codex). Never `~/.claude/CLAUDE.md` or `~/.codex/`. The
+`SessionStart` hook no longer carries any rule text and there is no second
+copy: it prints one warning line when an opted-in project's core link is
+missing or stale, or a non-opted-in project still has it. After a yes turns
+into a no without an `adopt.sh` re-run the core keeps loading, with that
+warning, until the re-run; enforcement stops at once. Always-loaded text is
+followed on a best-effort basis; the binding layer is the script checks and
+hooks, and a rule that needs one to work for Codex is enforced by that same
+check or hook for Claude too. The `Agent`-dispatch hook, the merge guard and
+the model-record gate stay as they are. The repo holds one copy of each rule's
+text; a `./check` assertion keeps hooks and gate scripts from containing rule
+text, quoting by `OR<n>` instead. `CONTEXT_BUDGET_CHARS` (9,000 characters)
+still bounds what hooks print but no longer measures rule text; the only size
+limit on the core is Codex's `project_doc_max_bytes`, guarded by the adoption
+`status` check (`instructions-over-limit`), not by cutting text. The
+inventory `orchestrator-rules.tsv` proves no rule is dropped. The *Yes means*
+delivery sentence is rewritten without a meaning-version bump: obligations
+are unchanged. Judgment rules are covered by Given/When/Then behavior scenarios
 run as an on-demand differential test of old against new text, and a
 committed stamp of that run is compared by `./check`. A `PreToolUse` hook on
 the `Agent` tool (`hooks/agent-dispatch`) denies a role dispatch whose

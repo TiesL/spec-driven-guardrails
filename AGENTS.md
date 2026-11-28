@@ -15,7 +15,7 @@ This project is developed from multiple computers. Follow this workflow in every
 
 ## When starting a session
 
-1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`). The same hook prints what this project opted into that must be in every session's context (`session-context.sh`), such as the multi-agent run rules; when it does, those rules apply to this session.
+1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`). The multi-agent run rules (`ORCHESTRATOR.md`) load as always-loaded instructions in a project that opted into them, installed by `adopt.sh`; when they are loaded, they apply to this session. The same hook (`session-context.sh`) warns, without rule text, when that installation doesn't match the project's answer.
 2. Check whether you're continuing existing work (existing WIP branch) or starting something new.
    - Existing work: `git checkout wip/<issue>-<slug> && git pull --ff-only origin wip/<issue>-<slug>`. On another computer, create the local WIP branch from `origin/wip/<issue>-<slug>` if needed. Fetch and merge any remote PR head into WIP before continuing; if only the PR branch exists, create WIP from that remote ref without checking out the PR branch.
    - New work: create the issue first — `gh issue create` with the epic or work-item template (`$SPEC_DRIVEN_GUARDRAILS_DIR/templates/ISSUE_TEMPLATE/`, see `write-spec`) — then branch from its number: `git checkout main && git pull --ff-only origin main && git checkout -b wip/<issue>-<slug>` (use the epic's release branch instead of `main` when applicable).
@@ -149,8 +149,8 @@ Claude-only frontmatter such as context/allowed-tools is runtime metadata,
 not evidence of Codex dispatch or enforcement. If supported-version skill
 metadata/discovery fails, stop and return to Architect; never duplicate bodies.
 
-When process-multi-agent-roles is yes, read and follow canonical
-`.agents/skills/role-contracts/ORCHESTRATOR.md` from session-context output.
+When process-multi-agent-roles is yes, follow the orchestrator-core block that
+adoption installs in AGENTS.md (canonical `.agents/skills/role-contracts/ORCHESTRATOR.md`).
 Once authorized, continue ordinary stage handoffs and finding routes with
 available fresh role dispatch without requesting confirmation for each handoff.
 Follow that owner's scopes, records, route tables, human override and merge

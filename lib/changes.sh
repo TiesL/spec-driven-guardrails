@@ -233,6 +233,19 @@ reaches_session_values() {
   ' "$source"
 }
 
+# opt_in_loaded_path <source> <id>: the path entry <id> declares as
+# `opt-in-loaded: <path>` in its Reaches session field (#750, A66), or
+# nothing. adopt.sh (both runtimes) and session-context.sh read the core
+# file through this, not through a literal path.
+opt_in_loaded_path() {
+  reaches_session_values "$1" | awk -F'|' -v id="$2" '
+    $1 == id && $2 ~ /^opt-in-loaded:/ {
+      v = substr($2, length("opt-in-loaded:") + 1)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (v != "") { print v; exit }
+    }'
+}
+
 # reaches_session_invalid <source> <root>: one problem per line, each
 # naming the entry id, the field and the culprit; empty when every entry is
 # valid. <root> is the directory paths are relative to, and whose
@@ -266,13 +279,13 @@ reaches_session_invalid() {
         rpath="${value#*:}"
         rpath="$(printf '%s' "$rpath" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')" ;;
       *)
-        echo "$id: Reaches session value '$value' has no keyword (none, always-loaded, session-context, hook, gate)"
+        echo "$id: Reaches session value '$value' has no keyword (none, always-loaded, opt-in-loaded, hook, gate)"
         continue ;;
     esac
     case "$kind" in
-      always-loaded|session-context|hook|gate) ;;
+      always-loaded|opt-in-loaded|hook|gate) ;;
       *)
-        echo "$id: Reaches session keyword '$kind' is not one of none, always-loaded, session-context, hook, gate"
+        echo "$id: Reaches session keyword '$kind' is not one of none, always-loaded, opt-in-loaded, hook, gate"
         continue ;;
     esac
     if [ -z "$rpath" ]; then
@@ -338,7 +351,8 @@ changes_current_id() {
 # answered_yes <project-dir> <id> — #371 A16: the one rule for "this
 # project answered this CHANGES.md row yes". Exit 0 for yes, 1 otherwise
 # (no, never answered, no answer file). Three callers: adopt.sh (issue
-# templates), session-context.sh (session-start text) and
+# templates and the core rules link), session-context.sh (core link
+# warning) and
 # model-record-gate.sh (role-play detection, also reached through the
 # merge guard). Replaces adopt.sh's hard-coded
 # issue_tracking_answered_yes.

@@ -514,6 +514,49 @@ install_user_skill() {
   skill_symlink_cleanup_if_orphaned "$target/$name" "$source_real"
 }
 
+# #750 (A66 D1, D3, D7): the always-loaded orchestrator core. A project
+# that answered process-multi-agent-roles yes gets the symlink
+# .claude/rules/sdg-orchestrator-core.md -> the file that row declares as
+# `opt-in-loaded:` in this clone (a symlink, so a release reaches the next
+# session without re-adoption). Any other answer removes that symlink, and
+# only ours (core_rule_ours): a project-owned regular file at the path is left alone and
+# reported. Never user level: --user installs no core.
+CORE_RULE_LINK=".claude/rules/sdg-orchestrator-core.md"
+
+# A66 ownership addendum: the sdg- name and the managed .gitignore block
+# reserve the path, as for CLAUDE.md and .claude/settings.json. Any symlink
+# there is ours, whatever its target (old declared path, moved clone,
+# dangling, foreign): replaced on yes, removed otherwise, never a byte lost.
+# A regular file or directory there is the project's: never replaced,
+# removed, untracked or git-ignored.
+core_rule_ours() {
+  [ -L "$1/$CORE_RULE_LINK" ]
+}
+
+# core_rule_project_owned <project>: a non-symlink sits at the reserved path.
+core_rule_project_owned() {
+  [ -e "$1/$CORE_RULE_LINK" ] && [ ! -L "$1/$CORE_RULE_LINK" ]
+}
+
+install_core_rule() {
+  local project_dir="$1" link core
+  link="$project_dir/$CORE_RULE_LINK"
+  core="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
+  if [ -n "$core" ] && answered_yes "$project_dir" process-multi-agent-roles; then
+    if core_rule_project_owned "$project_dir"; then
+      echo "Not linking the orchestrator core: $link is a project-owned file, left untouched." >&2
+      return 0
+    fi
+    mkdir -p "$(dirname "$link")"
+    rm -f "$link"
+    ln -s "$CLAUDE_WORKFLOW_DIR/$core" "$link"
+    echo "Orchestrator core linked: $CORE_RULE_LINK -> $CLAUDE_WORKFLOW_DIR/$core"
+  elif core_rule_ours "$project_dir"; then
+    rm "$link"
+    echo "Orchestrator core link removed (process-multi-agent-roles is not answered yes): $CORE_RULE_LINK"
+  fi
+}
+
 adopt_user_trigger() {
   mkdir -p "$HOME/.claude"
   backup_if_real_file "$HOME/.claude/CLAUDE.md"
@@ -549,11 +592,19 @@ adopt_project() {
   # other checkout, and without this line, the first re-adoption after W9
   # would leave a pile of untracked files in all four projects.
   untrack_managed_paths "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
-  write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
+  # The reserved core path is managed unless a project file sits there.
+  local core_managed=()
+  if ! core_rule_project_owned "$project_dir"; then
+    core_managed=("$CORE_RULE_LINK")
+    untrack_managed_paths "$project_dir" "$CORE_RULE_LINK"
+  fi
+  write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/" ${core_managed[@]+"${core_managed[@]}"}
   install_skills "$project_dir"
   install_git_hooks "$project_dir"
 
   scaffold_shared "$project_dir"
+  # After scaffold_shared: the answer may only just have been seeded.
+  install_core_rule "$project_dir"
 
   echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
 }
@@ -713,6 +764,11 @@ if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
 elif [ "$runtime" = codex ]; then
   shared_destinations "$project_dir"
+  # A66 D3: the shared reader decides; the Codex module installs the core
+  # block and the managed project_doc_max_bytes key only for this path.
+  SDG_OPT_IN_CORE="$(opt_in_loaded_path "$CLAUDE_WORKFLOW_DIR/CHANGES.md" process-multi-agent-roles)"
+  answered_yes "$project_dir" process-multi-agent-roles || SDG_OPT_IN_CORE=""
+  export SDG_OPT_IN_CORE
   if [ "$status_mode" -eq 1 ]; then
     exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status "${shared_paths[@]}"
   fi

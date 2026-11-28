@@ -340,13 +340,15 @@ preference). Existing adopters answer the meaning v4 readoption question for the
 The skill is self-contained: it names the `role:<name>` labels and the `model-record` markers,
 and points at canonical installed skills. Built-in Claude Code review capabilities (`security-review`, `code-review`) remain runtime-dependent; unavailable required dispatch/capability is handled through the shared stop/override contract.
 
-**Claude: automatic from the first work item.** Once the row says yes, the `SessionStart` hook runs
-`session-context.sh`, which prints the skill's `ORCHESTRATOR.md` into every session of that
-project: what counts as a work item, the stage order with labels and markers, dispatching each
+**Claude: automatic from the first work item.** Once the row says yes, `adopt.sh` links
+`.claude/rules/sdg-orchestrator-core.md` to the skill's `ORCHESTRATOR.md`, which Claude Code
+loads into every session of that project (Codex gets the same bytes as an `AGENTS.md` block):
+what counts as a work item, the stage order with labels and markers, dispatching each
 role as a fresh agent (never a fork), the human override record, what to do when dispatch
 isn't available, and how to resume. So a session that gets a work-item request starts the
-pipeline without being asked. A `no` or unanswered row prints nothing. This repo answers its
-own row yes, with no special case. `session-context.sh` also warns when the project's
+pipeline without being asked. A `no` or unanswered row installs nothing. This repo answers its
+own row yes, with no special case. The `SessionStart` hook's `session-context.sh` warns when
+that link doesn't match the answer, and when the project's
 `CLAUDE.md` is no longer the link to `WORKFLOW.md`. Before merge, `model-record-gate.sh` flags a
 run where one session played every role (several stages' markers in one text, or a stage
 missing), and the merge guard refuses `gh pr merge` on it unless the human recorded a
@@ -365,7 +367,7 @@ detected.
 What an adopted project **gets**: the `role-contracts` skill, the opt-in question, the
 session-start rules and the merge-time check once it answers yes, and permission to run the
 three evidence scripts against its own repo. What it does **not** get: orchestrator software
-(the orchestrating session follows canonical `ORCHESTRATOR.md`; Codex explicitly reads session-context)
+(the orchestrating session follows canonical `ORCHESTRATOR.md`; Codex reads it from the `AGENTS.md` core block)
 and any installed copy of the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
 the project and not wired into its `check` or CI, and they are read-only. Run them by path from
 the guardrails clone, with the adopted
@@ -530,7 +532,7 @@ state, retry blindly, or expose credentials or raw server stderr.
 | `lib/` | Shared bash: `changes.sh` (parser/predicates), `nfr.sh` (registry reader). |
 | `pending-changes.sh` | What from `CHANGES.md`/`nfr/` still needs an answer in a given project. |
 | `route-child.sh` | Optional separate-process child routing through Caveman; see `docs/model-routing.md`. |
-| `session-context.sh` | At session start: prints the session-context files (today `ORCHESTRATOR.md`) of entries a project answered yes, and warns when its `CLAUDE.md` link is gone. |
+| `session-context.sh` | At session start: prints no rule text; warns when the project's `CLAUDE.md` link is gone or its orchestrator-core link doesn't match its answer (Codex: the adoption status warning). |
 
 **This repo's own internals** — not installed anywhere else:
 

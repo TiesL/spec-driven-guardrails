@@ -24,6 +24,18 @@ IGNORE_END = b'# spec-driven-guardrails: end'
 RECORD = '.guardrails/installation.json'
 BUNDLE = '.codex/sdg-guard'
 COVERAGE = 'runtime-hooks: not-installed; runtime shell interception unavailable'
+# #750 (A66 D1, D4): the opt-in orchestrator core block after the workflow
+# block, and the one config key adoption owns. adopt.sh passes the declared
+# core path in SDG_OPT_IN_CORE only for a project that answered
+# process-multi-agent-roles yes (the shared reader); empty means remove.
+CORE_BEGIN = b'<!-- spec-driven-guardrails: orchestrator-core begin -->'
+CORE_END = b'<!-- spec-driven-guardrails: orchestrator-core end -->'
+CONFIG = '.codex/config.toml'
+LIMIT_KEY = 'project_doc_max_bytes'
+DEFAULT_LIMIT = 32768
+# Ownership lives in the bytes: the marker comment plus the key line, as one
+# fragment. A key without the marker is the project's own.
+MANAGED_KEY = b'# spec-driven-guardrails: managed key, removed when not opted in\n' + LIMIT_KEY.encode() + b' = 65536\n'
 
 def exists(p):
     return p.exists() or p.is_symlink()
@@ -38,9 +50,72 @@ def inventory(source, project):
                          capture_output=True, text=True)
     print('runtime: codex\nproject: ' + str(project) + '\ncheckout: ' + str(source))
     print('revision: ' + (rev.stdout.strip() if rev.returncode == 0 else 'unavailable (unversioned checkout)'))
-    print('config/trust/permissions/unrelated-hooks/plugins: project/user-owned; not installed or changed')
+    print('config: only the managed ' + LIMIT_KEY + ' for a yes project, in effect only for a trusted project; trust/permissions/unrelated-hooks/plugins: not installed or changed')
     print('native-hooks: shared; foreign hooks/hooksPath/--no-verify may make coverage unavailable')
     print('structural installation only; not live-loaded')
+
+def opt_in_core(source):
+    rel = os.environ.get('SDG_OPT_IN_CORE', '')
+    if not rel: return None
+    if Path(rel).is_absolute() or '..' in Path(rel).parts:
+        raise Conflict('opt-in-loaded core path must stay inside the checkout: ' + rel)
+    path = source / rel
+    data = regular(path, rel)
+    if not path.is_file(): raise Conflict(rel + ': declared opt-in-loaded core is missing')
+    return data
+
+def core_agents(data, core):
+    """Place, refresh or remove the core block right after the workflow block."""
+    span = block(data, CORE_BEGIN, CORE_END, 'AGENTS.md')
+    if span:
+        if core is None:
+            # Also drop the newline the insert added, restoring the prior bytes.
+            stop = span[1] + 1 if data[span[1]:span[1] + 1] == b'\n' else span[1]
+            return data[:span[0]] + data[stop:]
+        return data[:span[0]] + CORE_BEGIN + b'\n' + core + CORE_END + data[span[1]:]
+    if core is None: return data
+    stop = data.index(END) + len(END)
+    return data[:stop] + b'\n' + CORE_BEGIN + b'\n' + core + CORE_END + data[stop:]
+
+UNREADABLE = object()
+
+def top_level_limit(data):
+    """The top-level project_doc_max_bytes (before the first table): an int in
+    any TOML integer form, bare or quoted key; UNREADABLE when defined with a
+    value that is not one; None when not defined there."""
+    for line in data.decode('utf-8', 'replace').splitlines():
+        if line.lstrip().startswith('['): return None
+        m = re.match(r'\s*("?)' + LIMIT_KEY + r'\1\s*=\s*([^#]*?)\s*(#.*)?$', line)
+        if m:
+            try: return int(m.group(2).replace('_', ''), 0)
+            except ValueError: return UNREADABLE
+    return None
+
+def names_key(data):
+    """Whether a non-comment line names the key (any TOML form: quoted,
+    100_000, hex, after a multi-line array). A comment is no definition."""
+    return any(LIMIT_KEY in line and not line.lstrip().startswith('#')
+               for line in data.decode('utf-8', 'replace').splitlines())
+
+def config_plan(project, install):
+    """Return (wanted bytes or None to delete, changed). A project-owned key is
+    never touched; the managed fragment is written for yes only, removed
+    otherwise, and a config left empty by that removal was ours: deleted."""
+    parent, path = project / '.codex', project / CONFIG
+    # Without opt-in only a regular config can hold a fragment of ours.
+    if not install and (parent.is_symlink() or path.is_symlink() or not path.is_file()):
+        return None, False
+    if parent.is_symlink() or (exists(parent) and not parent.is_dir()):
+        raise Conflict('.codex: expected a real directory')
+    present = exists(path)
+    data = regular(path, CONFIG)
+    if data.count(MANAGED_KEY) > 1: raise Conflict(CONFIG + ': duplicated managed key')
+    own = data.replace(MANAGED_KEY, b'')
+    # A66 D4: any other non-comment line naming the key makes it the
+    # project's; never add ours.
+    wanted = MANAGED_KEY + own if install and not names_key(own) else own
+    if not wanted and data: return None, True
+    return wanted, wanted != data or not present
 
 def record_read(project):
     path = project / RECORD
@@ -505,6 +580,8 @@ def main():
     bundle_stale = False
     links = {}
     removals = []
+    deletes = []
+    core_pending = False
     old = None
     try:
         # Shared scaffolding runs after this Module, but belongs to this same
@@ -538,7 +615,16 @@ def main():
         data = regular(project / 'AGENTS.md', 'AGENTS.md')
         span = block(data, BEGIN, END, 'AGENTS.md')
         payload = (source / 'adapters/codex/AGENTS.md').read_bytes()
-        files['AGENTS.md'] = managed(data, span, framed(payload))
+        core = opt_in_core(source)
+        # Status reports drift of an installed core block. A yes answered
+        # after the last adoption has nothing installed to drift yet:
+        # installing it is adoption's job, so status notes it, not stale.
+        core_pending = status and core is not None and block(data, CORE_BEGIN, CORE_END, 'AGENTS.md') is None
+        if core_pending: core = None
+        files['AGENTS.md'] = core_agents(managed(data, span, framed(payload)), core)
+        config_bytes, config_changed = config_plan(project, core is not None)
+        if config_changed and config_bytes is None: deletes.append(CONFIG)
+        elif config_changed or (core is not None and config_bytes is not None): files[CONFIG] = config_bytes
         old = record_read(project)
         transaction = old.get('guard_bundle_transaction') if old else None
         if transaction:
@@ -640,6 +726,27 @@ def main():
                 print('stale/broken/missing: ' + name); stale = True
             else: print('unchanged: ' + name)
         for name in removals: print('stale removed canonical skill: ' + name); stale = True
+        for name in deletes: print('stale/not removed: ' + name); stale = True
+        if core_pending:
+            print('pending: orchestrator-core block not installed yet; run adopt.sh --runtime codex to install it')
+        # A66 D4: the project-root AGENTS.md against the effective limit, only
+        # once the core block is installed (opt-in only; D3).
+        agents = project / 'AGENTS.md'
+        installed = block(data, CORE_BEGIN, CORE_END, 'AGENTS.md') is not None
+        size = agents.stat().st_size if installed and agents.is_file() else 0
+        config = project / CONFIG
+        limit = top_level_limit(config.read_bytes()) if config.is_file() and not config.is_symlink() else None
+        # Fail closed: a defined key whose value status cannot read counts as
+        # the default, and the advice says how to make it readable.
+        advice = '; run adopt.sh --runtime codex again or raise the project key'
+        if limit is UNREADABLE:
+            advice = '; ' + LIMIT_KEY + ' is defined but unreadable: write it as a plain top-level integer'
+            limit = None
+        limit = DEFAULT_LIMIT if limit is None else limit
+        if size > limit:
+            print('instructions-over-limit: AGENTS.md is ' + str(size) + ' bytes, over ' + LIMIT_KEY + ' ' + str(limit)
+                  + '; Codex drops the rest' + advice)
+            stale = True
         for name in ('pre-commit', 'commit-msg', 'pre-push'):
             p = project / '.git/hooks' / name
             if not p.is_symlink() or p.resolve() != source / 'hooks' / name:
@@ -661,6 +768,8 @@ def main():
             files[RECORD] = encode_record(rec)
             files = {k: v for k, v in files.items() if not k.startswith(BUNDLE + '/')}
         for name in removals:
+            (project / name).unlink(); print('removed: ' + name)
+        for name in deletes:
             (project / name).unlink(); print('removed: ' + name)
         for name, target in links.items():
             p = project / name
